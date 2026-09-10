@@ -7,7 +7,6 @@ import {
   Copy,
   FileText,
   Gauge,
-  Globe,
   Image as ImageIcon,
   LayoutTemplate,
   MonitorSmartphone,
@@ -104,7 +103,6 @@ type SectionId =
   | "privacy"
   | "scan"
   | "accuracy"
-  | "web"
   | "devices"
   | `cms:${string}`;
 
@@ -156,15 +154,6 @@ function SettingsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const prepare = useMutation({
-    mutationFn: async () => {
-      const { prepareWebFaces } = await import("@/lib/prepare-web-faces");
-      return prepareWebFaces();
-    },
-    onSuccess: (r) =>
-      toast.success(`เตรียมรูปแล้ว ${r.processed} รูป${r.failed ? ` (ใช้ไม่ได้ ${r.failed} รูป)` : ""}`),
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const { data: devices } = useQuery({
     queryKey: ["devices"],
@@ -197,7 +186,7 @@ function SettingsPage() {
     },
     { id: "scan", title: "การสแกนและเสียง", hint: "กันสแกนซ้ำ หน่วงเวลา และเสียงพูด", icon: Volume2 },
     { id: "accuracy", title: "ความแม่นยำและรูปถ่าย", hint: "ค่าความเหมือนและการเก็บรูป", icon: Gauge },
-    { id: "web", title: "โหมดสแกนผ่านเว็บ", hint: "ใช้งานได้โดยไม่ต้องติดตั้งโปรแกรม", icon: Globe },
+    
     {
       id: "kiosk",
       title: "หน้าจอตู้สแกน",
@@ -689,48 +678,6 @@ function SettingsPage() {
                     <span className="text-sm">
                       นำรูปที่สแกนผ่านแบบมั่นใจสูงไปเพิ่มเป็นข้อมูลลงทะเบียนอัตโนมัติ
                     </span>
-                  </div>
-                </div>
-                {SaveBar}
-              </div>
-            ) : section === "web" ? (
-              <div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
-                    <Switch
-                      checked={form.allow_web_scan}
-                      onCheckedChange={(v) => set({ allow_web_scan: v })}
-                    />
-                    <span className="text-sm">
-                      อนุญาตให้ตู้สแกนใช้หน้าเว็บตรวจใบหน้าได้ เมื่อไม่มีโปรแกรมบนเครื่อง
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>ความคล้ายขั้นต่ำของโหมดเว็บ</Label>
-                    <Input
-                      type="number"
-                      step={0.01}
-                      min={0}
-                      max={1}
-                      value={Number(form.web_match_threshold)}
-                      onChange={(e) => set({ web_match_threshold: Number(e.target.value) })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      ตัวเลขน้อย = เข้มงวดขึ้น (แนะนำ 0.42)
-                    </p>
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label>เตรียมรูปที่ลงทะเบียนไว้ให้โหมดเว็บ</Label>
-                    <Button
-                      variant="secondary"
-                      onClick={() => prepare.mutate()}
-                      disabled={prepare.isPending}
-                    >
-                      {prepare.isPending ? "กำลังเตรียมรูป…" : "เตรียมรูปทั้งหมด"}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      ต้องกดหนึ่งครั้งหลังลงทะเบียนรูปใหม่ เพื่อให้โหมดเว็บรู้จักคนเหล่านั้น
-                    </p>
                   </div>
                 </div>
                 {SaveBar}

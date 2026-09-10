@@ -83,8 +83,6 @@ function Kiosk() {
     last_sync?: number | null;
   } | null>(null);
 
-  const [webReady, setWebReady] = useState(false);
-  const [webError, setWebError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentScan[]>([]);
   const [voiceOn, setVoiceOn] = useState(false);
   const [display, setDisplay] = useState({
@@ -303,23 +301,6 @@ function Kiosk() {
     };
   }, [agentUrl]);
 
-  // Warm up the in-browser face model whenever the local program is absent.
-  useEffect(() => {
-    if (agentOnline !== false || webReady) return;
-    let cancelled = false;
-    import("@/lib/face-web")
-      .then((m) => m.loadFaceApi())
-      .then(() => {
-        if (!cancelled) setWebReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setWebError("โหลดตัวตรวจใบหน้าไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วรีเฟรช");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [agentOnline, webReady]);
-
   useEffect(() => {
     let stream: MediaStream | null = null;
     navigator.mediaDevices
@@ -340,54 +321,22 @@ function Kiosk() {
     return canvas.toDataURL("image/jpeg", quality);
   }, []);
 
-  // Web mode: measure the face in the browser, let the server decide.
-  const scanViaWeb = useCallback(
-    async (video: HTMLVideoElement) => {
-      const { measureSingleFace } = await import("@/lib/face-web");
-      const outcome = await measureSingleFace(video);
-      if (outcome.status !== "ok") {
-        return { result: outcome.status } as { result: string };
-      }
-
-      const snapshot = capture(video, 0.8);
-      lastShotRef.current = snapshot;
-
-      const res = await fetch("/api/public/kiosk/web-scan", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          descriptor: outcome.face.descriptor,
-          geometry: outcome.face.geometry,
-          snapshot,
-        }),
-      });
-      return (await res.json()) as { result?: string };
-    },
-    [capture],
-  );
-
   const scanOnce = useCallback(async () => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || busyRef.current) return;
-    if (agentOnline === null) return;
-    if (!agentOnline && !webReady) return;
+    if (!agentOnline) return;
     busyRef.current = true;
     setStatus("scanning");
     setGuide("scanning");
     try {
-      let data: Omit<ScanResult, "result"> & { result?: string };
-      if (agentOnline) {
-        const dataUrl = capture(video, 0.85);
-        lastShotRef.current = dataUrl;
-        const res = await fetch(`${agentUrl.replace(/\/$/, "")}/scan`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ image: dataUrl }),
-        });
-        data = (await res.json()) as typeof data;
-      } else {
-        data = (await scanViaWeb(video)) as typeof data;
-      }
+      const dataUrl = capture(video, 0.85);
+      lastShotRef.current = dataUrl;
+      const res = await fetch(`${agentUrl.replace(/\/$/, "")}/scan`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
         setStatus("idle");
@@ -422,12 +371,12 @@ function Kiosk() {
         });
       }, 1000);
     } catch {
-      if (agentOnline) setAgentOnline(false);
+      setAgentOnline(false);
       setGuide("idle");
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, capture, scanViaWeb, speak, loadRecent]);
+  }, [agentUrl, agentOnline, capture, speak, loadRecent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -481,12 +430,10 @@ function Kiosk() {
                     }`
                   : ""}
               </span>
-            ) : webError ? (
-              <span className="text-destructive">{webError}</span>
-            ) : webReady ? (
-              <span className="text-primary">โหมดเว็บ • พร้อมสแกน</span>
+            ) : agentOnline === false ? (
+              <span className="text-destructive">ยังไม่ได้เปิดโปรแกรม FaceGate</span>
             ) : (
-              <span className="text-muted-foreground">โหมดเว็บ • กำลังเตรียม…</span>
+              <span className="text-muted-foreground">กำลังเชื่อมต่อโปรแกรม FaceGate…</span>
             )}
           </div>
           {!voiceOn ? (
@@ -559,10 +506,12 @@ function Kiosk() {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-1 shimmer-line" />
 
           <div className="animate-rise pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow backdrop-blur">
-            {agentOnline === false && !webReady && !webError && (
-              <span className="text-muted-foreground">กำลังเตรียมตัวตรวจใบหน้า…</span>
+            {agentOnline === false && (
+              <span className="text-destructive">
+                กรุณาเปิดโปรแกรม FaceGate บนเครื่องนี้ก่อนเริ่มสแกน
+              </span>
             )}
-            {(agentOnline !== false || webReady) && (
+            {agentOnline !== false && (
               <>
                 {status === "scanning" && !result && (
                   <>
