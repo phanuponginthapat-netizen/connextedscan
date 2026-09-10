@@ -430,7 +430,7 @@ function AttendancePage() {
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
             {t("brand.school_name")}
           </p>
-          <h1 className="font-display text-2xl font-semibold">รายงานการเข้า-ออก</h1>
+          <h1 className="font-display text-2xl font-semibold">{t("report.title")}</h1>
           <p className="text-sm text-muted-foreground">
             ช่วงวันที่ {rangeLabel} •{" "}
             {personType === "all"
