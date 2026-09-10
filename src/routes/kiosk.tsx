@@ -85,7 +85,7 @@ function Kiosk() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ image: dataUrl }),
       });
-      const data = (await res.json()) as ScanResult & { result?: string };
+      const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       if (!data.result || data.result === "no_face") {
         setStatus("idle");
         busyRef.current = false;
