@@ -70,6 +70,39 @@ export const Route = createFileRoute("/api/public/kiosk/attendance")({
 
         const now = bangkokMinutes();
         const cooldown = settings?.duplicate_cooldown_minutes ?? 300;
+        const geometryScore = parsed.data.geometry_score ?? null;
+
+        // Second opinion: facial landmark geometry (eye/nose/mouth distances).
+        const geometryMin = settings?.geometry_min_score ?? 0.5;
+        if (geometryScore !== null && geometryScore < geometryMin) {
+          await supabaseAdmin.from("attendance_logs").insert({
+            student_id,
+            direction: "in",
+            status: "geometry_reject",
+            confidence,
+            geometry_score: geometryScore,
+            device_name: device.name,
+          });
+          return jsonResponse({
+            result: "denied",
+            message: "สัดส่วนใบหน้าไม่ตรงกับข้อมูลที่ลงทะเบียน",
+            speak: "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่",
+            next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
+          });
+        }
+
+        // Store the captured face as scan evidence.
+        let snapshotPath: string | null = null;
+        if ((settings?.save_snapshots ?? true) && parsed.data.snapshot) {
+          const bytes = decodeBase64Jpeg(parsed.data.snapshot);
+          if (bytes) {
+            const path = `snapshots/${student_id}/${Date.now()}.jpg`;
+            const { error } = await supabaseAdmin.storage
+              .from("faces")
+              .upload(path, bytes, { contentType: "image/jpeg", upsert: true });
+            if (!error) snapshotPath = path;
+          }
+        }
 
         // Decide direction from the configured windows.
         let direction = parsed.data.direction ?? null;
