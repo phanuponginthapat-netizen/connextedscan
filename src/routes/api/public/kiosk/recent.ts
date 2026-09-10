@@ -13,12 +13,32 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
       GET: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        const { data: settings } = await supabaseAdmin
+          .from("settings")
+          .select(
+            "kiosk_show_recent, kiosk_recent_limit, kiosk_mirror, kiosk_show_clock, kiosk_show_confidence, next_person_delay_seconds, voice_enabled, voice_rate, voice_volume",
+          )
+          .eq("id", true)
+          .maybeSingle();
+
+        const display = {
+          show_recent: settings?.kiosk_show_recent ?? true,
+          recent_limit: Math.min(Math.max(settings?.kiosk_recent_limit ?? 20, 1), 50),
+          mirror: settings?.kiosk_mirror ?? true,
+          show_clock: settings?.kiosk_show_clock ?? true,
+          show_confidence: settings?.kiosk_show_confidence ?? false,
+          next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
+          voice_enabled: settings?.voice_enabled ?? true,
+          voice_rate: Number(settings?.voice_rate ?? 1),
+          voice_volume: Number(settings?.voice_volume ?? 1),
+        };
+
         const { data: logs } = await supabaseAdmin
           .from("attendance_logs")
           .select("id, scanned_at, direction, snapshot_path, student_id")
           .eq("status", "ok")
           .order("scanned_at", { ascending: false })
-          .limit(20);
+          .limit(display.recent_limit);
 
         const rows = logs ?? [];
         const ids = [...new Set(rows.map((r) => r.student_id).filter(Boolean))] as string[];
@@ -71,7 +91,7 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
           }),
         );
 
-        return jsonResponse({ items });
+        return jsonResponse({ items, display });
       },
     },
   },

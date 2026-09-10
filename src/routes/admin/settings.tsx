@@ -16,6 +16,9 @@ import {
   ScanFace,
   Settings2,
   Volume2,
+  CalendarDays,
+  ShieldCheck,
+  Monitor,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -69,10 +72,35 @@ type SettingsRow = {
   geometry_min_score: number;
   web_match_threshold: number;
   allow_web_scan: boolean;
+  work_days: string;
+  block_non_work_days: boolean;
+  late_grace_minutes: number;
+  early_leave_before: string;
+  voice_enabled: boolean;
+  voice_rate: number;
+  voice_volume: number;
+  voice_duplicate_template: string;
+  voice_late_suffix: string;
+  voice_denied_text: string;
+  voice_out_of_window_text: string;
+  kiosk_show_recent: boolean;
+  kiosk_recent_limit: number;
+  kiosk_mirror: boolean;
+  kiosk_show_clock: boolean;
+  kiosk_show_confidence: boolean;
+  min_face_coverage: number;
+  detector_min_score: number;
+  log_unknown_attempts: boolean;
+  snapshot_retention_days: number;
+  log_retention_days: number;
+  default_report_days: number;
 };
 
 type SectionId =
   | "time"
+  | "calendar"
+  | "kiosk"
+  | "privacy"
   | "scan"
   | "accuracy"
   | "web"
@@ -155,9 +183,27 @@ function SettingsPage() {
 
   const systemNav: Array<{ id: SectionId; title: string; hint: string; icon: typeof Clock }> = [
     { id: "time", title: "ช่วงเวลาเข้า-ออก", hint: "กำหนดเวลารับสแกนและเวลาสาย", icon: Clock },
+    {
+      id: "calendar",
+      title: "วันทำการและการมาสาย",
+      hint: "วันเปิดรับสแกน ผ่อนผันสาย และออกก่อนเวลา",
+      icon: CalendarDays,
+    },
     { id: "scan", title: "การสแกนและเสียง", hint: "กันสแกนซ้ำ หน่วงเวลา และเสียงพูด", icon: Volume2 },
     { id: "accuracy", title: "ความแม่นยำและรูปถ่าย", hint: "ค่าความเหมือนและการเก็บรูป", icon: Gauge },
     { id: "web", title: "โหมดสแกนผ่านเว็บ", hint: "ใช้งานได้โดยไม่ต้องติดตั้งโปรแกรม", icon: Globe },
+    {
+      id: "kiosk",
+      title: "หน้าจอตู้สแกน",
+      hint: "รายการล่าสุด กระจกสะท้อน และข้อมูลที่แสดง",
+      icon: Monitor,
+    },
+    {
+      id: "privacy",
+      title: "ข้อมูลและความเป็นส่วนตัว",
+      hint: "อายุการเก็บรูปและประวัติ รายงานเริ่มต้น",
+      icon: ShieldCheck,
+    },
     { id: "devices", title: "เครื่องตู้สแกน", hint: "รหัสเครื่องและสถานะเชื่อมต่อ", icon: MonitorSmartphone },
   ];
 
@@ -334,12 +380,208 @@ function SettingsPage() {
                       onChange={(e) => set({ school_name: e.target.value })}
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label>ข้อความเสียงเมื่อสแกนซ้ำ</Label>
+                    <Input
+                      value={form.voice_duplicate_template}
+                      onChange={(e) => set({ voice_duplicate_template: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ข้อความต่อท้ายเมื่อมาสาย</Label>
+                    <Input
+                      value={form.voice_late_suffix}
+                      onChange={(e) => set({ voice_late_suffix: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ข้อความเมื่อไม่พบข้อมูล</Label>
+                    <Input
+                      value={form.voice_denied_text}
+                      onChange={(e) => set({ voice_denied_text: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ข้อความเมื่อสแกนนอกเวลา</Label>
+                    <Input
+                      value={form.voice_out_of_window_text}
+                      onChange={(e) => set({ voice_out_of_window_text: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ความเร็วเสียงพูด</Label>
+                    <Input
+                      type="number"
+                      step={0.1}
+                      min={0.5}
+                      max={2}
+                      value={Number(form.voice_rate)}
+                      onChange={(e) => set({ voice_rate: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ระดับเสียง (0–1)</Label>
+                    <Input
+                      type="number"
+                      step={0.1}
+                      min={0}
+                      max={1}
+                      value={Number(form.voice_volume)}
+                      onChange={(e) => set({ voice_volume: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Switch
+                      checked={form.voice_enabled}
+                      onCheckedChange={(v) => set({ voice_enabled: v })}
+                    />
+                    <span className="text-sm">เปิดเสียงพูดขานชื่อเมื่อสแกนสำเร็จ</span>
+                  </div>
                   <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
                     <Switch
                       checked={form.require_liveness}
                       onCheckedChange={(v) => set({ require_liveness: v })}
                     />
                     <span className="text-sm">บังคับตรวจว่าเป็นคนจริง (กันการยกรูปมาส่อง)</span>
+                  </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : section === "calendar" ? (
+              <div>
+                <div className="space-y-4">
+                  <div>
+                    <Label>วันเปิดรับการสแกน</Label>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"].map((d, i) => {
+                        const days = (form.work_days ?? "").split(",").filter(Boolean);
+                        const on = days.includes(String(i));
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() =>
+                              set({
+                                work_days: (on
+                                  ? days.filter((v) => v !== String(i))
+                                  : [...days, String(i)]
+                                )
+                                  .map(Number)
+                                  .sort((a, b) => a - b)
+                                  .join(","),
+                              })
+                            }
+                            className={cn(
+                              "size-11 rounded-full border text-sm font-medium transition-colors",
+                              on
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:bg-muted",
+                            )}
+                          >
+                            {d}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={form.block_non_work_days}
+                      onCheckedChange={(v) => set({ block_non_work_days: v })}
+                    />
+                    <span className="text-sm">ปิดรับการสแกนในวันที่ไม่ใช่วันทำการ</span>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>ผ่อนผันสาย (นาที)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={Number(form.late_grace_minutes)}
+                        onChange={(e) => set({ late_grace_minutes: Number(e.target.value) })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        เลยเวลาสายได้ไม่เกินกี่นาที ก่อนจะถือว่ามาสายจริง
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>ออกก่อนเวลา ถ้าสแกนออกก่อน</Label>
+                      <TimeInput24
+                        value={String(form.early_leave_before).slice(0, 5)}
+                        onChange={(v) => set({ early_leave_before: `${v}:00` })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : section === "kiosk" ? (
+              <div>
+                <div className="space-y-3">
+                  {([
+                    ["kiosk_show_recent", "แสดงรายการสแกนล่าสุดข้างหน้าจอกล้อง"],
+                    ["kiosk_mirror", "แสดงภาพกล้องแบบกระจกเงา"],
+                    ["kiosk_show_clock", "แสดงนาฬิกาบนหน้าจอตู้สแกน"],
+                    ["kiosk_show_confidence", "แสดงค่าความมั่นใจของการจับคู่ใบหน้า"],
+                  ] as Array<[keyof SettingsRow, string]>).map(([key, label]) => (
+                    <div key={key} className="flex items-center gap-3 rounded-lg border p-3">
+                      <Switch
+                        checked={Boolean(form[key])}
+                        onCheckedChange={(v) => set({ [key]: v } as Partial<SettingsRow>)}
+                      />
+                      <span className="text-sm">{label}</span>
+                    </div>
+                  ))}
+                  <div className="max-w-xs space-y-1.5">
+                    <Label>จำนวนรายการล่าสุดที่แสดง</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={Number(form.kiosk_recent_limit)}
+                      onChange={(e) => set({ kiosk_recent_limit: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : section === "privacy" ? (
+              <div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>เก็บรูปตอนสแกน (วัน)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={Number(form.snapshot_retention_days)}
+                      onChange={(e) => set({ snapshot_retention_days: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">ครบกำหนดแล้วรูปจะถูกลบทิ้ง</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>เก็บประวัติเข้า-ออก (วัน)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={Number(form.log_retention_days)}
+                      onChange={(e) => set({ log_retention_days: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ช่วงวันเริ่มต้นของรายงาน</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={Number(form.default_report_days)}
+                      onChange={(e) => set({ default_report_days: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Switch
+                      checked={form.log_unknown_attempts}
+                      onCheckedChange={(v) => set({ log_unknown_attempts: v })}
+                    />
+                    <span className="text-sm">บันทึกความพยายามสแกนของคนที่ไม่ได้ลงทะเบียน</span>
                   </div>
                 </div>
                 {SaveBar}
@@ -394,6 +636,31 @@ function SettingsPage() {
                       max={1}
                       value={Number(form.auto_enroll_min_confidence)}
                       onChange={(e) => set({ auto_enroll_min_confidence: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ขนาดใบหน้าขั้นต่ำในเฟรม</Label>
+                    <Input
+                      type="number"
+                      step={0.01}
+                      min={0}
+                      max={1}
+                      value={Number(form.min_face_coverage)}
+                      onChange={(e) => set({ min_face_coverage: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      กันการสแกนจากระยะไกลเกินไป (แนะนำ 0.10)
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>คะแนนการตรวจพบใบหน้าขั้นต่ำ</Label>
+                    <Input
+                      type="number"
+                      step={0.05}
+                      min={0}
+                      max={1}
+                      value={Number(form.detector_min_score)}
+                      onChange={(e) => set({ detector_min_score: Number(e.target.value) })}
                     />
                   </div>
                   <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
