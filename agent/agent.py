@@ -50,6 +50,7 @@ face_app.prepare(ctx_id=-1, det_size=(320, 320))
 state: dict[str, Any] = {
     "matrix": np.zeros((0, 512), dtype=np.float32),  # normalised embeddings
     "owners": [],  # student_id per row
+    "geoms": [],  # landmark geometry per row
     "students": {},
     "settings": {},
     "last_sync": None,
@@ -165,16 +166,18 @@ def sync_once() -> None:
     res.raise_for_status()
     data = res.json()
 
-    rows, owners = [], []
+    rows, owners, geoms = [], [], []
     for item in data.get("embeddings", []):
         vec = np.array(item["embedding"], dtype=np.float32)
         if vec.size:
             rows.append(normalise(vec))
             owners.append(item["student_id"])
+            geoms.append(item.get("geometry") or None)
 
     with lock:
         state["matrix"] = np.vstack(rows) if rows else np.zeros((0, 512), dtype=np.float32)
         state["owners"] = owners
+        state["geoms"] = geoms
         state["students"] = {s["id"]: s for s in data.get("students", [])}
         state["settings"] = data.get("settings") or {}
         state["last_sync"] = time.time()
@@ -199,6 +202,7 @@ def process_pending(pending: list[dict]) -> None:
                 {
                     "face_id": item["id"],
                     "embedding": normalise(face.normed_embedding).tolist(),
+                    "geometry": geometry_features(face),
                     "quality": float(getattr(face, "det_score", 0.0)),
                 }
             )
