@@ -102,8 +102,8 @@ function Landing() {
     <main className="min-h-screen bg-[#f6f9fd] text-[#132a4f]">
       {/* ===== Top nav ===== */}
       <header className="sticky top-0 z-30 border-b border-sky-100 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             {logo ? (
               <img
                 src={logo}
@@ -115,9 +115,9 @@ function Landing() {
                 <ScanFace className="size-5" />
               </span>
             )}
-            <div className="leading-tight">
-              <p className="font-display text-lg font-bold">{t("brand.name")}</p>
-              <p className="text-xs text-slate-500">{t("brand.school_name")}</p>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate font-display text-lg font-bold">{t("brand.name")}</p>
+              <p className="truncate text-xs text-slate-500">{t("brand.school_name")}</p>
             </div>
           </div>
 
@@ -138,14 +138,14 @@ function Landing() {
               asChild
               variant="ghost"
               size="sm"
-              className="rounded-full text-slate-600 hover:text-[#1d6fe0]"
+              className="hidden whitespace-nowrap rounded-full text-slate-600 hover:text-[#1d6fe0] lg:inline-flex"
             >
               <Link to="/admin">เข้าสู่ระบบการใช้งาน</Link>
             </Button>
             <Button
               asChild
               size="sm"
-              className="rounded-full bg-[#1d6fe0] px-5 text-white shadow-md shadow-blue-500/30 transition-all hover:bg-[#155fc4] hover:shadow-lg hover:shadow-blue-500/40"
+              className="whitespace-nowrap rounded-full bg-[#1d6fe0] px-4 text-white shadow-md shadow-blue-500/30 transition-all hover:bg-[#155fc4] hover:shadow-lg hover:shadow-blue-500/40 sm:px-5"
             >
               <Link to="/download">ดาวน์โหลดโปรแกรมสแกน</Link>
             </Button>
@@ -158,21 +158,21 @@ function Landing() {
         <div className="pointer-events-none absolute -top-24 -left-24 size-96 rounded-full bg-sky-200/50 blur-3xl" />
         <div className="pointer-events-none absolute top-32 -right-24 size-96 rounded-full bg-blue-200/40 blur-3xl" />
 
-        <div className="relative mx-auto max-w-6xl px-6 pt-14 pb-0 text-center">
-          <p className="animate-rise text-xs font-semibold tracking-[0.3em] text-[#1d6fe0] uppercase">
+        <div className="relative mx-auto max-w-7xl px-5 pt-14 pb-0 text-center sm:px-6">
+          <p className="animate-rise text-xs font-semibold text-[#1d6fe0] sm:tracking-[0.18em]">
             {t("home.eyebrow")}
           </p>
-          <h1 className="animate-rise mx-auto mt-4 max-w-3xl font-display text-4xl leading-tight font-bold sm:text-5xl md:text-6xl [animation-delay:0.08s]">
+          <h1 className="animate-rise mx-auto mt-4 max-w-6xl whitespace-nowrap font-display text-2xl leading-[1.2] font-bold sm:text-4xl md:text-5xl lg:text-6xl [animation-delay:0.08s]">
             {t("home.title")}
           </h1>
-          <p className="animate-rise mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-500 sm:text-lg [animation-delay:0.15s]">
+          <p className="animate-rise mx-auto mt-5 max-w-4xl text-pretty text-base leading-8 text-slate-500 sm:text-lg lg:whitespace-nowrap [animation-delay:0.15s]">
             {t("home.subtitle")}
           </p>
           <div className="animate-rise mt-8 flex flex-wrap justify-center gap-3 [animation-delay:0.22s]">
             <Button
               asChild
               size="lg"
-              className="rounded-full bg-[#1d6fe0] px-8 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 hover:bg-[#155fc4]"
+              className="whitespace-nowrap rounded-full bg-[#1d6fe0] px-8 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 hover:bg-[#155fc4]"
             >
               <Link to="/download">ดาวน์โหลดโปรแกรมสแกน</Link>
             </Button>
@@ -180,7 +180,7 @@ function Landing() {
               asChild
               size="lg"
               variant="outline"
-              className="rounded-full border-sky-200 bg-white px-8 text-[#1d6fe0] transition-all hover:-translate-y-0.5 hover:bg-sky-50"
+              className="whitespace-nowrap rounded-full border-sky-200 bg-white px-8 text-[#1d6fe0] transition-all hover:-translate-y-0.5 hover:bg-sky-50"
             >
               <Link to="/admin">เข้าสู่ระบบการใช้งาน</Link>
             </Button>
