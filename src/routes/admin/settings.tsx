@@ -37,6 +37,12 @@ type SettingsRow = {
   require_liveness: boolean;
   school_name: string;
   voice_template: string;
+  save_snapshots: boolean;
+  auto_enroll: boolean;
+  auto_enroll_min_confidence: number;
+  auto_enroll_max_faces: number;
+  geometry_weight: number;
+  geometry_min_score: number;
 };
 
 function SettingsPage() {
