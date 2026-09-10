@@ -26,6 +26,7 @@ import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agen
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
+import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
 
 const IndexRoute = IndexRouteImport.update({
@@ -115,6 +116,11 @@ const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
   path: '/api/public/kiosk/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskTtsRoute = ApiPublicKioskTtsRouteImport.update({
+  id: '/api/public/kiosk/tts',
+  path: '/api/public/kiosk/tts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKioskWebScanRoute = ApiPublicKioskWebScanRouteImport.update({
   id: '/api/public/kiosk/web-scan',
   path: '/api/public/kiosk/web-scan',
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesByTo {
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesById {
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRouteTypes {
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/tts'
     | '/api/public/kiosk/web-scan'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/tts'
     | '/api/public/kiosk/web-scan'
   id:
     | '__root__'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/tts'
     | '/api/public/kiosk/web-scan'
   fileRoutesById: FileRoutesById
 }
@@ -252,6 +264,7 @@ export interface RootRouteChildren {
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
+  ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
 }
 
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/tts': {
+      id: '/api/public/kiosk/tts'
+      path: '/api/public/kiosk/tts'
+      fullPath: '/api/public/kiosk/tts'
+      preLoaderRoute: typeof ApiPublicKioskTtsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/web-scan': {
       id: '/api/public/kiosk/web-scan'
       path: '/api/public/kiosk/web-scan'
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
+  ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
 }
 export const routeTree = rootRouteImport

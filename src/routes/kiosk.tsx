@@ -63,33 +63,78 @@ function Kiosk() {
   const [webError, setWebError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentScan[]>([]);
   const [voiceOn, setVoiceOn] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const thaiVoice = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+    return window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("th")) ?? null;
+  };
+
+  // Play a sentence through the cloud voice service. Needed on machines with
+  // no Thai system voice, such as the FaceGate desktop app on Windows.
+  const speakViaServer = useCallback(async (text: string) => {
+    const res = await fetch("/api/public/kiosk/tts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("tts failed");
+    const blob = await res.blob();
+    const audio = audioRef.current ?? new Audio();
+    audioRef.current = audio;
+    const url = URL.createObjectURL(blob);
+    audio.src = url;
+    audio.onended = () => URL.revokeObjectURL(url);
+    await audio.play();
+  }, []);
 
   // Browsers block spoken audio until the person interacts with the page.
   const enableVoice = useCallback(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const warm = new SpeechSynthesisUtterance("เปิดเสียงเรียบร้อย");
-    warm.lang = "th-TH";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
-    window.speechSynthesis.speak(warm);
+    if (typeof window === "undefined") return;
+    // Unlock the shared audio element with the user gesture.
+    const audio = audioRef.current ?? new Audio();
+    audioRef.current = audio;
+    audio.muted = true;
+    audio.src =
+      "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//WreyTRUoAWgBgkOAGbZHBgG1OF6zM82DWbZaUmMBptgQhGjsyYqc9ae9XFz280948NMBWInljyzsNRFLPWdnZGWrddDsjK1unuSrVN9jJsK8KuQtQCtMBjCEtImISdNKJOopIpBFpNSMbIHCSRpRR5iakjTiyzLhchUUBwCgyKiweBv/7UsQbg8isVMRMYMSAAAA0gAAABEVEQU1FMy45OS41VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
+    void audio.play().catch(() => {});
+    audio.muted = false;
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+      const warm = new SpeechSynthesisUtterance("เปิดเสียงเรียบร้อย");
+      warm.lang = "th-TH";
+      const v = thaiVoice();
+      if (v) {
+        warm.voice = v;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(warm);
+      }
+    }
+    if (!thaiVoice()) void speakViaServer("เปิดเสียงเรียบร้อย").catch(() => {});
     setVoiceOn(true);
-  }, []);
+  }, [speakViaServer]);
 
   const speak = useCallback(
     (text: string) => {
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-      if (!voiceOn) return;
-      const synth = window.speechSynthesis;
-      synth.cancel();
-      synth.resume();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "th-TH";
-      utter.rate = 1;
-      const thai = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith("th"));
-      if (thai) utter.voice = thai;
-      synth.speak(utter);
+      if (typeof window === "undefined" || !voiceOn) return;
+      const voice = thaiVoice();
+      if (voice && "speechSynthesis" in window) {
+        const synth = window.speechSynthesis;
+        synth.cancel();
+        synth.resume();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "th-TH";
+        utter.rate = 1;
+        utter.voice = voice;
+        utter.onerror = () => void speakViaServer(text).catch(() => {});
+        synth.speak(utter);
+        return;
+      }
+      // No Thai system voice (FaceGate on Windows): use the cloud voice.
+      void speakViaServer(text).catch(() => {});
     },
-    [voiceOn],
+    [voiceOn, speakViaServer],
   );
 
   useEffect(() => {
@@ -243,7 +288,7 @@ function Kiosk() {
         );
       }
       if (scan.speak) speak(scan.speak);
-      const delay = scan.next_delay_seconds ?? 3;
+      const delay = scan.next_delay_seconds ?? 5;
       setStatus("cooldown");
       setCountdown(delay);
       const timer = setInterval(() => {
@@ -381,54 +426,8 @@ function Kiosk() {
             )}
           </div>
 
-          <div className={`w-full rounded-2xl border-2 p-6 text-center ${result ? tone : "border-dashed"}`}>
-            {!result && <p className="text-muted-foreground">{t("kiosk.next_person")}</p>}
-            {result && (
-              <div className="space-y-3">
-                {(result.avatar_url || result.snapshot_url) && (
-                  <div className="flex items-end justify-center gap-6">
-                    <figure className="space-y-1">
-                      {result.avatar_url ? (
-                        <img
-                          src={result.avatar_url}
-                          alt={result.student ? `รูปโปรไฟล์ของ ${result.student.full_name}` : "รูปโปรไฟล์"}
-                          className="size-28 rounded-2xl border-4 border-primary/40 object-cover shadow"
-                        />
-                      ) : (
-                        <div className="flex size-28 items-center justify-center rounded-2xl border-4 border-dashed text-muted-foreground">
-                          <User className="size-8" />
-                        </div>
-                      )}
-                      <figcaption className="text-xs text-muted-foreground">รูปโปรไฟล์</figcaption>
-                    </figure>
-                    {result.snapshot_url && (
-                      <figure className="space-y-1">
-                        <img
-                          src={result.snapshot_url}
-                          alt="ภาพขณะสแกนจริง"
-                          className="size-28 rounded-2xl border-4 border-accent/50 object-cover shadow"
-                        />
-                        <figcaption className="text-xs text-muted-foreground">ภาพตอนสแกน</figcaption>
-                      </figure>
-                    )}
-                  </div>
-                )}
-                <div className="flex items-center justify-center gap-2">
-                  {result.result === "ok" ? (
-                    <CheckCircle2 className="size-7 text-primary" />
-                  ) : (
-                    <XCircle className="size-7 text-destructive" />
-                  )}
-                  <p className="text-2xl font-semibold">{result.message}</p>
-                </div>
-                {result.student && (
-                  <p className="text-sm text-muted-foreground">
-                    {result.student.student_code} • {result.student.class_room ?? "-"}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">คนถัดไปในอีก {countdown} วินาที</p>
-              </div>
-            )}
+          <div className="w-full rounded-2xl border-2 border-dashed p-6 text-center">
+            <p className="text-muted-foreground">{t("kiosk.next_person")}</p>
           </div>
         </div>
 
@@ -514,6 +513,62 @@ function Kiosk() {
           <p className="text-xs text-muted-foreground">
             ค่าเริ่มต้นคือ http://127.0.0.1:8899 ตามโปรแกรมที่ติดตั้งบนตู้สแกน
           </p>
+        </div>
+      )}
+
+      {/* Scan result popup */}
+      {result && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm"
+        >
+          <div
+            className={`w-full max-w-lg rounded-3xl border-4 bg-card p-8 text-center shadow-panel ${tone}`}
+          >
+            {(result.avatar_url || result.snapshot_url) && (
+              <div className="flex items-end justify-center gap-6">
+                <figure className="space-y-1">
+                  {result.avatar_url ? (
+                    <img
+                      src={result.avatar_url}
+                      alt={result.student ? `รูปโปรไฟล์ของ ${result.student.full_name}` : "รูปโปรไฟล์"}
+                      className="size-32 rounded-2xl border-4 border-primary/40 object-cover shadow"
+                    />
+                  ) : (
+                    <div className="flex size-32 items-center justify-center rounded-2xl border-4 border-dashed text-muted-foreground">
+                      <User className="size-9" />
+                    </div>
+                  )}
+                  <figcaption className="text-xs text-muted-foreground">รูปโปรไฟล์</figcaption>
+                </figure>
+                {result.snapshot_url && (
+                  <figure className="space-y-1">
+                    <img
+                      src={result.snapshot_url}
+                      alt="ภาพขณะสแกนจริง"
+                      className="size-32 rounded-2xl border-4 border-accent/50 object-cover shadow"
+                    />
+                    <figcaption className="text-xs text-muted-foreground">ภาพตอนสแกน</figcaption>
+                  </figure>
+                )}
+              </div>
+            )}
+            <div className="mt-5 flex items-center justify-center gap-2">
+              {result.result === "ok" ? (
+                <CheckCircle2 className="size-8 shrink-0 text-primary" />
+              ) : (
+                <XCircle className="size-8 shrink-0 text-destructive" />
+              )}
+              <p className="text-2xl font-bold">{result.message}</p>
+            </div>
+            {result.student && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {result.student.student_code} • {result.student.class_room ?? "-"}
+              </p>
+            )}
+            <p className="mt-4 text-sm text-muted-foreground">คนถัดไปในอีก {countdown} วินาที</p>
+          </div>
         </div>
       )}
     </main>

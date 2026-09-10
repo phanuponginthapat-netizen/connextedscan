@@ -52,7 +52,7 @@ export async function recordScan(input: RecordScanInput) {
       result: "denied" as const,
       message: "ไม่พบข้อมูลนักเรียน หรือถูกระงับการใช้งาน",
       speak: "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
-      next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
+      next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
   }
 
@@ -76,7 +76,7 @@ export async function recordScan(input: RecordScanInput) {
       result: "denied" as const,
       message: "สัดส่วนใบหน้าไม่ตรงกับข้อมูลที่ลงทะเบียน",
       speak: "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่",
-      next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
+      next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
   }
 
@@ -162,7 +162,7 @@ export async function recordScan(input: RecordScanInput) {
       snapshot_url: snapshotUrl,
       message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
       speak: `สแกนซ้ำ ${displayName} บันทึกเวลาไปแล้ว`,
-      next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
+      next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
   }
 
@@ -232,6 +232,6 @@ export async function recordScan(input: RecordScanInput) {
     auto_enrolled: autoEnrolled,
     message: `สแกนสำเร็จ: ${student.full_name} (${directionLabel})${late ? " • มาสาย" : ""}`,
     speak: late ? `${speak} มาสายนะคะ` : speak,
-    next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
+    next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
   };
 }
