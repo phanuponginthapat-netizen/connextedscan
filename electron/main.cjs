@@ -18,6 +18,20 @@ const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
   "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app";
 
+// Let the kiosk page speak the moment it loads — no "enable sound" tap needed.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+// Give the kiosk everything this PC has: no throttling, full GPU use.
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+app.commandLine.appendSwitch("ignore-gpu-blocklist");
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-zero-copy");
+app.commandLine.appendSwitch("canvas-oop-rasterization");
+app.commandLine.appendSwitch("force_high_performance_gpu");
+app.commandLine.appendSwitch("enable-features", "CanvasOopRasterization,WebAssemblySimd,WebAssemblyLazyCompilation");
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=2048");
+
 let kioskWindow = null;
 let settingsWindow = null;
 let agentProcess = null;
@@ -144,8 +158,16 @@ function openKiosk() {
       // Allow the HTTPS cloud page to call the local HTTP agent on 127.0.0.1:8899
       webSecurity: false,
       preload: path.join(__dirname, "preload.cjs"),
+      autoplayPolicy: "no-user-gesture-required",
+      backgroundThrottling: false,
+      spellcheck: false,
+      enableWebSQL: false,
     },
   });
+
+  // Camera and microphone are always allowed on the kiosk PC.
+  kioskWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, done) => done(true));
+  kioskWindow.webContents.setBackgroundThrottling?.(false);
 
   // Branded loading screen instead of a blank window while the cloud page
   // (or the network) is still coming up.
