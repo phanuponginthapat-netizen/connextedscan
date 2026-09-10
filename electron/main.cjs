@@ -88,11 +88,13 @@ function startAgent() {
     FACEGATE_DEVICE_KEY: deviceKey,
     FACEGATE_CLOUD_URL: cloudUrl,
   };
-  if (fs.existsSync(sitePath)) {
-    env.PYTHONPATH = [sitePath, agentDir, process.env.PYTHONPATH]
-      .filter(Boolean)
-      .join(path.delimiter);
-  }
+  env.PYTHONPATH = [
+    fs.existsSync(sitePath) ? sitePath : null,
+    agentDir,
+    process.env.PYTHONPATH,
+  ]
+    .filter(Boolean)
+    .join(path.delimiter);
   if (fs.existsSync(modelDir)) {
     env.FACEGATE_MODEL_DIR = modelDir;
   }
