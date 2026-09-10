@@ -340,8 +340,8 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            รูปที่ผ่านการจับใบหน้าแล้วจะใช้กับโหมดเว็บได้ทันที และจะขึ้น “พร้อมใช้”
-            เมื่อเครื่องตู้สแกนคำนวณด้วย ArcFace เสร็จ
+            รูปที่ขึ้น “พร้อมใช้” จะใช้สแกนได้ทันทีโดยไม่ต้องเปิดโปรแกรม FaceGate
+            และถ้าเปิดเครื่องตู้สแกนไว้ ระบบจะคำนวณซ้ำด้วย ArcFace ให้แม่นขึ้นอัตโนมัติ
           </p>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {(faces ?? []).map((f) => (
