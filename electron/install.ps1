@@ -1,4 +1,4 @@
-# FaceGate Installer — run via ติดตั้ง-FaceGate.bat
+﻿# FaceGate Installer — run via ติดตั้ง-FaceGate.bat
 $ErrorActionPreference = "Stop"
 $source = Split-Path -Parent $MyInvocation.MyCommand.Path
 $target = Join-Path $env:LOCALAPPDATA "FaceGate"
