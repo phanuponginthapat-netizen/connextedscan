@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, LogIn, LogOut, UserCheck, Users } from "lucide-react";
+import { ArrowRight, Briefcase, LogIn, LogOut, UserCheck, Users } from "lucide-react";
+import { personGroupLabel } from "@/components/people/people";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +31,23 @@ function Dashboard() {
     queryKey: ["dashboard"],
     queryFn: async () => {
       const today = startOfTodayISO();
-      const [students, faces, logs] = await Promise.all([
-        supabase.from("students").select("id", { count: "exact", head: true }).eq("is_active", true),
+      const [students, staff, faces, logs] = await Promise.all([
+        supabase
+          .from("students")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .eq("person_type", "student"),
+        supabase
+          .from("students")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .eq("person_type", "staff"),
         supabase.from("student_faces").select("student_id").eq("status", "ready"),
         supabase
           .from("attendance_logs")
-          .select("id, direction, status, confidence, scanned_at, students(full_name, class_room)")
+          .select(
+            "id, direction, status, confidence, scanned_at, students(full_name, class_room, department, person_type)",
+          )
           .gte("scanned_at", today)
           .order("scanned_at", { ascending: false })
           .limit(30),
@@ -44,6 +56,7 @@ function Dashboard() {
       const rows = logs.data ?? [];
       return {
         totalStudents: students.count ?? 0,
+        totalStaff: staff.count ?? 0,
         enrolled,
         checkIn: rows.filter((r) => r.direction === "in" && r.status === "ok").length,
         checkOut: rows.filter((r) => r.direction === "out" && r.status === "ok").length,
@@ -55,6 +68,7 @@ function Dashboard() {
 
   const stats = [
     { label: "นักเรียนทั้งหมด", value: data?.totalStudents ?? 0, icon: Users },
+    { label: "บุคลากรทั้งหมด", value: data?.totalStaff ?? 0, icon: Briefcase },
     { label: "ลงทะเบียนใบหน้าแล้ว", value: data?.enrolled ?? 0, icon: UserCheck },
     { label: "เข้าวันนี้", value: data?.checkIn ?? 0, icon: LogIn },
     { label: "ออกวันนี้", value: data?.checkOut ?? 0, icon: LogOut },
@@ -67,7 +81,7 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground">อัปเดตอัตโนมัติทุก 15 วินาที</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((s) => (
           <Card key={s.label}>
             <CardContent className="flex items-center gap-4 pt-6">
@@ -105,7 +119,7 @@ function Dashboard() {
               <div>
                 <p className="font-medium">{row.students?.full_name ?? "ไม่ทราบชื่อ"}</p>
                 <p className="text-xs text-muted-foreground">
-                  {row.students?.class_room ?? "-"} •{" "}
+                  {row.students ? personGroupLabel(row.students) : "-"} •{" "}
                   {new Date(row.scanned_at).toLocaleTimeString("th-TH", {
                     hour: "2-digit",
                     minute: "2-digit",

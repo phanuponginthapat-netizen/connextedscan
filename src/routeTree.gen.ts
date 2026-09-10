@@ -16,6 +16,8 @@ import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
+import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
 import { Route as AdminStudentsIndexRouteImport } from './routes/admin/students/index'
 import { Route as AdminStudentsIdRouteImport } from './routes/admin/students/$id'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
@@ -57,6 +59,16 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminStaffIndexRoute = AdminStaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminStaffIdRoute = AdminStaffIdRouteImport.update({
+  id: '/staff/$id',
+  path: '/staff/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminStudentsIndexRoute = AdminStudentsIndexRouteImport.update({
   id: '/students/',
   path: '/students/',
@@ -93,7 +105,9 @@ export interface FileRoutesByFullPath {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/staff/$id': typeof AdminStaffIdRoute
   '/admin/students/$id': typeof AdminStudentsIdRoute
+  '/admin/staff/': typeof AdminStaffIndexRoute
   '/admin/students/': typeof AdminStudentsIndexRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
@@ -106,7 +120,9 @@ export interface FileRoutesByTo {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/staff/$id': typeof AdminStaffIdRoute
   '/admin/students/$id': typeof AdminStudentsIdRoute
+  '/admin/staff': typeof AdminStaffIndexRoute
   '/admin/students': typeof AdminStudentsIndexRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
@@ -121,7 +137,9 @@ export interface FileRoutesById {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/staff/$id': typeof AdminStaffIdRoute
   '/admin/students/$id': typeof AdminStudentsIdRoute
+  '/admin/staff/': typeof AdminStaffIndexRoute
   '/admin/students/': typeof AdminStudentsIndexRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
@@ -137,7 +155,9 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/settings'
     | '/admin/'
+    | '/admin/staff/$id'
     | '/admin/students/$id'
+    | '/admin/staff/'
     | '/admin/students/'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
@@ -150,7 +170,9 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/settings'
     | '/admin'
+    | '/admin/staff/$id'
     | '/admin/students/$id'
+    | '/admin/staff'
     | '/admin/students'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
@@ -164,7 +186,9 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/settings'
     | '/admin/'
+    | '/admin/staff/$id'
     | '/admin/students/$id'
+    | '/admin/staff/'
     | '/admin/students/'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
@@ -232,6 +256,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/staff/': {
+      id: '/admin/staff/'
+      path: '/staff'
+      fullPath: '/admin/staff/'
+      preLoaderRoute: typeof AdminStaffIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/staff/$id': {
+      id: '/admin/staff/$id'
+      path: '/staff/$id'
+      fullPath: '/admin/staff/$id'
+      preLoaderRoute: typeof AdminStaffIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/students/': {
       id: '/admin/students/'
       path: '/students'
@@ -274,7 +312,9 @@ interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminStaffIdRoute: typeof AdminStaffIdRoute
   AdminStudentsIdRoute: typeof AdminStudentsIdRoute
+  AdminStaffIndexRoute: typeof AdminStaffIndexRoute
   AdminStudentsIndexRoute: typeof AdminStudentsIndexRoute
 }
 
@@ -282,7 +322,9 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminStaffIdRoute: AdminStaffIdRoute,
   AdminStudentsIdRoute: AdminStudentsIdRoute,
+  AdminStaffIndexRoute: AdminStaffIndexRoute,
   AdminStudentsIndexRoute: AdminStudentsIndexRoute,
 }
 

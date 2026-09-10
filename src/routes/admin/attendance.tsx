@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { personGroupLabel, personTypeLabel } from "@/components/people/people";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,21 +38,27 @@ function todayStr() {
 function AttendancePage() {
   const [date, setDate] = useState(todayStr());
   const [direction, setDirection] = useState("all");
+  const [personType, setPersonType] = useState("all");
 
   const { data: rows } = useQuery({
-    queryKey: ["attendance", date, direction],
+    queryKey: ["attendance", date, direction, personType],
     queryFn: async () => {
       const start = new Date(`${date}T00:00:00`);
       const end = new Date(`${date}T23:59:59.999`);
+      const join =
+        personType === "all"
+          ? "students(full_name, student_code, class_room, department, person_type)"
+          : "students!inner(full_name, student_code, class_room, department, person_type)";
       let query = supabase
         .from("attendance_logs")
         .select(
-          "id, direction, status, confidence, geometry_score, snapshot_path, device_name, scanned_at, students(full_name, student_code, class_room)",
+          `id, direction, status, confidence, geometry_score, snapshot_path, device_name, scanned_at, ${join}`,
         )
         .gte("scanned_at", start.toISOString())
         .lte("scanned_at", end.toISOString())
         .order("scanned_at", { ascending: false });
       if (direction !== "all") query = query.eq("direction", direction);
+      if (personType !== "all") query = query.eq("students.person_type", personType);
       const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
@@ -74,14 +81,16 @@ function AttendancePage() {
   });
 
   function exportCsv() {
-    const header = "เวลา,รหัส,ชื่อ,ห้อง,ประเภท,สถานะ,ความมั่นใจ,สัดส่วนใบหน้า,เครื่อง\n";
+    const header =
+      "เวลา,รหัส,ชื่อ,ประเภทบุคคล,ห้อง/ฝ่าย,ประเภท,สถานะ,ความมั่นใจ,สัดส่วนใบหน้า,เครื่อง\n";
     const body = (rows ?? [])
       .map((r) =>
         [
           new Date(r.scanned_at).toLocaleString("th-TH"),
           r.students?.student_code ?? "",
           r.students?.full_name ?? "",
-          r.students?.class_room ?? "",
+          r.students ? personTypeLabel(r.students.person_type) : "",
+          r.students ? personGroupLabel(r.students) : "",
           r.direction === "in" ? "เข้า" : "ออก",
           r.status,
           r.confidence?.toFixed(3) ?? "",
@@ -119,6 +128,19 @@ function AttendancePage() {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <Label>บุคคล</Label>
+          <Select value={personType} onValueChange={setPersonType}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทั้งหมด</SelectItem>
+              <SelectItem value="student">นักเรียน</SelectItem>
+              <SelectItem value="staff">บุคลากร</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Button variant="secondary" onClick={exportCsv}>
           <Download className="size-4" /> ส่งออก CSV
         </Button>
@@ -143,9 +165,17 @@ function AttendancePage() {
                   <div className="size-12 rounded-lg bg-muted" />
                 )}
                 <div>
-                  <p className="font-medium">{r.students?.full_name ?? "ไม่ทราบชื่อ"}</p>
+                  <p className="font-medium">
+                    {r.students?.full_name ?? "ไม่ทราบชื่อ"}{" "}
+                    {r.students && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        ({personTypeLabel(r.students.person_type)})
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {r.students?.student_code ?? "-"} • {r.students?.class_room ?? "-"} •{" "}
+                    {r.students?.student_code ?? "-"} •{" "}
+                    {r.students ? personGroupLabel(r.students) : "-"} •{" "}
                     {new Date(r.scanned_at).toLocaleTimeString("th-TH", {
                       hour: "2-digit",
                       minute: "2-digit",

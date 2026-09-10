@@ -232,33 +232,42 @@ export type Database = {
         Row: {
           class_room: string | null
           created_at: string
+          department: string | null
           full_name: string
           guardian_phone: string | null
           id: string
           is_active: boolean
           nickname: string | null
+          person_type: string
+          position: string | null
           student_code: string
           updated_at: string
         }
         Insert: {
           class_room?: string | null
           created_at?: string
+          department?: string | null
           full_name: string
           guardian_phone?: string | null
           id?: string
           is_active?: boolean
           nickname?: string | null
+          person_type?: string
+          position?: string | null
           student_code: string
           updated_at?: string
         }
         Update: {
           class_room?: string | null
           created_at?: string
+          department?: string | null
           full_name?: string
           guardian_phone?: string | null
           id?: string
           is_active?: boolean
           nickname?: string | null
+          person_type?: string
+          position?: string | null
           student_code?: string
           updated_at?: string
         }
