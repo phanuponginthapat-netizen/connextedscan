@@ -220,19 +220,26 @@ function Kiosk() {
 
         {/* Guide status badge */}
         <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow">
-          {status === "scanning" && !result && (
+          {agentOnline === false && (
+            <span className="text-destructive">ยังไม่ได้เชื่อมต่อโปรแกรมตรวจใบหน้า</span>
+          )}
+          {agentOnline !== false && (
             <>
-              <Loader2 className="size-4 animate-spin text-primary" /> กำลังตรวจใบหน้า…
+              {status === "scanning" && !result && (
+                <>
+                  <Loader2 className="size-4 animate-spin text-primary" /> กำลังตรวจใบหน้า…
+                </>
+              )}
+              {guide === "no_face" && status !== "scanning" && !result && (
+                <span className="text-muted-foreground">ไม่พบใบหน้าในกรอบ</span>
+              )}
+              {guide === "multiple_faces" && !result && (
+                <span className="text-destructive">พบหลายใบหน้า กรุณาเข้ามาคนเดียว</span>
+              )}
+              {guide === "idle" && !result && (
+                <span className="text-primary">ยืนให้ใบหน้าอยู่ในกรอบคนเดียว</span>
+              )}
             </>
-          )}
-          {guide === "no_face" && status !== "scanning" && !result && (
-            <span className="text-muted-foreground">ไม่พบใบหน้าในกรอบ</span>
-          )}
-          {guide === "multiple_faces" && !result && (
-            <span className="text-destructive">พบหลายใบหน้า กรุณาเข้ามาคนเดียว</span>
-          )}
-          {(guide === "idle" || (result && status === "cooldown")) && !result && (
-            <span className="text-primary">ยืนให้ใบหน้าอยู่ในกรอบคนเดียว</span>
           )}
         </div>
 
