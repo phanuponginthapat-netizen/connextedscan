@@ -374,12 +374,17 @@ function SettingsPage() {
                     </p>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>ชื่อโรงเรียน</Label>
-                    <Input
-                      value={form.school_name}
-                      onChange={(e) => set({ school_name: e.target.value })}
-                    />
+                    <Label>ชื่อโรงเรียน/หน่วยงาน</Label>
+                    <Input value={t("brand.school_name")} readOnly disabled />
+                    <button
+                      type="button"
+                      className="text-xs text-primary underline underline-offset-2"
+                      onClick={() => setSection("cms:brand")}
+                    >
+                      แก้ไขที่หัวข้อ “แบรนด์และสีของระบบ” (ใช้ร่วมกันทั้งระบบ)
+                    </button>
                   </div>
+
                   <div className="space-y-1.5">
                     <Label>ข้อความเสียงเมื่อสแกนซ้ำ</Label>
                     <Input
