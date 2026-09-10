@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
@@ -30,6 +31,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const ApiPublicKioskAttendanceRoute =
   ApiPublicKioskAttendanceRouteImport.update({
@@ -51,16 +57,17 @@ const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/admin/': typeof AdminIndexRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AdminIndexRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
@@ -68,8 +75,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/admin/': typeof AdminIndexRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
@@ -80,14 +88,15 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/admin/'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/auth'
+    | '/admin'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/admin/'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
@@ -103,7 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRouteRoute: typeof AdminRouteRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
@@ -133,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/api/public/kiosk/attendance': {
       id: '/api/public/kiosk/attendance'
       path: '/api/public/kiosk/attendance'
@@ -157,9 +174,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRouteRoute: AdminRouteRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
