@@ -38,11 +38,11 @@ function Landing() {
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      <header className="sticky top-0 z-30 border-b bg-card/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             {logo ? (
-              <img src={logo} alt={t("brand.name")} className="size-9 rounded-md object-contain" />
+              <img src={logo} alt={t("brand.name")} className="size-9 rounded-md object-contain transition-transform duration-300 hover:scale-105" />
             ) : (
               <span className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground">
                 <ScanFace className="size-5" />
@@ -70,13 +70,13 @@ function Landing() {
             <p className="text-xs font-semibold tracking-[0.28em] text-slate-300 uppercase">
               {t("home.eyebrow")}
             </p>
-            <h1 className="mt-4 font-display text-4xl leading-tight font-bold sm:text-5xl">
+            <h1 className="animate-rise mt-4 font-display text-4xl leading-tight font-bold sm:text-5xl">
               {t("home.title")}
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300">
+            <p className="animate-rise mt-5 max-w-xl text-base leading-relaxed text-slate-300 [animation-delay:0.1s]">
               {t("home.subtitle")}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="animate-rise mt-8 flex flex-wrap gap-3 [animation-delay:0.18s]">
               <Button asChild size="lg">
                 <Link to="/kiosk">{t("home.cta_primary")}</Link>
               </Button>
@@ -86,11 +86,11 @@ function Landing() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur">
+          <div className="animate-soft-in animate-float-soft rounded-2xl border border-white/15 bg-white/5 p-6 shadow-2xl backdrop-blur">
             <div className="aspect-4/3 rounded-xl border border-dashed border-white/30 p-6">
               <div className="grid h-full place-items-center text-center">
                 <div>
-                  <ScanFace className="mx-auto size-16 text-slate-200" />
+                  <ScanFace className="mx-auto size-16 text-slate-200 drop-shadow-lg" />
                   <p className="mt-4 text-sm text-slate-300">{t("kiosk.subtitle")}</p>
                 </div>
               </div>
@@ -101,10 +101,10 @@ function Landing() {
 
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="font-display text-2xl font-semibold">{t("home.features_title")}</h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="stagger-children mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f) => (
-            <div key={f.title} className="panel-card p-6">
-              <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground">
+            <div key={f.title} className="panel-card hover-lift p-6">
+              <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground transition-transform duration-300 group-hover:scale-110">
                 <f.icon className="size-5" />
               </span>
               <h3 className="mt-4 text-base font-semibold">{f.title}</h3>

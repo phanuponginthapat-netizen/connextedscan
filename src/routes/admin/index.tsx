@@ -137,7 +137,7 @@ function Dashboard() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="stagger-children grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="นักเรียนทั้งหมด" value={data?.totalStudents ?? 0} icon={Users} />
         <StatCard label="บุคลากรทั้งหมด" value={data?.totalStaff ?? 0} icon={Briefcase} />
         <StatCard

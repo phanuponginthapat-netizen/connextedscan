@@ -32,7 +32,7 @@ function AdminLayout() {
 
   if (loading || !session) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+      <div className="flex min-h-screen animate-pulse items-center justify-center text-muted-foreground">
         กำลังตรวจสอบสิทธิ์…
       </div>
     );
@@ -68,13 +68,13 @@ function AdminLayout() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                  "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60",
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground/75 hover:translate-x-1 hover:bg-sidebar-accent/60",
                 )}
               >
-                <item.icon className="size-4" />
+                <item.icon className="size-4 transition-transform duration-200 group-hover:scale-110" />
                 {t(item.key)}
               </Link>
             );
@@ -102,7 +102,7 @@ function AdminLayout() {
             <Link
               key={item.to}
               to={item.to}
-              className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground"
+              className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               {t(item.key)}
             </Link>
@@ -135,7 +135,7 @@ function AdminLayout() {
             </Button>
           </div>
         </div>
-        <main className="mx-auto max-w-6xl p-6">
+        <main key={pathname} className="animate-rise mx-auto max-w-6xl p-6">
           <Outlet />
         </main>
       </div>

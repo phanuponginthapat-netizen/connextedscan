@@ -518,7 +518,7 @@ function Kiosk() {
           display.show_recent ? "lg:grid-cols-[minmax(0,1fr)_340px]" : "grid-cols-1"
         }`}
       >
-        <div className="relative min-h-0 overflow-hidden rounded-3xl border shadow-panel">
+        <div className="animate-soft-in relative min-h-0 overflow-hidden rounded-3xl border shadow-panel">
           <video
             ref={videoRef}
             autoPlay
@@ -529,13 +529,17 @@ function Kiosk() {
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <div
-              className={`flex aspect-[3/4] h-[70%] items-center justify-center rounded-[50%] border-4 border-dashed ${guideColor} transition-colors duration-300`}
+              className={`flex aspect-[3/4] h-[70%] items-center justify-center rounded-[50%] border-4 border-dashed ${guideColor} transition-all duration-500 ${
+                guide === "scanning" ? "scale-[1.02] animate-glow-pulse" : "scale-100"
+              }`}
             >
               <User className={`size-16 opacity-40 ${guide === "scanning" ? "animate-pulse" : ""}`} />
             </div>
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 shimmer-line" />
+
+          <div className="animate-rise pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow backdrop-blur">
             {agentOnline === false && !webReady && !webError && (
               <span className="text-muted-foreground">กำลังเตรียมตัวตรวจใบหน้า…</span>
             )}
@@ -568,7 +572,7 @@ function Kiosk() {
 
         {/* Right: people who already scanned */}
         {display.show_recent && (
-        <aside className="flex min-h-0 flex-col rounded-3xl border bg-card p-4 shadow-panel">
+        <aside className="animate-soft-in flex min-h-0 flex-col rounded-3xl border bg-card p-4 shadow-panel">
           <div className="flex shrink-0 items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">สแกนเข้าล่าสุด</h2>
             <span className="text-xs text-muted-foreground">{recent.length} รายการ</span>
@@ -580,7 +584,7 @@ function Kiosk() {
               </p>
             )}
             {recent.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-xl border p-2">
+              <div key={item.id} className="animate-rise flex items-center gap-3 rounded-xl border p-2 transition-colors hover:bg-muted/50">
                 <div className="flex shrink-0 gap-1">
                   {item.avatarUrl ? (
                     <img src={item.avatarUrl} alt={`รูปโปรไฟล์ของ ${item.name}`} className="size-12 rounded-lg object-cover" />
@@ -622,10 +626,10 @@ function Kiosk() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm"
+          className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm duration-200"
         >
           <div
-            className={`w-full max-w-lg rounded-3xl border-4 bg-card p-8 text-center shadow-panel ${tone}`}
+            className={`animate-soft-in w-full max-w-lg rounded-3xl border-4 bg-card p-8 text-center shadow-panel ${tone}`}
           >
             {(result.avatar_url || result.snapshot_url) && (
               <div className="flex items-end justify-center gap-6">
@@ -634,7 +638,7 @@ function Kiosk() {
                     <img
                       src={result.avatar_url}
                       alt={result.student ? `รูปโปรไฟล์ของ ${result.student.full_name}` : "รูปโปรไฟล์"}
-                      className="size-32 rounded-2xl border-4 border-primary/40 object-cover shadow"
+                      className="animate-soft-in size-32 rounded-2xl border-4 border-primary/40 object-cover shadow-lg"
                     />
                   ) : (
                     <div className="flex size-32 items-center justify-center rounded-2xl border-4 border-dashed text-muted-foreground">
@@ -648,7 +652,7 @@ function Kiosk() {
                     <img
                       src={result.snapshot_url}
                       alt="ภาพขณะสแกนจริง"
-                      className="size-32 rounded-2xl border-4 border-accent/50 object-cover shadow"
+                      className="animate-soft-in size-32 rounded-2xl border-4 border-accent/50 object-cover shadow-lg [animation-delay:0.08s]"
                     />
                     <figcaption className="text-xs text-muted-foreground">ภาพตอนสแกน</figcaption>
                   </figure>
@@ -657,9 +661,9 @@ function Kiosk() {
             )}
             <div className="mt-5 flex items-center justify-center gap-2">
               {result.result === "ok" ? (
-                <CheckCircle2 className="size-8 shrink-0 text-primary" />
+                <CheckCircle2 className="animate-soft-in size-8 shrink-0 text-primary" />
               ) : (
-                <XCircle className="size-8 shrink-0 text-destructive" />
+                <XCircle className="animate-soft-in size-8 shrink-0 text-destructive" />
               )}
               <p className="text-2xl font-bold">{result.message}</p>
             </div>

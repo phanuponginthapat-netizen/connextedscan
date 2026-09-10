@@ -19,12 +19,12 @@ export function StatCard({
   tone?: "default" | "positive" | "warning";
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="hover-lift group overflow-hidden">
       <CardContent className="flex items-start gap-3 pt-6">
         {Icon && (
           <div
             className={cn(
-              "rounded-xl p-2.5",
+              "rounded-xl p-2.5 transition-transform duration-300 group-hover:scale-110",
               tone === "warning"
                 ? "bg-destructive/10 text-destructive"
                 : "bg-secondary text-primary",
@@ -37,7 +37,7 @@ export function StatCard({
           <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
-          <p className="mt-0.5 text-2xl font-semibold tabular-nums">{value}</p>
+          <p className="animate-soft-in mt-0.5 text-2xl font-semibold tabular-nums">{value}</p>
           {hint && <p className="mt-0.5 truncate text-xs text-muted-foreground">{hint}</p>}
         </div>
       </CardContent>
