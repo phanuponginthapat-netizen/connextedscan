@@ -92,7 +92,14 @@ function Kiosk() {
     voice_enabled: true,
     voice_rate: 1,
     voice_volume: 1,
+    news_enabled: false,
+    news_text: "",
   });
+  // Boot gate: the scan screen only appears once the camera, the FaceGate
+  // program and the voice are all ready, so the kiosk works at full speed
+  // from the very first scan.
+  const [camReady, setCamReady] = useState(false);
+  const [booted, setBooted] = useState(false);
   const displayRef = useRef(display);
   displayRef.current = display;
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -200,6 +207,8 @@ function Kiosk() {
           voice_enabled?: boolean;
           voice_rate?: number;
           voice_volume?: number;
+          news_enabled?: boolean;
+          news_text?: string;
         };
       };
       if (data.display) {
@@ -210,6 +219,8 @@ function Kiosk() {
           voice_enabled: data.display.voice_enabled ?? true,
           voice_rate: Number(data.display.voice_rate ?? 1),
           voice_volume: Number(data.display.voice_volume ?? 1),
+          news_enabled: data.display.news_enabled ?? false,
+          news_text: data.display.news_text ?? "",
         });
       }
       setRecent(
