@@ -54,7 +54,15 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
             return {
               id: row.id,
               name: person?.full_name ?? "ไม่ทราบชื่อ",
-              detail: [person?.student_code, person?.class_room].filter(Boolean).join(" • "),
+              detail: [
+                person?.student_code,
+                person?.person_type === "staff"
+                  ? [person?.department, person?.position].filter(Boolean).join(" / ")
+                  : person?.class_room,
+              ]
+                .filter(Boolean)
+                .join(" • "),
+              role: person?.person_type === "staff" ? "บุคลากร" : "นักเรียน",
               direction: row.direction === "out" ? "out" : "in",
               scanned_at: row.scanned_at,
               avatar_url: avatarUrl,

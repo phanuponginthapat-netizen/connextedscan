@@ -42,7 +42,9 @@ export async function recordScan(input: RecordScanInput) {
     supabaseAdmin.from("settings").select("*").eq("id", true).maybeSingle(),
     supabaseAdmin
       .from("students")
-      .select("id, full_name, nickname, student_code, class_room, is_active, avatar_path")
+      .select(
+        "id, full_name, nickname, student_code, class_room, is_active, avatar_path, person_type, department, position",
+      )
       .eq("id", studentId)
       .maybeSingle(),
   ]);
