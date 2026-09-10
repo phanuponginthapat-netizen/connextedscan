@@ -298,6 +298,22 @@ def geometry_similarity(a: dict | None, b: dict | None) -> float | None:
     return float(max(0.0, 1.0 - 2.0 * (sum(diffs) / len(diffs))))
 
 
+# Size of the on-screen oval guide, as a share of the camera picture.
+# Faces outside this oval belong to people walking past, not to the person
+# being scanned, so they are ignored.
+GUIDE_RX = 0.30
+GUIDE_RY = 0.36
+# Anyone whose face reaches within this much of the oval counts as crowding it.
+GUIDE_MARGIN = 1.25
+
+
+def inside_guide_margin(dets, i: int, cx: float, cy: float, rx: float, ry: float) -> bool:
+    fx = (float(dets[i, 0]) + float(dets[i, 2])) / 2.0
+    fy = (float(dets[i, 1]) + float(dets[i, 3])) / 2.0
+    return ((fx - cx) / (rx * GUIDE_MARGIN)) ** 2 + ((fy - cy) / (ry * GUIDE_MARGIN)) ** 2 <= 1.0
+
+
+
 def embed_image(bgr: np.ndarray):
     faces = face_app.get(bgr)
     if not faces:
@@ -506,24 +522,55 @@ def scan(req: ScanRequest):
     if not strong:
         return {"result": "no_face", "message": ""}
 
-    frame_area = float(arr.shape[0] * arr.shape[1])
+    frame_h, frame_w = float(arr.shape[0]), float(arr.shape[1])
+    frame_area = frame_h * frame_w
     areas = {
         i: float((dets[i, 2] - dets[i, 0]) * (dets[i, 3] - dets[i, 1])) for i in strong
     }
     # Only faces big enough to matter count as "people standing at the kiosk".
-    present = [i for i in strong if areas[i] / frame_area >= max(min_coverage, 0.01)]
-    if not present:
+    big = [i for i in strong if areas[i] / frame_area >= max(min_coverage, 0.01)]
+    if not big:
         return {
             "result": "no_face",
             "message": "กรุณาเข้าใกล้กล้องอีกนิด",
         }
+
+    # Anyone walking past behind the person being scanned is simply ignored:
+    # only faces sitting inside the on-screen oval guide are considered.
+    cx, cy = frame_w / 2.0, frame_h / 2.0
+    rx, ry = frame_w * GUIDE_RX, frame_h * GUIDE_RY
+
+    def inside_guide(i: int) -> bool:
+        fx = (float(dets[i, 0]) + float(dets[i, 2])) / 2.0
+        fy = (float(dets[i, 1]) + float(dets[i, 3])) / 2.0
+        return ((fx - cx) / rx) ** 2 + ((fy - cy) / ry) ** 2 <= 1.0
+
+    present = [i for i in big if inside_guide(i)]
+    if not present:
+        return {
+            "result": "no_face",
+            "message": "กรุณาจัดใบหน้าให้อยู่ในกรอบ",
+        }
     if len(present) > 1:
         return {
             "result": "multiple_faces",
-            "message": "พบหลายใบหน้า กรุณาแสกนทีละคน",
+            "message": "พบหลายใบหน้าในกรอบ กรุณาแสกนทีละคน",
             "speak": "พบหลายใบหน้า กรุณาเข้ามาคนเดียว",
             "next_delay_seconds": 3,
         }
+    # A second person inside the frame but outside the oval is fine; someone
+    # crowding right at the edge of the oval is not.
+    idx_main = max(present, key=lambda i: areas[i])
+    for i in big:
+        if i == idx_main:
+            continue
+        if areas[i] >= areas[idx_main] * 0.6 and inside_guide_margin(dets, i, cx, cy, rx, ry):
+            return {
+                "result": "multiple_faces",
+                "message": "มีคนอื่นอยู่ใกล้กรอบเกินไป กรุณาแสกนทีละคน",
+                "speak": "กรุณาเข้ามาคนเดียว",
+                "next_delay_seconds": 3,
+            }
 
     idx = present[0]
     face = Face(
