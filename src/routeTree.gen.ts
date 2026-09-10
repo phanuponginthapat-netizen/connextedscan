@@ -25,6 +25,7 @@ import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agen
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
+import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -108,6 +109,11 @@ const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
   path: '/api/public/kiosk/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskWebScanRoute = ApiPublicKioskWebScanRouteImport.update({
+  id: '/api/public/kiosk/web-scan',
+  path: '/api/public/kiosk/web-scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/web-scan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/web-scan'
   id:
     | '__root__'
     | '/'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/web-scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,6 +240,7 @@ export interface RootRouteChildren {
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
+  ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -344,6 +357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/web-scan': {
+      id: '/api/public/kiosk/web-scan'
+      path: '/api/public/kiosk/web-scan'
+      fullPath: '/api/public/kiosk/web-scan'
+      preLoaderRoute: typeof ApiPublicKioskWebScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -382,6 +402,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
+  ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -114,6 +114,7 @@ export type Database = {
       }
       settings: {
         Row: {
+          allow_web_scan: boolean
           auto_enroll: boolean
           auto_enroll_max_faces: number
           auto_enroll_min_confidence: number
@@ -133,8 +134,10 @@ export type Database = {
           school_name: string
           updated_at: string
           voice_template: string
+          web_match_threshold: number
         }
         Insert: {
+          allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
@@ -154,8 +157,10 @@ export type Database = {
           school_name?: string
           updated_at?: string
           voice_template?: string
+          web_match_threshold?: number
         }
         Update: {
+          allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
@@ -175,6 +180,7 @@ export type Database = {
           school_name?: string
           updated_at?: string
           voice_template?: string
+          web_match_threshold?: number
         }
         Relationships: []
       }
@@ -191,6 +197,8 @@ export type Database = {
           source: string
           status: string
           student_id: string
+          web_embedding: number[] | null
+          web_geometry: Json | null
         }
         Insert: {
           created_at?: string
@@ -204,6 +212,8 @@ export type Database = {
           source?: string
           status?: string
           student_id: string
+          web_embedding?: number[] | null
+          web_geometry?: Json | null
         }
         Update: {
           created_at?: string
@@ -217,6 +227,8 @@ export type Database = {
           source?: string
           status?: string
           student_id?: string
+          web_embedding?: number[] | null
+          web_geometry?: Json | null
         }
         Relationships: [
           {
