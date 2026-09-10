@@ -549,6 +549,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_signup_open: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
