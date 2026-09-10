@@ -7,9 +7,18 @@ type FaceApi = typeof import("@vladmandic/face-api");
 
 let apiPromise: Promise<FaceApi> | null = null;
 
+export type FaceBox = { x: number; y: number; width: number; height: number };
+
 export type FaceMeasurement = {
   descriptor: number[];
   geometry: Record<string, number>;
+  box: FaceBox;
+  /** Detector confidence 0-1. */
+  score: number;
+  /** Fraction of the frame covered by the face box (0-1). */
+  coverage: number;
+  /** Frame size the box refers to. */
+  frame: { width: number; height: number };
 };
 
 export async function loadFaceApi(): Promise<FaceApi> {
