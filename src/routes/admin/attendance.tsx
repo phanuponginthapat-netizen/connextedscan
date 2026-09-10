@@ -761,9 +761,21 @@ function AttendancePage() {
                 <CardTitle className="text-base">ประวัติการสแกนทั้งหมด</CardTitle>
                 <CardDescription>ไม่รวมรายการที่ระบบตัดเป็นการสแกนซ้ำ</CardDescription>
               </div>
-              <Button variant="secondary" size="sm" onClick={exportLogs} className="print:hidden">
-                <Download className="size-4" /> ดาวน์โหลดประวัติ
-              </Button>
+              <div className="flex gap-2 print:hidden">
+                <Button variant="secondary" size="sm" onClick={exportLogs}>
+                  <Download className="size-4" /> ดาวน์โหลดประวัติ
+                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setConfirmClearRange(true)}
+                    disabled={filtered.length === 0}
+                  >
+                    <Trash2 className="size-4" /> ลบประวัติช่วงนี้
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className="overflow-x-auto">
