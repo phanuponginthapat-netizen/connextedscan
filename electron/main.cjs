@@ -10,14 +10,18 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
+const { syncAgent } = require("./updater.cjs");
 
 const CONFIG_PATH = path.join(app.getPath("userData"), "facegate-config.json");
+const UPDATE_DIR = path.join(app.getPath("userData"), "agent");
+const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
   "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app";
 
 let kioskWindow = null;
 let settingsWindow = null;
 let agentProcess = null;
+let currentAppVersion = null;
 
 function loadConfig() {
   try {
@@ -53,9 +57,14 @@ function startAgent() {
   }
 
   // Files spawned by a child process must live outside the asar archive.
-  const agentDir = path
+  const bundledAgentDir = path
     .join(__dirname, "..", "agent")
     .replace("app.asar", "app.asar.unpacked");
+  // Prefer the auto-updated copy in user data when it is complete.
+  const hasUpdate =
+    fs.existsSync(path.join(UPDATE_DIR, "agent.py")) &&
+    fs.existsSync(path.join(UPDATE_DIR, "face_engine.py"));
+  const agentDir = hasUpdate ? UPDATE_DIR : bundledAgentDir;
   const script = path.join(agentDir, "agent.py");
 
   // The packaged build ships its own Python runtime + libraries next to the
@@ -79,11 +88,13 @@ function startAgent() {
     FACEGATE_DEVICE_KEY: deviceKey,
     FACEGATE_CLOUD_URL: cloudUrl,
   };
-  if (fs.existsSync(sitePath)) {
-    env.PYTHONPATH = [sitePath, agentDir, process.env.PYTHONPATH]
-      .filter(Boolean)
-      .join(path.delimiter);
-  }
+  env.PYTHONPATH = [
+    fs.existsSync(sitePath) ? sitePath : null,
+    agentDir,
+    process.env.PYTHONPATH,
+  ]
+    .filter(Boolean)
+    .join(path.delimiter);
   if (fs.existsSync(modelDir)) {
     env.FACEGATE_MODEL_DIR = modelDir;
   }
@@ -135,6 +146,13 @@ function openKiosk() {
 
   kioskWindow.loadURL(url);
 
+  // Retry when the kiosk PC boots before the network is ready.
+  kioskWindow.webContents.on("did-fail-load", () => {
+    setTimeout(() => {
+      if (kioskWindow) kioskWindow.loadURL(url);
+    }, 5000);
+  });
+
   kioskWindow.on("closed", () => {
     kioskWindow = null;
   });
@@ -165,6 +183,38 @@ function openSettings() {
   });
 }
 
+/**
+ * Check the cloud for a newer version of the scanning engine and the kiosk
+ * page. New agent code restarts the background engine; a new web version
+ * simply reloads the kiosk window.
+ */
+async function checkForUpdates({ initial = false } = {}) {
+  const cfg = loadConfig();
+  const cloudUrl = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "");
+  const bundledAgentDir = path
+    .join(__dirname, "..", "agent")
+    .replace("app.asar", "app.asar.unpacked");
+
+  try {
+    const result = await syncAgent(cloudUrl, UPDATE_DIR, bundledAgentDir);
+    const versionChanged =
+      currentAppVersion !== null && result.appVersion !== currentAppVersion;
+    currentAppVersion = result.appVersion;
+
+    if (initial) return;
+
+    if (result.changed) {
+      console.log("[update] restarting scanning engine with the new version");
+      startAgent();
+    }
+    if ((versionChanged || result.changed) && kioskWindow) {
+      kioskWindow.reload();
+    }
+  } catch (err) {
+    console.warn("[update] check failed:", err.message);
+  }
+}
+
 // IPC exposed to the settings page.
 ipcMain.handle("get-config", () => loadConfig());
 ipcMain.handle("save-config", (_event, cfg) => {
@@ -179,14 +229,18 @@ ipcMain.handle("quit", () => {
   app.quit();
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const cfg = loadConfig();
   if (!cfg.deviceKey || !cfg.deviceKey.trim()) {
     openSettings();
   } else {
+    await checkForUpdates({ initial: true });
     startAgent();
     openKiosk();
   }
+  setInterval(() => {
+    void checkForUpdates();
+  }, UPDATE_INTERVAL_MS);
 });
 
 app.on("window-all-closed", () => {
