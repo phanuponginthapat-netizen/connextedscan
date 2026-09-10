@@ -4,7 +4,7 @@ import {
   ShieldCheck,
   Users,
   Volume2,
-  LogIn,
+  Download,
   LogOut,
   Settings2,
   BarChart3,
@@ -66,15 +66,15 @@ const features = [
 
 const quickActions = [
   {
-    icon: LogIn,
-    title: "ตู้สแกนเข้า-ออก",
-    body: "เปิดหน้าสแกนสำหรับตู้หน้าโรงเรียน",
-    to: "/kiosk",
+    icon: Download,
+    title: "ดาวน์โหลดโปรแกรมสแกน",
+    body: "ไฟล์ติดตั้งสำหรับ Windows และ Linux",
+    to: "/download",
     primary: true,
   },
   {
     icon: Settings2,
-    title: "ระบบหลังบ้าน",
+    title: "เข้าสู่ระบบการใช้งาน",
     body: "ลงทะเบียนใบหน้า ตั้งค่าเวลา และจัดการผู้ใช้",
     to: "/admin",
     primary: false,
@@ -140,14 +140,14 @@ function Landing() {
               size="sm"
               className="rounded-full text-slate-600 hover:text-[#1d6fe0]"
             >
-              <Link to="/admin">{t("home.cta_secondary")}</Link>
+              <Link to="/admin">เข้าสู่ระบบการใช้งาน</Link>
             </Button>
             <Button
               asChild
               size="sm"
               className="rounded-full bg-[#1d6fe0] px-5 text-white shadow-md shadow-blue-500/30 transition-all hover:bg-[#155fc4] hover:shadow-lg hover:shadow-blue-500/40"
             >
-              <Link to="/kiosk">{t("home.cta_primary")}</Link>
+              <Link to="/download">ดาวน์โหลดโปรแกรมสแกน</Link>
             </Button>
           </div>
         </div>
@@ -174,7 +174,7 @@ function Landing() {
               size="lg"
               className="rounded-full bg-[#1d6fe0] px-8 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 hover:bg-[#155fc4]"
             >
-              <Link to="/kiosk">{t("home.cta_primary")}</Link>
+              <Link to="/download">ดาวน์โหลดโปรแกรมสแกน</Link>
             </Button>
             <Button
               asChild
@@ -182,7 +182,7 @@ function Landing() {
               variant="outline"
               className="rounded-full border-sky-200 bg-white px-8 text-[#1d6fe0] transition-all hover:-translate-y-0.5 hover:bg-sky-50"
             >
-              <Link to="/admin">{t("home.cta_secondary")}</Link>
+              <Link to="/admin">เข้าสู่ระบบการใช้งาน</Link>
             </Button>
           </div>
         </div>
@@ -285,7 +285,7 @@ function Landing() {
               size="lg"
               className="mt-8 rounded-full bg-white px-8 text-[#0b3b7a] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-sky-50"
             >
-              <Link to="/kiosk">เริ่มสแกนเลย</Link>
+              <Link to="/download">ดาวน์โหลดโปรแกรมสแกน</Link>
             </Button>
           </div>
           <div className="animate-float-soft">
