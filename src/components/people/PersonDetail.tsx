@@ -98,6 +98,42 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
     },
   });
 
+  const { data: avatarUrl } = useQuery({
+    queryKey: ["avatar", id, person?.avatar_path],
+    enabled: !!person?.avatar_path,
+    queryFn: async () => {
+      const { data } = await supabase.storage
+        .from("faces")
+        .createSignedUrl(person!.avatar_path!, 3600);
+      return data?.signedUrl ?? null;
+    },
+  });
+
+  const uploadAvatar = useMutation({
+    mutationFn: async (file: File) => {
+      const path = `${id}/avatar-${crypto.randomUUID()}.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("faces")
+        .upload(path, file, { contentType: file.type || "image/jpeg" });
+      if (upErr) throw upErr;
+      if (person?.avatar_path) {
+        await supabase.storage.from("faces").remove([person.avatar_path]);
+      }
+      const { error } = await supabase
+        .from("students")
+        .update({ avatar_path: path, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("อัปเดตรูปโปรไฟล์แล้ว");
+      qc.invalidateQueries({ queryKey: ["person", id] });
+      qc.invalidateQueries({ queryKey: ["avatar", id] });
+      qc.invalidateQueries({ queryKey: ["people", personType] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const ready = (faces ?? []).filter((f) => f.status === "ready").length;
 
   if (!person) return <p className="text-muted-foreground">กำลังโหลด…</p>;
@@ -127,11 +163,44 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
       </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{person.full_name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {person.student_code} • {personGroupLabel(person)}
-          </p>
+        <div className="flex items-center gap-4">
+          <Label
+            htmlFor="avatar-upload"
+            className="group relative block size-20 shrink-0 cursor-pointer overflow-hidden rounded-full border"
+            title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={`รูปโปรไฟล์ของ ${person.full_name}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                <Camera className="size-6" />
+              </div>
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              เปลี่ยนรูป
+            </span>
+          </Label>
+          <input
+            id="avatar-upload"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadAvatar.mutate(file);
+              e.target.value = "";
+            }}
+          />
+          <div>
+            <h1 className="text-2xl font-semibold">{person.full_name}</h1>
+            <p className="text-sm text-muted-foreground">
+              {person.student_code} • {personGroupLabel(person)} • คลิกที่รูปเพื่อเปลี่ยนรูปโปรไฟล์
+            </p>
+          </div>
         </div>
         <Badge variant={ready > 0 ? "default" : "destructive"}>
           {ready > 0 ? `พร้อมใช้งาน ${ready} ชุด` : "ยังผ่านตู้สแกนไม่ได้"}

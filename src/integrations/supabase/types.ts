@@ -230,6 +230,7 @@ export type Database = {
       }
       students: {
         Row: {
+          avatar_path: string | null
           class_room: string | null
           created_at: string
           department: string | null
@@ -244,6 +245,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_path?: string | null
           class_room?: string | null
           created_at?: string
           department?: string | null
@@ -258,6 +260,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_path?: string | null
           class_room?: string | null
           created_at?: string
           department?: string | null
