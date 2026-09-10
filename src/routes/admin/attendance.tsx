@@ -1,14 +1,35 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Download, LogIn, LogOut, Printer, Users } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip as ReTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  AlarmClock,
+  Clock,
+  Download,
+  LogIn,
+  LogOut,
+  Printer,
+  ScanFace,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCms } from "@/lib/cms-client";
 import { personGroupLabel, personTypeLabel } from "@/components/people/people";
+import { StatCard, SortHeader, TablePager } from "@/components/reports/report-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -46,8 +67,21 @@ export const Route = createFileRoute("/admin/attendance")({
   component: AttendancePage,
 });
 
+const PAGE_SIZE = 25;
+
+function toDateStr(d: Date) {
+  const tz = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return tz.toISOString().slice(0, 10);
+}
+
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return toDateStr(new Date());
+}
+
+function shiftDays(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return toDateStr(d);
 }
 
 function timeText(value?: string | null) {
@@ -61,6 +95,13 @@ function dateText(value: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+function durationText(minutes: number | null) {
+  if (minutes == null || minutes <= 0) return "-";
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return h > 0 ? `${h} ชม. ${m} น.` : `${m} นาที`;
 }
 
 function downloadCsv(name: string, header: string[], rows: (string | number)[][]) {
@@ -91,11 +132,42 @@ type LogRow = {
   } | null;
 };
 
+type DailyRow = {
+  key: string;
+  date: string;
+  code: string;
+  name: string;
+  type: string;
+  group: string;
+  inAt: string | null;
+  outAt: string | null;
+  scans: number;
+  minutes: number | null;
+  late: boolean;
+};
+
+type SummarySort = "date" | "name" | "code" | "inAt" | "outAt" | "minutes";
+
 function AttendancePage() {
+  const { t } = useCms();
   const [from, setFrom] = useState(todayStr());
   const [to, setTo] = useState(todayStr());
   const [personType, setPersonType] = useState("all");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SummarySort>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [summaryPage, setSummaryPage] = useState(1);
+  const [logPage, setLogPage] = useState(1);
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings-late"],
+    queryFn: async () => {
+      const { data } = await supabase.from("settings").select("late_after").maybeSingle();
+      return data as { late_after: string } | null;
+    },
+    staleTime: 60_000,
+  });
+  const lateAfter = settings?.late_after?.slice(0, 5) ?? null;
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["attendance", from, to, personType],
@@ -126,43 +198,39 @@ function AttendancePage() {
     const term = search.trim().toLowerCase();
     if (!term) return rows ?? [];
     return (rows ?? []).filter((r) =>
-      [r.students?.full_name, r.students?.student_code, r.students?.class_room, r.students?.department]
+      [
+        r.students?.full_name,
+        r.students?.student_code,
+        r.students?.class_room,
+        r.students?.department,
+      ]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(term)),
     );
   }, [rows, search]);
 
   // One line per person per day: first check-in, last check-out.
-  const daily = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        key: string;
-        date: string;
-        code: string;
-        name: string;
-        type: string;
-        group: string;
-        inAt: string | null;
-        outAt: string | null;
-        scans: number;
-      }
-    >();
+  const daily = useMemo<DailyRow[]>(() => {
+    const map = new Map<string, DailyRow>();
     for (const r of filtered) {
       if (r.status !== "ok") continue;
       const day = r.scanned_at.slice(0, 10);
       const key = `${day}|${r.students?.student_code ?? r.id}`;
-      const entry = map.get(key) ?? {
-        key,
-        date: day,
-        code: r.students?.student_code ?? "-",
-        name: r.students?.full_name ?? "ไม่ทราบชื่อ",
-        type: r.students ? personTypeLabel(r.students.person_type) : "-",
-        group: r.students ? personGroupLabel(r.students) : "-",
-        inAt: null,
-        outAt: null,
-        scans: 0,
-      };
+      const entry =
+        map.get(key) ??
+        ({
+          key,
+          date: day,
+          code: r.students?.student_code ?? "-",
+          name: r.students?.full_name ?? "ไม่ทราบชื่อ",
+          type: r.students ? personTypeLabel(r.students.person_type) : "-",
+          group: r.students ? personGroupLabel(r.students) : "-",
+          inAt: null,
+          outAt: null,
+          scans: 0,
+          minutes: null,
+          late: false,
+        } satisfies DailyRow);
       entry.scans += 1;
       if (r.direction === "in") {
         if (!entry.inAt || r.scanned_at < entry.inAt) entry.inAt = r.scanned_at;
@@ -171,25 +239,120 @@ function AttendancePage() {
       }
       map.set(key, entry);
     }
-    return [...map.values()].sort((a, b) =>
-      a.date === b.date ? a.name.localeCompare(b.name, "th") : b.date.localeCompare(a.date),
-    );
-  }, [filtered]);
+    const list = [...map.values()];
+    for (const entry of list) {
+      if (entry.inAt && entry.outAt) {
+        const diff = (new Date(entry.outAt).getTime() - new Date(entry.inAt).getTime()) / 60000;
+        entry.minutes = diff > 0 ? diff : null;
+      }
+      if (entry.inAt && lateAfter) {
+        const d = new Date(entry.inAt);
+        const clock = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        entry.late = clock > lateAfter;
+      }
+    }
+    return list;
+  }, [filtered, lateAfter]);
 
-  const stats = useMemo(
-    () => ({
+  const sortedDaily = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    const value = (row: DailyRow) => {
+      switch (sortKey) {
+        case "name":
+          return row.name;
+        case "code":
+          return row.code;
+        case "inAt":
+          return row.inAt ?? "";
+        case "outAt":
+          return row.outAt ?? "";
+        case "minutes":
+          return row.minutes ?? -1;
+        default:
+          return row.date;
+      }
+    };
+    return [...daily].sort((a, b) => {
+      const av = value(a);
+      const bv = value(b);
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+      return String(av).localeCompare(String(bv), "th") * dir;
+    });
+  }, [daily, sortKey, sortDir]);
+
+  const stats = useMemo(() => {
+    const withDuration = daily.filter((d) => d.minutes != null);
+    const avg = withDuration.length
+      ? withDuration.reduce((s, d) => s + (d.minutes ?? 0), 0) / withDuration.length
+      : null;
+    return {
       people: new Set(daily.map((d) => d.code)).size,
       checkIn: filtered.filter((r) => r.direction === "in" && r.status === "ok").length,
       checkOut: filtered.filter((r) => r.direction === "out" && r.status === "ok").length,
-    }),
-    [daily, filtered],
-  );
+      late: daily.filter((d) => d.late).length,
+      stillIn: daily.filter((d) => d.inAt && !d.outAt).length,
+      avgMinutes: avg,
+      scans: filtered.length,
+    };
+  }, [daily, filtered]);
+
+  const chartData = useMemo(() => {
+    const map = new Map<string, { day: string; label: string; in: number; out: number }>();
+    for (const r of filtered) {
+      if (r.status !== "ok") continue;
+      const day = r.scanned_at.slice(0, 10);
+      const entry =
+        map.get(day) ??
+        {
+          day,
+          label: new Date(day).toLocaleDateString("th-TH", { day: "2-digit", month: "short" }),
+          in: 0,
+          out: 0,
+        };
+      if (r.direction === "in") entry.in += 1;
+      else entry.out += 1;
+      map.set(day, entry);
+    }
+    return [...map.values()].sort((a, b) => a.day.localeCompare(b.day));
+  }, [filtered]);
+
+  const summaryPageCount = Math.max(1, Math.ceil(sortedDaily.length / PAGE_SIZE));
+  const summaryRows = sortedDaily.slice((summaryPage - 1) * PAGE_SIZE, summaryPage * PAGE_SIZE);
+  const logPageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const logRows = filtered.slice((logPage - 1) * PAGE_SIZE, logPage * PAGE_SIZE);
+
+  function onSort(key: SummarySort) {
+    if (key === sortKey) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+    setSummaryPage(1);
+  }
+
+  function applyRange(nextFrom: string, nextTo: string) {
+    setFrom(nextFrom);
+    setTo(nextTo);
+    setSummaryPage(1);
+    setLogPage(1);
+  }
 
   function exportSummary() {
     downloadCsv(
       `รายงานเข้า-ออก-${from}-ถึง-${to}.csv`,
-      ["วันที่", "รหัส", "ชื่อ-นามสกุล", "ประเภทบุคคล", "ห้อง/ฝ่าย", "เวลาเข้า", "เวลาออก", "จำนวนสแกน"],
-      daily.map((d) => [
+      [
+        "วันที่",
+        "รหัส",
+        "ชื่อ-นามสกุล",
+        "ประเภทบุคคล",
+        "ห้อง/ฝ่าย",
+        "เวลาเข้า",
+        "เวลาออก",
+        "รวมเวลา (นาที)",
+        "สถานะ",
+        "จำนวนสแกน",
+      ],
+      sortedDaily.map((d) => [
         dateText(d.date),
         d.code,
         d.name,
@@ -197,6 +360,8 @@ function AttendancePage() {
         d.group,
         timeText(d.inAt),
         timeText(d.outAt),
+        d.minutes != null ? Math.round(d.minutes) : "",
+        d.late ? "มาสาย" : d.inAt ? "ปกติ" : "ไม่มีเวลาเข้า",
         d.scans,
       ]),
     );
@@ -232,19 +397,37 @@ function AttendancePage() {
     );
   }
 
-  const summaryCards = [
-    { label: "จำนวนคน", value: stats.people, icon: Users },
-    { label: "บันทึกเข้า", value: stats.checkIn, icon: LogIn },
-    { label: "บันทึกออก", value: stats.checkOut, icon: LogOut },
+  const rangeLabel = from === to ? dateText(from) : `${dateText(from)} – ${dateText(to)}`;
+  const presets: Array<[string, () => void]> = [
+    ["วันนี้", () => applyRange(todayStr(), todayStr())],
+    ["7 วันล่าสุด", () => applyRange(shiftDays(-6), todayStr())],
+    ["30 วันล่าสุด", () => applyRange(shiftDays(-29), todayStr())],
+    [
+      "เดือนนี้",
+      () => {
+        const d = new Date();
+        applyRange(toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)), todayStr());
+      },
+    ],
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      {/* Report header — also used as the printed cover line */}
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold">รายงานเข้า-ออก</h1>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {t("brand.school_name")}
+          </p>
+          <h1 className="font-display text-2xl font-semibold">รายงานการเข้า-ออก</h1>
           <p className="text-sm text-muted-foreground">
-            สรุปเวลาเข้า-ออกรายบุคคล และประวัติการสแกนทั้งหมด
+            ช่วงวันที่ {rangeLabel} •{" "}
+            {personType === "all"
+              ? "ทุกประเภทบุคคล"
+              : personType === "student"
+                ? "เฉพาะนักเรียน"
+                : "เฉพาะบุคลากร"}{" "}
+            • ออกรายงานเมื่อ {new Date().toLocaleString("th-TH")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
@@ -258,55 +441,123 @@ function AttendancePage() {
       </div>
 
       <Card className="print:hidden">
-        <CardContent className="flex flex-wrap items-end gap-3 pt-6">
-          <div className="space-y-1.5">
-            <Label>ตั้งแต่วันที่</Label>
-            <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-wrap gap-2">
+            {presets.map(([label, run]) => (
+              <Button key={label} variant="outline" size="sm" onClick={run}>
+                {label}
+              </Button>
+            ))}
           </div>
-          <div className="space-y-1.5">
-            <Label>ถึงวันที่</Label>
-            <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>บุคคล</Label>
-            <Select value={personType} onValueChange={setPersonType}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">ทั้งหมด</SelectItem>
-                <SelectItem value="student">นักเรียน</SelectItem>
-                <SelectItem value="staff">บุคลากร</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>ค้นหา</Label>
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ชื่อ รหัส ห้อง หรือฝ่าย"
-              className="w-56"
-            />
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label>ตั้งแต่วันที่</Label>
+              <Input
+                type="date"
+                value={from}
+                max={to}
+                onChange={(e) => applyRange(e.target.value, to)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>ถึงวันที่</Label>
+              <Input
+                type="date"
+                value={to}
+                min={from}
+                onChange={(e) => applyRange(from, e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>บุคคล</Label>
+              <Select
+                value={personType}
+                onValueChange={(v) => {
+                  setPersonType(v);
+                  setSummaryPage(1);
+                  setLogPage(1);
+                }}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                  <SelectItem value="student">นักเรียน</SelectItem>
+                  <SelectItem value="staff">บุคลากร</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>ค้นหา</Label>
+              <Input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setSummaryPage(1);
+                  setLogPage(1);
+                }}
+                placeholder="ชื่อ รหัส ห้อง หรือฝ่าย"
+                className="w-56"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {summaryCards.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="rounded-xl bg-secondary p-3">
-                <s.icon className="size-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
-                <p className="text-2xl font-semibold">{s.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <StatCard label="จำนวนคน" value={stats.people} icon={Users} />
+        <StatCard label="บันทึกเข้า" value={stats.checkIn} icon={LogIn} />
+        <StatCard label="บันทึกออก" value={stats.checkOut} icon={LogOut} />
+        <StatCard
+          label="มาสาย"
+          value={stats.late}
+          icon={AlarmClock}
+          tone={stats.late > 0 ? "warning" : "default"}
+          hint={lateAfter ? `หลัง ${lateAfter} น.` : undefined}
+        />
+        <StatCard label="ยังไม่บันทึกออก" value={stats.stillIn} icon={Clock} />
+        <StatCard
+          label="เวลาเฉลี่ย"
+          value={stats.avgMinutes != null ? durationText(stats.avgMinutes) : "-"}
+          icon={ScanFace}
+          hint={`สแกนทั้งหมด ${stats.scans.toLocaleString("th-TH")} ครั้ง`}
+        />
       </div>
+
+      {chartData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">สถิติการสแกนรายวัน</CardTitle>
+            <CardDescription>เปรียบเทียบจำนวนบันทึกเข้าและออกในแต่ละวัน</CardDescription>
+          </CardHeader>
+          <CardContent className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
+                <ReTooltip
+                  contentStyle={{
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--card)",
+                    fontSize: 12,
+                  }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="in" name="เข้า" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="out"
+                  name="ออก"
+                  fill="var(--muted-foreground)"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="summary">
         <TabsList className="print:hidden">
@@ -315,126 +566,188 @@ function AttendancePage() {
         </TabsList>
 
         <TabsContent value="summary" className="mt-4">
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
-              <CardTitle className="text-base">
-                บันทึกเข้า-ออก ({dateText(from)} - {dateText(to)})
-              </CardTitle>
+              <CardTitle className="text-base">ตารางสรุปเวลาเข้า-ออกรายบุคคล</CardTitle>
+              <CardDescription>
+                หนึ่งบรรทัดต่อคนต่อวัน โดยใช้เวลาเข้าแรกสุดและเวลาออกล่าสุด
+              </CardDescription>
             </CardHeader>
-            <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>วันที่</TableHead>
-                    <TableHead>รหัส</TableHead>
-                    <TableHead>ชื่อ-นามสกุล</TableHead>
-                    <TableHead>ประเภท</TableHead>
-                    <TableHead>ห้อง/ฝ่าย</TableHead>
-                    <TableHead className="text-center">เวลาเข้า</TableHead>
-                    <TableHead className="text-center">เวลาออก</TableHead>
-                    <TableHead className="text-center">สแกน</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {daily.length === 0 && (
+            <CardContent className="px-0 pb-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/50">
                     <TableRow>
-                      <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                        {isLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงวันที่เลือก"}
-                      </TableCell>
+                      <SortHeader
+                        label="วันที่"
+                        sortKey="date"
+                        active={sortKey}
+                        dir={sortDir}
+                        onSort={onSort}
+                      />
+                      <SortHeader
+                        label="รหัส"
+                        sortKey="code"
+                        active={sortKey}
+                        dir={sortDir}
+                        onSort={onSort}
+                      />
+                      <SortHeader
+                        label="ชื่อ-นามสกุล"
+                        sortKey="name"
+                        active={sortKey}
+                        dir={sortDir}
+                        onSort={onSort}
+                      />
+                      <TableHead>ประเภท</TableHead>
+                      <TableHead>ห้อง/ฝ่าย</TableHead>
+                      <SortHeader
+                        label="เวลาเข้า"
+                        sortKey="inAt"
+                        active={sortKey}
+                        dir={sortDir}
+                        onSort={onSort}
+                      />
+                      <SortHeader
+                        label="เวลาออก"
+                        sortKey="outAt"
+                        active={sortKey}
+                        dir={sortDir}
+                        onSort={onSort}
+                      />
+                      <SortHeader
+                        label="รวมเวลา"
+                        sortKey="minutes"
+                        active={sortKey}
+                        dir={sortDir}
+                        onSort={onSort}
+                      />
+                      <TableHead className="text-center">สถานะ</TableHead>
+                      <TableHead className="text-center">สแกน</TableHead>
                     </TableRow>
-                  )}
-                  {daily.map((d) => (
-                    <TableRow key={d.key}>
-                      <TableCell className="whitespace-nowrap">{dateText(d.date)}</TableCell>
-                      <TableCell className="font-mono text-xs">{d.code}</TableCell>
-                      <TableCell className="font-medium">{d.name}</TableCell>
-                      <TableCell>{d.type}</TableCell>
-                      <TableCell>{d.group}</TableCell>
-                      <TableCell className="text-center tabular-nums">
-                        {d.inAt ? (
-                          timeText(d.inAt)
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center tabular-nums">
-                        {d.outAt ? (
-                          timeText(d.outAt)
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">{d.scans}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {summaryRows.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={10} className="py-12 text-center text-muted-foreground">
+                          {isLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงวันที่เลือก"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {summaryRows.map((d) => (
+                      <TableRow key={d.key} className="even:bg-muted/20">
+                        <TableCell className="whitespace-nowrap">{dateText(d.date)}</TableCell>
+                        <TableCell className="font-mono text-xs">{d.code}</TableCell>
+                        <TableCell className="font-medium">{d.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{d.type}</TableCell>
+                        <TableCell className="text-muted-foreground">{d.group}</TableCell>
+                        <TableCell className="tabular-nums">{timeText(d.inAt)}</TableCell>
+                        <TableCell className="tabular-nums">{timeText(d.outAt)}</TableCell>
+                        <TableCell className="whitespace-nowrap tabular-nums">
+                          {durationText(d.minutes)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {d.late ? (
+                            <Badge variant="destructive">มาสาย</Badge>
+                          ) : d.inAt && !d.outAt ? (
+                            <Badge variant="outline">ยังไม่ออก</Badge>
+                          ) : (
+                            <Badge variant="secondary">ปกติ</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center tabular-nums">{d.scans}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <TablePager
+                page={summaryPage}
+                pageCount={summaryPageCount}
+                total={sortedDaily.length}
+                onPage={setSummaryPage}
+              />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="logs" className="mt-4">
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-base">ประวัติการสแกนทั้งหมด</CardTitle>
+          <Card className="overflow-hidden">
+            <CardHeader className="flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-base">ประวัติการสแกนทั้งหมด</CardTitle>
+                <CardDescription>ไม่รวมรายการที่ระบบตัดเป็นการสแกนซ้ำ</CardDescription>
+              </div>
               <Button variant="secondary" size="sm" onClick={exportLogs} className="print:hidden">
                 <Download className="size-4" /> ดาวน์โหลดประวัติ
               </Button>
             </CardHeader>
-            <CardContent className="px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>เวลา</TableHead>
-                    <TableHead>รหัส</TableHead>
-                    <TableHead>ชื่อ-นามสกุล</TableHead>
-                    <TableHead>ห้อง/ฝ่าย</TableHead>
-                    <TableHead className="text-center">เข้า/ออก</TableHead>
-                    <TableHead className="text-center">สถานะ</TableHead>
-                    <TableHead className="text-center">ความเหมือน</TableHead>
-                    <TableHead>เครื่อง</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.length === 0 && (
+            <CardContent className="px-0 pb-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/50">
                     <TableRow>
-                      <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                        {isLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงวันที่เลือก"}
-                      </TableCell>
+                      <TableHead>เวลา</TableHead>
+                      <TableHead>รหัส</TableHead>
+                      <TableHead>ชื่อ-นามสกุล</TableHead>
+                      <TableHead>ห้อง/ฝ่าย</TableHead>
+                      <TableHead className="text-center">เข้า/ออก</TableHead>
+                      <TableHead className="text-center">สถานะ</TableHead>
+                      <TableHead className="text-center">ความเหมือน</TableHead>
+                      <TableHead>เครื่อง</TableHead>
                     </TableRow>
-                  )}
-                  {filtered.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {dateText(r.scanned_at)} {timeText(r.scanned_at)}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {r.students?.student_code ?? "-"}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {r.students?.full_name ?? "ไม่ทราบชื่อ"}
-                      </TableCell>
-                      <TableCell>{r.students ? personGroupLabel(r.students) : "-"}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={r.direction === "in" ? "default" : "secondary"}>
-                          {r.direction === "in" ? "เข้า" : "ออก"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {r.status === "ok" && <span className="text-primary">สำเร็จ</span>}
-                        {r.status === "duplicate" && <Badge variant="outline">สแกนซ้ำ</Badge>}
-                        {r.status === "geometry_reject" && (
-                          <Badge variant="destructive">สัดส่วนไม่ตรง</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center tabular-nums">
-                        {r.confidence != null ? r.confidence.toFixed(2) : "-"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{r.device_name ?? "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {logRows.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                          {isLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงวันที่เลือก"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {logRows.map((r) => (
+                      <TableRow key={r.id} className="even:bg-muted/20">
+                        <TableCell className="whitespace-nowrap tabular-nums">
+                          {dateText(r.scanned_at)} {timeText(r.scanned_at)}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {r.students?.student_code ?? "-"}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {r.students?.full_name ?? "ไม่ทราบชื่อ"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {r.students ? personGroupLabel(r.students) : "-"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={r.direction === "in" ? "default" : "secondary"}>
+                            {r.direction === "in" ? "เข้า" : "ออก"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {r.status === "ok" && <span className="text-primary">สำเร็จ</span>}
+                          {r.status === "duplicate" && <Badge variant="outline">สแกนซ้ำ</Badge>}
+                          {r.status === "geometry_reject" && (
+                            <Badge variant="destructive">สัดส่วนไม่ตรง</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center tabular-nums">
+                          {r.confidence != null ? r.confidence.toFixed(2) : "-"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {r.device_name ?? "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <TablePager
+                page={logPage}
+                pageCount={logPageCount}
+                total={filtered.length}
+                onPage={setLogPage}
+              />
             </CardContent>
           </Card>
         </TabsContent>
