@@ -46,6 +46,7 @@ function speak(text: string) {
 }
 
 function Kiosk() {
+  const { t } = useCms();
   const videoRef = useRef<HTMLVideoElement>(null);
   const busyRef = useRef(false);
   const [agentUrl, setAgentUrl] = useState("http://127.0.0.1:8899");

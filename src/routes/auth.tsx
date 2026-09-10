@@ -61,13 +61,15 @@ function AuthPage() {
   }
 
   return (
-    <main className="kiosk-shell flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-3xl border bg-card p-8 shadow-panel">
+    <main className="brand-hero flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="panel-card w-full max-w-md p-8">
         <div className="flex items-center gap-3">
-          <ScanFace className="size-8 text-primary" />
+          <span className="grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground">
+            <ScanFace className="size-6" />
+          </span>
           <div>
-            <h1 className="text-xl font-semibold">FaceGate หลังบ้าน</h1>
-            <p className="text-sm text-muted-foreground">สำหรับเจ้าหน้าที่โรงเรียนเท่านั้น</p>
+            <h1 className="font-display text-xl font-semibold">{t("auth.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("auth.subtitle")}</p>
           </div>
         </div>
 
