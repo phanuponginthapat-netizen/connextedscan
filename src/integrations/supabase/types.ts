@@ -19,6 +19,7 @@ export type Database = {
           confidence: number | null
           device_name: string | null
           direction: string
+          geometry_score: number | null
           id: string
           scanned_at: string
           snapshot_path: string | null
@@ -29,6 +30,7 @@ export type Database = {
           confidence?: number | null
           device_name?: string | null
           direction: string
+          geometry_score?: number | null
           id?: string
           scanned_at?: string
           snapshot_path?: string | null
@@ -39,6 +41,7 @@ export type Database = {
           confidence?: number | null
           device_name?: string | null
           direction?: string
+          geometry_score?: number | null
           id?: string
           scanned_at?: string
           snapshot_path?: string | null
@@ -111,46 +114,64 @@ export type Database = {
       }
       settings: {
         Row: {
+          auto_enroll: boolean
+          auto_enroll_max_faces: number
+          auto_enroll_min_confidence: number
           checkin_end: string
           checkin_start: string
           checkout_end: string
           checkout_start: string
           duplicate_cooldown_minutes: number
+          geometry_min_score: number
+          geometry_weight: number
           id: boolean
           late_after: string
           match_threshold: number
           next_person_delay_seconds: number
           require_liveness: boolean
+          save_snapshots: boolean
           school_name: string
           updated_at: string
           voice_template: string
         }
         Insert: {
+          auto_enroll?: boolean
+          auto_enroll_max_faces?: number
+          auto_enroll_min_confidence?: number
           checkin_end?: string
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
           duplicate_cooldown_minutes?: number
+          geometry_min_score?: number
+          geometry_weight?: number
           id?: boolean
           late_after?: string
           match_threshold?: number
           next_person_delay_seconds?: number
           require_liveness?: boolean
+          save_snapshots?: boolean
           school_name?: string
           updated_at?: string
           voice_template?: string
         }
         Update: {
+          auto_enroll?: boolean
+          auto_enroll_max_faces?: number
+          auto_enroll_min_confidence?: number
           checkin_end?: string
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
           duplicate_cooldown_minutes?: number
+          geometry_min_score?: number
+          geometry_weight?: number
           id?: boolean
           late_after?: string
           match_threshold?: number
           next_person_delay_seconds?: number
           require_liveness?: boolean
+          save_snapshots?: boolean
           school_name?: string
           updated_at?: string
           voice_template?: string
@@ -162,6 +183,7 @@ export type Database = {
           created_at: string
           embedding: number[] | null
           error_message: string | null
+          geometry: Json | null
           id: string
           image_path: string
           processed_at: string | null
@@ -174,6 +196,7 @@ export type Database = {
           created_at?: string
           embedding?: number[] | null
           error_message?: string | null
+          geometry?: Json | null
           id?: string
           image_path: string
           processed_at?: string | null
@@ -186,6 +209,7 @@ export type Database = {
           created_at?: string
           embedding?: number[] | null
           error_message?: string | null
+          geometry?: Json | null
           id?: string
           image_path?: string
           processed_at?: string | null
