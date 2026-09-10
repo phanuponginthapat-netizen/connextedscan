@@ -15,7 +15,7 @@ export function FaceBoxOverlay({
   frame: { width: number; height: number };
   mirrored?: boolean;
   tone?: "ok" | "warn" | "bad";
-  label?: string;
+  label?: string | undefined;
 }) {
   if (!frame.width || !frame.height) return null;
   const color =
