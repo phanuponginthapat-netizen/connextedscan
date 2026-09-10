@@ -167,6 +167,7 @@ function Kiosk() {
           time: new Date(item.scanned_at).toLocaleTimeString("th-TH", {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: false,
           }),
           avatarUrl: item.avatar_url,
           snapshotUrl: item.snapshot_url,
