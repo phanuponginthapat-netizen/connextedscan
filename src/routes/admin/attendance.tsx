@@ -840,7 +840,7 @@ function AttendancePage() {
                           <TableCell className="text-center print:hidden">
                             <Button
                               variant="ghost"
-                              size="icon-sm"
+                              size="icon"
                               title="ลบรายการนี้"
                               onClick={() => setDeleteTarget(r)}
                             >
