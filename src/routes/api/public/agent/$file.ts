@@ -4,13 +4,26 @@ import faceEngineSource from "../../../../../agent/face_engine.py?raw";
 import requirements from "../../../../../agent/requirements.txt?raw";
 import installPs1 from "../../../../../agent/install.ps1?raw";
 import installSh from "../../../../../agent/install.sh?raw";
+import installBat from "../../../../../agent/install.bat?raw";
 
-const files: Record<string, { body: string; type: string }> = {
+const files: Record<string, { body: string; type: string; download?: string }> = {
   "agent.py": { body: agentSource, type: "text/plain; charset=utf-8" },
   "face_engine.py": { body: faceEngineSource, type: "text/plain; charset=utf-8" },
   "requirements.txt": { body: requirements, type: "text/plain; charset=utf-8" },
   "install.ps1": { body: installPs1, type: "text/plain; charset=utf-8" },
   "install.sh": { body: installSh, type: "text/plain; charset=utf-8" },
+  "install.bat": { body: installBat, type: "text/plain; charset=utf-8" },
+  // ไฟล์ติดตั้งพร้อมใช้ — ดับเบิลคลิกได้เหมือนไฟล์ .exe
+  "FaceGate-Setup-windows-x64.bat": {
+    body: installBat,
+    type: "application/octet-stream",
+    download: "FaceGate-Setup-windows-x64.bat",
+  },
+  "FaceGate-Setup-linux-x64.sh": {
+    body: installSh,
+    type: "application/octet-stream",
+    download: "FaceGate-Setup-linux-x64.sh",
+  },
 };
 
 /** Files the FaceGate desktop program keeps up to date automatically. */
@@ -62,13 +75,16 @@ export const Route = createFileRoute("/api/public/agent/$file")({
           .replaceAll("__CLOUD_URL__", url.origin)
           .replaceAll("__DEVICE_KEY__", key);
 
-        return new Response(body, {
-          headers: {
-            "content-type": entry.type,
-            "cache-control": "no-store",
-            "access-control-allow-origin": "*",
-          },
-        });
+        const headers: Record<string, string> = {
+          "content-type": entry.type,
+          "cache-control": "no-store",
+          "access-control-allow-origin": "*",
+        };
+        if (entry.download) {
+          headers["content-disposition"] = `attachment; filename="${entry.download}"`;
+        }
+
+        return new Response(body, { headers });
       },
     },
   },
