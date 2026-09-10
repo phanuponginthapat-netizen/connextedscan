@@ -49,6 +49,7 @@ function Dashboard() {
             "id, direction, status, confidence, scanned_at, students(full_name, class_room, department, person_type)",
           )
           .gte("scanned_at", today)
+          .neq("status", "duplicate")
           .order("scanned_at", { ascending: false })
           .limit(30),
       ]);
