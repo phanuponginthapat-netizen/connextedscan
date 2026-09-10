@@ -27,14 +27,19 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
             .eq("is_active", true),
           supabaseAdmin
             .from("student_faces")
-            .select("id, student_id, image_path, status, embedding")
+            .select("id, student_id, image_path, status, embedding, geometry")
             .in("status", ["pending", "ready"]),
         ]);
 
         const pending = (faces ?? []).filter((f) => f.status === "pending");
         const ready = (faces ?? [])
           .filter((f) => f.status === "ready" && f.embedding)
-          .map((f) => ({ id: f.id, student_id: f.student_id, embedding: f.embedding }));
+          .map((f) => ({
+            id: f.id,
+            student_id: f.student_id,
+            embedding: f.embedding,
+            geometry: f.geometry ?? null,
+          }));
 
         const pendingWithUrls = await Promise.all(
           pending.map(async (f) => {

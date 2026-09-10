@@ -11,6 +11,7 @@ const bodySchema = z.object({
     z.object({
       face_id: z.string().uuid(),
       embedding: z.array(z.number()).min(64).max(2048).optional(),
+      geometry: z.record(z.string(), z.number()).optional(),
       quality: z.number().optional(),
       error: z.string().optional(),
     }),
@@ -37,6 +38,7 @@ export const Route = createFileRoute("/api/public/kiosk/embeddings")({
               .from("student_faces")
               .update({
                 embedding: item.embedding,
+                geometry: item.geometry ?? null,
                 quality: item.quality ?? null,
                 status: "ready",
                 error_message: null,
