@@ -10,14 +10,18 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
+const { syncAgent } = require("./updater.cjs");
 
 const CONFIG_PATH = path.join(app.getPath("userData"), "facegate-config.json");
+const UPDATE_DIR = path.join(app.getPath("userData"), "agent");
+const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
   "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app";
 
 let kioskWindow = null;
 let settingsWindow = null;
 let agentProcess = null;
+let currentAppVersion = null;
 
 function loadConfig() {
   try {
