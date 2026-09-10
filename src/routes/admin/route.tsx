@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Briefcase, CalendarClock, Download, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
+import { Briefcase, CalendarClock, ChevronLeft, ChevronRight, Download, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,33 @@ function AdminLayout() {
               {item.label}
             </Link>
           ))}
+        </div>
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-card/95 px-4 py-2 backdrop-blur">
+          <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
+            <ChevronLeft className="size-4" /> ย้อนกลับ
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => window.history.forward()}>
+            ไปต่อ <ChevronRight className="size-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/admin" })}>
+            <LayoutDashboard className="size-4" /> หน้าภาพรวม
+          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/kiosk" })}>
+              <ScanFace className="size-4" /> ไปหน้าสแกน
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                if (!confirm("ต้องการออกจากระบบใช่หรือไม่")) return;
+                await supabase.auth.signOut();
+                navigate({ to: "/auth" });
+              }}
+            >
+              <LogOut className="size-4" /> ออกจากระบบ
+            </Button>
+          </div>
         </div>
         <main className="mx-auto max-w-6xl p-6">
           <Outlet />

@@ -7,9 +7,18 @@ type FaceApi = typeof import("@vladmandic/face-api");
 
 let apiPromise: Promise<FaceApi> | null = null;
 
+export type FaceBox = { x: number; y: number; width: number; height: number };
+
 export type FaceMeasurement = {
   descriptor: number[];
   geometry: Record<string, number>;
+  box: FaceBox;
+  /** Detector confidence 0-1. */
+  score: number;
+  /** Fraction of the frame covered by the face box (0-1). */
+  coverage: number;
+  /** Frame size the box refers to. */
+  frame: { width: number; height: number };
 };
 
 export async function loadFaceApi(): Promise<FaceApi> {
@@ -80,8 +89,14 @@ function buildGeometry(landmarks: {
 
 export type DetectOutcome =
   | { status: "no_face" }
-  | { status: "multiple_faces"; count: number }
+  | { status: "multiple_faces"; count: number; boxes: FaceBox[]; frame: { width: number; height: number } }
   | { status: "ok"; face: FaceMeasurement };
+
+function frameSize(input: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement) {
+  if (input instanceof HTMLVideoElement) return { width: input.videoWidth, height: input.videoHeight };
+  if (input instanceof HTMLImageElement) return { width: input.naturalWidth, height: input.naturalHeight };
+  return { width: input.width, height: input.height };
+}
 
 /** Measures exactly one face in the frame; rejects empty or crowded frames. */
 export async function measureSingleFace(
@@ -94,15 +109,39 @@ export async function measureSingleFace(
     .withFaceLandmarks()
     .withFaceDescriptors();
 
+  const frame = frameSize(input);
   if (results.length === 0) return { status: "no_face" };
-  if (results.length > 1) return { status: "multiple_faces", count: results.length };
+  if (results.length > 1) {
+    return {
+      status: "multiple_faces",
+      count: results.length,
+      frame,
+      boxes: results.map((r) => ({
+        x: r.detection.box.x,
+        y: r.detection.box.y,
+        width: r.detection.box.width,
+        height: r.detection.box.height,
+      })),
+    };
+  }
 
   const first = results[0]!;
+  const box = {
+    x: first.detection.box.x,
+    y: first.detection.box.y,
+    width: first.detection.box.width,
+    height: first.detection.box.height,
+  };
+  const area = Math.max(1, frame.width * frame.height);
   return {
     status: "ok",
     face: {
       descriptor: Array.from(first.descriptor),
       geometry: buildGeometry(first.landmarks as never),
+      box,
+      score: first.detection.score,
+      coverage: (box.width * box.height) / area,
+      frame,
     },
   };
 }
