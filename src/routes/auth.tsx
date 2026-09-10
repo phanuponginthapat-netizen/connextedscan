@@ -126,6 +126,12 @@ function AuthPage() {
             </form>
           </TabsContent>
 
+          {!signupOpen ? (
+            <p className="pt-4 text-center text-xs text-muted-foreground">
+              ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอบัญชีใช้งาน
+            </p>
+          ) : null}
+
           <TabsContent value="signup">
             <form onSubmit={signUp} className="space-y-4 pt-4">
               <div className="space-y-2">
