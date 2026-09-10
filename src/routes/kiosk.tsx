@@ -54,12 +54,39 @@ function Kiosk() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [camError, setCamError] = useState<string | null>(null);
+  const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
+  const [knownFaces, setKnownFaces] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(AGENT_KEY);
     if (saved) setAgentUrl(saved);
     window.speechSynthesis?.getVoices();
   }, []);
+
+  // Is the face-recognition program on this PC reachable?
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch(`${agentUrl.replace(/\/$/, "")}/health`);
+        const data = (await res.json()) as { ok?: boolean; known_faces?: number };
+        if (cancelled) return;
+        setAgentOnline(!!data.ok);
+        setKnownFaces(data.known_faces ?? null);
+      } catch {
+        if (!cancelled) {
+          setAgentOnline(false);
+          setKnownFaces(null);
+        }
+      }
+    };
+    check();
+    const t = setInterval(check, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [agentUrl]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
