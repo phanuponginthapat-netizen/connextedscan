@@ -54,12 +54,39 @@ function Kiosk() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [camError, setCamError] = useState<string | null>(null);
+  const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
+  const [knownFaces, setKnownFaces] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(AGENT_KEY);
     if (saved) setAgentUrl(saved);
     window.speechSynthesis?.getVoices();
   }, []);
+
+  // Is the face-recognition program on this PC reachable?
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch(`${agentUrl.replace(/\/$/, "")}/health`);
+        const data = (await res.json()) as { ok?: boolean; known_faces?: number };
+        if (cancelled) return;
+        setAgentOnline(!!data.ok);
+        setKnownFaces(data.known_faces ?? null);
+      } catch {
+        if (!cancelled) {
+          setAgentOnline(false);
+          setKnownFaces(null);
+        }
+      }
+    };
+    check();
+    const t = setInterval(check, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [agentUrl]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -119,6 +146,7 @@ function Kiosk() {
         });
       }, 1000);
     } catch {
+      setAgentOnline(false);
       setGuide("idle");
       setStatus("idle");
       busyRef.current = false;
@@ -155,6 +183,23 @@ function Kiosk() {
         </p>
       </header>
 
+      {agentOnline === false && (
+        <div className="w-full max-w-2xl rounded-2xl border-2 border-destructive bg-destructive/10 p-4 text-center text-sm">
+          <p className="font-semibold text-destructive">ยังไม่ได้เชื่อมต่อโปรแกรมตรวจใบหน้าบนเครื่องนี้</p>
+          <p className="mt-1 text-muted-foreground">
+            หน้าจอนี้เป็นแค่กล้องกับหน้าจอแสดงผล การตรวจจับใบหน้าทำงานโดยโปรแกรมที่ติดตั้งบนตู้สแกน
+            กรุณาเปิดโปรแกรมนั้นก่อน แล้วหน้านี้จะเริ่มสแกนเองอัตโนมัติ ({agentUrl})
+          </p>
+        </div>
+      )}
+      {agentOnline === true && knownFaces === 0 && (
+        <div className="w-full max-w-2xl rounded-2xl border-2 border-accent bg-accent/10 p-4 text-center text-sm">
+          เชื่อมต่อโปรแกรมแล้ว แต่ยังไม่มีข้อมูลใบหน้าที่พร้อมใช้งาน กรุณาลงทะเบียนใบหน้าในหลังบ้านก่อน
+        </div>
+      )}
+
+
+
       <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border shadow-panel">
         <video
           ref={videoRef}
@@ -175,19 +220,26 @@ function Kiosk() {
 
         {/* Guide status badge */}
         <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow">
-          {status === "scanning" && !result && (
+          {agentOnline === false && (
+            <span className="text-destructive">ยังไม่ได้เชื่อมต่อโปรแกรมตรวจใบหน้า</span>
+          )}
+          {agentOnline !== false && (
             <>
-              <Loader2 className="size-4 animate-spin text-primary" /> กำลังตรวจใบหน้า…
+              {status === "scanning" && !result && (
+                <>
+                  <Loader2 className="size-4 animate-spin text-primary" /> กำลังตรวจใบหน้า…
+                </>
+              )}
+              {guide === "no_face" && status !== "scanning" && !result && (
+                <span className="text-muted-foreground">ไม่พบใบหน้าในกรอบ</span>
+              )}
+              {guide === "multiple_faces" && !result && (
+                <span className="text-destructive">พบหลายใบหน้า กรุณาเข้ามาคนเดียว</span>
+              )}
+              {guide === "idle" && !result && (
+                <span className="text-primary">ยืนให้ใบหน้าอยู่ในกรอบคนเดียว</span>
+              )}
             </>
-          )}
-          {guide === "no_face" && status !== "scanning" && !result && (
-            <span className="text-muted-foreground">ไม่พบใบหน้าในกรอบ</span>
-          )}
-          {guide === "multiple_faces" && !result && (
-            <span className="text-destructive">พบหลายใบหน้า กรุณาเข้ามาคนเดียว</span>
-          )}
-          {(guide === "idle" || (result && status === "cooldown")) && !result && (
-            <span className="text-primary">ยืนให้ใบหน้าอยู่ในกรอบคนเดียว</span>
           )}
         </div>
 
