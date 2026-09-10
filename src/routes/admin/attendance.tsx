@@ -19,9 +19,15 @@ import {
   LogOut,
   Printer,
   ScanFace,
+  Trash2,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  deleteAttendanceLog,
+  deleteAttendanceRange,
+} from "@/lib/attendance-admin.functions";
 import { useCms } from "@/lib/cms-client";
 import { personGroupLabel, personTypeLabel } from "@/components/people/people";
 import { StatCard, SortHeader, TablePager } from "@/components/reports/report-ui";
