@@ -70,16 +70,11 @@ function Kiosk() {
     return window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("th")) ?? null;
   };
 
-  // Play a sentence through the cloud voice service. Needed on machines with
-  // no Thai system voice, such as the FaceGate desktop app on Windows.
+  // Play a sentence with the voice clip stored on this device. Needed on
+  // machines with no Thai system voice, such as the FaceGate desktop app.
   const speakViaServer = useCallback(async (text: string) => {
-    const res = await fetch("/api/public/kiosk/tts", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error("tts failed");
-    const blob = await res.blob();
+    const { getVoiceClip } = await import("@/lib/voice-cache");
+    const blob = await getVoiceClip(text);
     const audio = audioRef.current ?? new Audio();
     audioRef.current = audio;
     const url = URL.createObjectURL(blob);
