@@ -30,12 +30,23 @@ function Dashboard() {
     queryKey: ["dashboard"],
     queryFn: async () => {
       const today = startOfTodayISO();
-      const [students, faces, logs] = await Promise.all([
-        supabase.from("students").select("id", { count: "exact", head: true }).eq("is_active", true),
+      const [students, staff, faces, logs] = await Promise.all([
+        supabase
+          .from("students")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .eq("person_type", "student"),
+        supabase
+          .from("students")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .eq("person_type", "staff"),
         supabase.from("student_faces").select("student_id").eq("status", "ready"),
         supabase
           .from("attendance_logs")
-          .select("id, direction, status, confidence, scanned_at, students(full_name, class_room)")
+          .select(
+            "id, direction, status, confidence, scanned_at, students(full_name, class_room, department, person_type)",
+          )
           .gte("scanned_at", today)
           .order("scanned_at", { ascending: false })
           .limit(30),
@@ -44,6 +55,7 @@ function Dashboard() {
       const rows = logs.data ?? [];
       return {
         totalStudents: students.count ?? 0,
+        totalStaff: staff.count ?? 0,
         enrolled,
         checkIn: rows.filter((r) => r.direction === "in" && r.status === "ok").length,
         checkOut: rows.filter((r) => r.direction === "out" && r.status === "ok").length,
@@ -55,6 +67,7 @@ function Dashboard() {
 
   const stats = [
     { label: "นักเรียนทั้งหมด", value: data?.totalStudents ?? 0, icon: Users },
+    { label: "บุคลากรทั้งหมด", value: data?.totalStaff ?? 0, icon: Briefcase },
     { label: "ลงทะเบียนใบหน้าแล้ว", value: data?.enrolled ?? 0, icon: UserCheck },
     { label: "เข้าวันนี้", value: data?.checkIn ?? 0, icon: LogIn },
     { label: "ออกวันนี้", value: data?.checkOut ?? 0, icon: LogOut },
