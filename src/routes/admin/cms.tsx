@@ -118,6 +118,53 @@ function CmsPage() {
                     onChange={(e) => setValue(field.key, e.target.value)}
                   />
                 </div>
+              ) : field.key === "brand.logo_url" ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    {valueOf(field.key) ? (
+                      <img
+                        src={valueOf(field.key)}
+                        alt="โลโก้ระบบ"
+                        className="size-14 rounded-lg border bg-card object-contain p-1"
+                      />
+                    ) : (
+                      <div className="flex size-14 items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground">
+                        ไม่มี
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild size="sm" variant="secondary">
+                        <label className="cursor-pointer">
+                          <Upload className="size-4" /> อัปโหลดรูปโลโก้
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = "";
+                              if (file) void uploadLogo(file, (v) => setValue(field.key, v));
+                            }}
+                          />
+                        </label>
+                      </Button>
+                      {valueOf(field.key) && (
+                        <Button size="sm" variant="ghost" onClick={() => setValue(field.key, "")}>
+                          ลบโลโก้
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Input
+                    id={field.key}
+                    value={valueOf(field.key).startsWith("data:") ? "" : valueOf(field.key)}
+                    onChange={(e) => setValue(field.key, e.target.value)}
+                    placeholder="หรือวางลิงก์รูปโลโก้"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    อัปโหลดรูป PNG/JPG ระบบจะย่อขนาดให้อัตโนมัติ
+                  </p>
+                </div>
               ) : (
                 <Input
                   id={field.key}
