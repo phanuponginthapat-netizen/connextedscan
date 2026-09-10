@@ -95,7 +95,7 @@ export async function recordScan(input: RecordScanInput) {
     return {
       result: "denied" as const,
       message: "สัดส่วนใบหน้าไม่ตรงกับข้อมูลที่ลงทะเบียน",
-      speak: "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่",
+      speak: settings?.voice_denied_text ?? "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่",
       next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
   }
@@ -149,7 +149,7 @@ export async function recordScan(input: RecordScanInput) {
       return {
         result: "denied" as const,
         message: `นอกช่วงเวลาที่กำหนด (เข้า ${fmt(settings.checkin_start)}-${fmt(settings.checkin_end)} / ออก ${fmt(settings.checkout_start)}-${fmt(settings.checkout_end)})`,
-        speak: "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
+        speak: settings.voice_out_of_window_text ?? "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
         next_delay_seconds: settings.next_person_delay_seconds ?? 5,
       };
     }
@@ -210,12 +210,21 @@ export async function recordScan(input: RecordScanInput) {
       avatar_url: avatarUrl,
       snapshot_url: snapshotUrl,
       message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
-      speak: `สแกนซ้ำ ${displayName} บันทึกเวลาไปแล้ว`,
+      speak: (settings?.voice_duplicate_template ?? "สแกนซ้ำ {name} บันทึกเวลาไปแล้ว")
+        .replace("{name}", displayName)
+        .replace("{direction}", directionLabel),
       next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
   }
 
-  const late = direction === "in" && settings ? now > timeToMinutes(settings.late_after) : false;
+  const late =
+    direction === "in" && settings
+      ? now > timeToMinutes(settings.late_after) + (settings.late_grace_minutes ?? 0)
+      : false;
+  const earlyLeave =
+    direction === "out" && settings?.early_leave_before
+      ? now < timeToMinutes(settings.early_leave_before)
+      : false;
 
   const { data: inserted } = await supabaseAdmin
     .from("attendance_logs")
@@ -276,11 +285,14 @@ export async function recordScan(input: RecordScanInput) {
     avatar_url: avatarUrl,
     snapshot_url: snapshotUrl,
     late,
+    early_leave: earlyLeave,
     log: inserted,
     geometry_score: geometryScore,
     auto_enrolled: autoEnrolled,
-    message: `สแกนสำเร็จ: ${student.full_name} (${directionLabel})${late ? " • มาสาย" : ""}`,
-    speak: late ? `${speak} มาสายนะคะ` : speak,
+    message: `สแกนสำเร็จ: ${student.full_name} (${directionLabel})${late ? " • มาสาย" : ""}${
+      earlyLeave ? " • ออกก่อนเวลา" : ""
+    }`,
+    speak: late ? `${speak} ${settings?.voice_late_suffix ?? "มาสายนะคะ"}` : speak,
     next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
   };
 }
