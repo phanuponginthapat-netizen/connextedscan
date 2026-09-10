@@ -1,6 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { corsPreflight, jsonResponse } from "@/lib/kiosk-auth.server";
 
+const SIGNED_TTL_SECONDS = 60 * 60;
+// Signing a picture link costs a round-trip, and the kiosk asks for the same
+// pictures every few seconds, so the links are reused until they expire.
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+async function signedUrl(
+  storage: { createSignedUrl: (path: string, expiresIn: number) => Promise<{ data: { signedUrl: string } | null }> },
+  path: string | null | undefined,
+): Promise<string | null> {
+  if (!path) return null;
+  const now = Date.now();
+  const hit = signedUrlCache.get(path);
+  if (hit && hit.expiresAt > now) return hit.url;
+  const { data } = await storage.createSignedUrl(path, SIGNED_TTL_SECONDS);
+  if (!data?.signedUrl) return null;
+  if (signedUrlCache.size > 500) signedUrlCache.clear();
+  signedUrlCache.set(path, {
+    url: data.signedUrl,
+    expiresAt: now + (SIGNED_TTL_SECONDS - 300) * 1000,
+  });
+  return data.signedUrl;
+}
+
 /**
  * The shared "latest scans" list for every kiosk screen. Reading it from the
  * database means the list survives restarts of the program and is identical
@@ -56,23 +79,15 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
 
         const byId = new Map((people ?? []).map((p) => [p.id, p]));
 
+        const storage = supabaseAdmin.storage.from("faces");
+
         const items = await Promise.all(
           rows.map(async (row) => {
             const person = row.student_id ? byId.get(row.student_id) : undefined;
-            let avatarUrl: string | null = null;
-            let snapshotUrl: string | null = null;
-            if (person?.avatar_path) {
-              const { data } = await supabaseAdmin.storage
-                .from("faces")
-                .createSignedUrl(person.avatar_path, 60 * 60);
-              avatarUrl = data?.signedUrl ?? null;
-            }
-            if (row.snapshot_path) {
-              const { data } = await supabaseAdmin.storage
-                .from("faces")
-                .createSignedUrl(row.snapshot_path, 60 * 60);
-              snapshotUrl = data?.signedUrl ?? null;
-            }
+            const [avatarUrl, snapshotUrl] = await Promise.all([
+              signedUrl(storage, person?.avatar_path),
+              signedUrl(storage, row.snapshot_path),
+            ]);
             return {
               id: row.id,
               name: person?.full_name ?? "ไม่ทราบชื่อ",

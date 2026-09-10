@@ -68,7 +68,11 @@ function Dashboard() {
           .select("id", { count: "exact", head: true })
           .eq("is_active", true)
           .eq("person_type", "staff"),
-        supabase.from("student_faces").select("student_id").eq("status", "ready"),
+        supabase
+          .from("student_faces")
+          .select("student_id")
+          .eq("status", "ready")
+          .limit(5000),
         supabase
           .from("attendance_logs")
           .select(
@@ -90,7 +94,10 @@ function Dashboard() {
         rows,
       };
     },
-    refetchInterval: 15000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    staleTime: 15000,
+    placeholderData: (prev) => prev,
   });
 
   const rows = data?.rows ?? [];

@@ -277,12 +277,16 @@ function AttendancePage() {
         .gte("scanned_at", start.toISOString())
         .lte("scanned_at", end.toISOString())
         .neq("status", "duplicate")
-        .order("scanned_at", { ascending: false });
+        .order("scanned_at", { ascending: false })
+        // A safety cap so a very wide date range cannot freeze the page.
+        .limit(5000);
       if (personType !== "all") query = query.eq("students.person_type", personType);
       const { data, error } = await query;
       if (error) throw error;
       return (data ?? []) as unknown as LogRow[];
     },
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
   });
 
   const filtered = useMemo(() => {

@@ -67,6 +67,7 @@ function Kiosk() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const busyRef = useRef(false);
   const lastShotRef = useRef<string | null>(null);
+  const lastDurationRef = useRef(0);
   const [agentUrl, setAgentUrl] = useState("http://127.0.0.1:8899");
   const [showConfig, setShowConfig] = useState(false);
   const [status, setStatus] = useState<"idle" | "scanning" | "cooldown">("idle");
@@ -81,6 +82,7 @@ function Kiosk() {
     cached_images?: number;
     pending_uploads?: number;
     last_sync?: number | null;
+    stale?: boolean;
   } | null>(null);
 
   const [recent, setRecent] = useState<RecentScan[]>([]);
@@ -290,6 +292,7 @@ function Kiosk() {
           cached_images?: number;
           pending_uploads?: number;
           last_sync?: number | null;
+          stale?: boolean;
         };
         if (cancelled) return;
         setAgentOnline(!!data.ok);
@@ -334,11 +337,24 @@ function Kiosk() {
     if (camReady && agentOnline === true && voiceReady) setBooted(true);
   }, [booted, camReady, agentOnline, voiceOn, display.voice_enabled]);
 
+  // One reusable drawing surface: creating a canvas for every frame makes the
+  // kiosk PC work much harder than it needs to.
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const capture = useCallback((video: HTMLVideoElement, quality: number) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    const maxWidth = 640;
+    const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
+    const width = Math.round(video.videoWidth * scale);
+    const height = Math.round(video.videoHeight * scale);
+    let canvas = canvasRef.current;
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvasRef.current = canvas;
+    }
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    canvas.getContext("2d")?.drawImage(video, 0, 0, width, height);
     return canvas.toDataURL("image/jpeg", quality);
   }, []);
 
@@ -350,13 +366,15 @@ function Kiosk() {
     setStatus("scanning");
     setGuide("scanning");
     try {
-      const dataUrl = capture(video, 0.85);
+      const startedAt = performance.now();
+      const dataUrl = capture(video, 0.72);
       lastShotRef.current = dataUrl;
       const res = await fetch(`${agentUrl.replace(/\/$/, "")}/scan`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ image: dataUrl }),
       });
+      lastDurationRef.current = performance.now() - startedAt;
       const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
@@ -399,11 +417,23 @@ function Kiosk() {
     }
   }, [agentUrl, agentOnline, booted, capture, speak, loadRecent]);
 
+  // Pace the scanning to how fast this PC actually answers: a slow machine
+  // gets breathing room instead of piling up frames it cannot process.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!busyRef.current) scanOnce();
-    }, 1200);
-    return () => clearInterval(interval);
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      if (!busyRef.current) void scanOnce();
+      const last = lastDurationRef.current;
+      const wait = Math.min(2000, Math.max(500, last ? last * 0.5 : 900));
+      timer = setTimeout(tick, wait);
+    };
+    timer = setTimeout(tick, 500);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [scanOnce]);
 
   const tone =
@@ -457,6 +487,11 @@ function Kiosk() {
               <span className="text-muted-foreground">กำลังเชื่อมต่อโปรแกรม FaceGate…</span>
             )}
           </div>
+          {agentStats?.stale ? (
+            <div className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              ข้อมูลใบหน้ายังไม่อัปเดต กำลังเชื่อมต่อระบบใหม่
+            </div>
+          ) : null}
           {!voiceOn ? (
             <Button size="sm" onClick={enableVoice}>
               <Volume2 className="size-4" /> เปิดเสียง
