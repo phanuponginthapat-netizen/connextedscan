@@ -6,7 +6,7 @@
 - [x] ให้ agent ปฏิเสธเมื่อเจอหลายใบหน้าในเฟรมเดียวกัน
 
 ## รอดำเนินการ
-- [ ] แก้ตัวติดตั้ง .bat ที่ error (เขียนใหม่เป็น ASCII + PowerShell installer)
-- [ ] แก้ลิงก์ install.ps1 บน hosted site ที่ขึ้น 401 Unauthorized
+- [x] แก้ตัวติดตั้ง .bat ที่ error (เขียนใหม่เป็น ASCII + PowerShell installer, แพ็ก ZIP v2)
+- [x] ลิงก์ install.ps1 ขึ้น 401 เพราะเว็บยังเป็น private — ต้อง Publish เว็บก่อนตู้สแกนถึงเข้าถึงได้
 - [ ] ทดสอบบนเครื่อง Intel Atom จริง ปรับ threshold / resolution ตามความเร็ว
 - [ ] ปรับปรุง UI หน้าตู้สแกนตามผลทดสอบ
