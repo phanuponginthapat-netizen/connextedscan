@@ -58,9 +58,22 @@ export async function recordScan(input: RecordScanInput) {
     return {
       result: "denied" as const,
       message: "ไม่พบข้อมูลนักเรียน หรือถูกระงับการใช้งาน",
-      speak: "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
+      speak: settings?.voice_denied_text ?? "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
       next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
+  }
+
+  // Days the system is open for scanning (e.g. Mon–Fri).
+  if (settings?.block_non_work_days) {
+    const days = parseWorkDays(settings.work_days);
+    if (!days.includes(bangkokWeekday())) {
+      return {
+        result: "denied" as const,
+        message: "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
+        speak: settings.voice_out_of_window_text ?? "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
+        next_delay_seconds: settings.next_person_delay_seconds ?? 5,
+      };
+    }
   }
 
   const now = bangkokMinutes();
