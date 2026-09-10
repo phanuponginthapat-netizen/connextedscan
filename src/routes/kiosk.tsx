@@ -146,6 +146,7 @@ function Kiosk() {
         });
       }, 1000);
     } catch {
+      setAgentOnline(false);
       setGuide("idle");
       setStatus("idle");
       busyRef.current = false;
