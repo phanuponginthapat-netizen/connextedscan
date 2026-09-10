@@ -183,6 +183,23 @@ function Kiosk() {
         </p>
       </header>
 
+      {agentOnline === false && (
+        <div className="w-full max-w-2xl rounded-2xl border-2 border-destructive bg-destructive/10 p-4 text-center text-sm">
+          <p className="font-semibold text-destructive">ยังไม่ได้เชื่อมต่อโปรแกรมตรวจใบหน้าบนเครื่องนี้</p>
+          <p className="mt-1 text-muted-foreground">
+            หน้าจอนี้เป็นแค่กล้องกับหน้าจอแสดงผล การตรวจจับใบหน้าทำงานโดยโปรแกรมที่ติดตั้งบนตู้สแกน
+            กรุณาเปิดโปรแกรมนั้นก่อน แล้วหน้านี้จะเริ่มสแกนเองอัตโนมัติ ({agentUrl})
+          </p>
+        </div>
+      )}
+      {agentOnline === true && knownFaces === 0 && (
+        <div className="w-full max-w-2xl rounded-2xl border-2 border-accent bg-accent/10 p-4 text-center text-sm">
+          เชื่อมต่อโปรแกรมแล้ว แต่ยังไม่มีข้อมูลใบหน้าที่พร้อมใช้งาน กรุณาลงทะเบียนใบหน้าในหลังบ้านก่อน
+        </div>
+      )}
+
+
+
       <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border shadow-panel">
         <video
           ref={videoRef}
