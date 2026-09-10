@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bar,
@@ -25,10 +24,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  deleteAttendanceLog,
-  deleteAttendanceRange,
-} from "@/lib/attendance-admin.functions";
 import { useCms } from "@/lib/cms-client";
 import { personGroupLabel, personTypeLabel } from "@/components/people/people";
 import { StatCard, SortHeader, TablePager } from "@/components/reports/report-ui";
@@ -178,8 +173,6 @@ type SummarySort = "date" | "name" | "code" | "inAt" | "outAt" | "minutes";
 
 function AttendancePage() {
   const { t } = useCms();
-  const deleteAttendanceLogFn = useServerFn(deleteAttendanceLog);
-  const deleteAttendanceRangeFn = useServerFn(deleteAttendanceRange);
   const [from, setFrom] = useState(todayStr());
   const [to, setTo] = useState(todayStr());
   const [personType, setPersonType] = useState("all");
@@ -224,15 +217,25 @@ function AttendancePage() {
     await queryClient.invalidateQueries({ queryKey: ["attendance"] });
   }
 
+  async function requestDelete(payload: { mode: "one"; id: string } | { mode: "range"; from: string; to: string }) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error("กรุณาเข้าสู่ระบบใหม่");
+    const response = await fetch("/api/public/admin/attendance-delete", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    const result = (await response.json()) as { ok: boolean; error?: string; deleted?: number };
+    if (!response.ok || !result.ok) throw new Error(result.error ?? "ลบไม่สำเร็จ");
+    return result;
+  }
+
   async function onDeleteOne() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await deleteAttendanceLogFn({ data: { id: deleteTarget.id } });
-      if (!res.ok) {
-        toast.error(res.error ?? "ลบไม่สำเร็จ");
-        return;
-      }
+      await requestDelete({ mode: "one", id: deleteTarget.id });
       toast.success("ลบรายการสแกนแล้ว");
       setDeleteTarget(null);
       await refreshRows();
@@ -246,12 +249,8 @@ function AttendancePage() {
   async function onDeleteRange() {
     setDeleting(true);
     try {
-      const result = await deleteAttendanceRangeFn({ data: { from, to } });
-      if (!result.ok) {
-        toast.error(result.error ?? "ลบไม่สำเร็จ");
-        return;
-      }
-      toast.success(`ลบประวัติแล้ว ${result.deleted.toLocaleString("th-TH")} รายการ`);
+      const result = await requestDelete({ mode: "range", from, to });
+      toast.success(`ลบประวัติแล้ว ${(result.deleted ?? 0).toLocaleString("th-TH")} รายการ`);
       setConfirmClearRange(false);
       await refreshRows();
     } catch (e) {
