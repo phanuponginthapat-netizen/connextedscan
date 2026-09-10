@@ -446,11 +446,13 @@ def health():
         cached_images = len(os.listdir(IMAGE_DIR))
     except Exception:  # noqa: BLE001
         cached_images = 0
+    stale = last_sync is None or (time.time() - float(last_sync)) > SYNC_SECONDS * 3
     return {
         "ok": True,
         "known_faces": known_faces,
         "students": students,
         "last_sync": last_sync,
+        "stale": stale,
         "cached_images": cached_images,
         "pending_uploads": outbox_count(),
         "cache_dir": CACHE_DIR,
