@@ -16,12 +16,14 @@ import {
   Settings2,
   Volume2,
   CalendarDays,
+  Megaphone,
   ShieldCheck,
   Monitor,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TimeInput24 } from "@/components/ui/time-input-24";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
