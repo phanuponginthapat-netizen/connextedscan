@@ -341,7 +341,7 @@ function Kiosk() {
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, capture, scanViaWeb, speak]);
+  }, [agentUrl, agentOnline, capture, scanViaWeb, speak, loadRecent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -471,7 +471,7 @@ function Kiosk() {
           <div className="mt-3 max-h-[70vh] space-y-2 overflow-y-auto pr-1">
             {recent.length === 0 && (
               <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                ยังไม่มีการสแกนในรอบนี้
+                ยังไม่มีรายการสแกน
               </p>
             )}
             {recent.map((item) => (
