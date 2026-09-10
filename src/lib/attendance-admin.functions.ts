@@ -2,14 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Throws unless the signed-in user holds the admin role. */
-async function assertAdmin(supabase: any, userId: string) {
-  const { data, error } = await supabase.rpc("has_role", {
-    _user_id: userId,
-    _role: "admin",
-  });
-  if (error || data !== true) {
-    throw new Error("เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่ลบประวัติการสแกนได้");
+const NOT_ADMIN = "เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่ลบประวัติการสแกนได้";
+
+/** Returns true when the signed-in user holds the admin role. */
+async function isAdmin(supabase: any, userId: string) {
+  try {
+    const { data, error } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    return !error && data === true;
+  } catch {
+    return false;
   }
 }
 
@@ -20,7 +24,9 @@ export const deleteAttendanceLog = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    if (!(await isAdmin(context.supabase, context.userId))) {
+      return { ok: false as const, error: NOT_ADMIN };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: row, error: readError } = await supabaseAdmin
@@ -28,16 +34,16 @@ export const deleteAttendanceLog = createServerFn({ method: "POST" })
       .select("id, snapshot_path")
       .eq("id", data.id)
       .maybeSingle();
-    if (readError) throw new Error(readError.message);
-    if (!row) throw new Error("ไม่พบรายการที่ต้องการลบ");
+    if (readError) return { ok: false as const, error: readError.message };
+    if (!row) return { ok: false as const, error: "ไม่พบรายการที่ต้องการลบ" };
 
     const { error } = await supabaseAdmin.from("attendance_logs").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false as const, error: error.message };
 
     if (row.snapshot_path) {
       await supabaseAdmin.storage.from("snapshots").remove([row.snapshot_path]);
     }
-    return { ok: true };
+    return { ok: true as const };
   });
 
 /** Deletes every scan record inside a date range (inclusive, local dates). */
@@ -52,7 +58,9 @@ export const deleteAttendanceRange = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    if (!(await isAdmin(context.supabase, context.userId))) {
+      return { ok: false as const, error: NOT_ADMIN, deleted: 0 };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const start = new Date(`${data.from}T00:00:00`).toISOString();
@@ -63,18 +71,18 @@ export const deleteAttendanceRange = createServerFn({ method: "POST" })
       .select("id, snapshot_path")
       .gte("scanned_at", start)
       .lte("scanned_at", end);
-    if (readError) throw new Error(readError.message);
-    if (!rows?.length) return { deleted: 0 };
+    if (readError) return { ok: false as const, error: readError.message, deleted: 0 };
+    if (!rows?.length) return { ok: true as const, deleted: 0 };
 
     const { error } = await supabaseAdmin
       .from("attendance_logs")
       .delete()
       .gte("scanned_at", start)
       .lte("scanned_at", end);
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false as const, error: error.message, deleted: 0 };
 
     const paths = rows.map((r) => r.snapshot_path).filter((p): p is string => Boolean(p));
     if (paths.length) await supabaseAdmin.storage.from("snapshots").remove(paths);
 
-    return { deleted: rows.length };
+    return { ok: true as const, deleted: rows.length };
   });
