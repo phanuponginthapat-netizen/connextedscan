@@ -183,6 +183,77 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">ความแม่นยำและรูปถ่ายตอนสแกน</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label>น้ำหนักสัดส่วนใบหน้า</Label>
+            <Input
+              type="number"
+              step={0.05}
+              min={0}
+              max={1}
+              value={Number(form.geometry_weight)}
+              onChange={(e) => set({ geometry_weight: Number(e.target.value) })}
+            />
+            <p className="text-xs text-muted-foreground">
+              ให้ระบบดูระยะห่างตา-จมูก-ปาก ประกอบด้วย (0 = ไม่ใช้, แนะนำ 0.25)
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>สัดส่วนใบหน้าขั้นต่ำ</Label>
+            <Input
+              type="number"
+              step={0.05}
+              min={0}
+              max={1}
+              value={Number(form.geometry_min_score)}
+              onChange={(e) => set({ geometry_min_score: Number(e.target.value) })}
+            />
+            <p className="text-xs text-muted-foreground">
+              ต่ำกว่านี้จะไม่ผ่าน แม้หน้าจะคล้ายกัน
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>เพิ่มรูปอัตโนมัติสูงสุด (รูป/คน)</Label>
+            <Input
+              type="number"
+              step={1}
+              min={0}
+              value={Number(form.auto_enroll_max_faces)}
+              onChange={(e) => set({ auto_enroll_max_faces: Number(e.target.value) })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>ความมั่นใจขั้นต่ำก่อนเก็บเข้าชุดลงทะเบียน</Label>
+            <Input
+              type="number"
+              step={0.01}
+              min={0}
+              max={1}
+              value={Number(form.auto_enroll_min_confidence)}
+              onChange={(e) => set({ auto_enroll_min_confidence: Number(e.target.value) })}
+            />
+          </div>
+          <div className="flex items-center gap-3 sm:col-span-3">
+            <Switch
+              checked={form.save_snapshots}
+              onCheckedChange={(v) => set({ save_snapshots: v })}
+            />
+            <span className="text-sm">เก็บรูปถ่ายทุกครั้งที่สแกน (ดูย้อนหลังในหน้าประวัติ)</span>
+          </div>
+          <div className="flex items-center gap-3 sm:col-span-3">
+            <Switch checked={form.auto_enroll} onCheckedChange={(v) => set({ auto_enroll: v })} />
+            <span className="text-sm">
+              นำรูปที่สแกนผ่านแบบมั่นใจสูงไปเพิ่มเป็นข้อมูลลงทะเบียนอัตโนมัติ
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
         บันทึกการตั้งค่า
       </Button>

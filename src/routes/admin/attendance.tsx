@@ -45,7 +45,9 @@ function AttendancePage() {
       const end = new Date(`${date}T23:59:59.999`);
       let query = supabase
         .from("attendance_logs")
-        .select("id, direction, status, confidence, device_name, scanned_at, students(full_name, student_code, class_room)")
+        .select(
+          "id, direction, status, confidence, geometry_score, snapshot_path, device_name, scanned_at, students(full_name, student_code, class_room)",
+        )
         .gte("scanned_at", start.toISOString())
         .lte("scanned_at", end.toISOString())
         .order("scanned_at", { ascending: false });
