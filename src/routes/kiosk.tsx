@@ -91,7 +91,7 @@ function Kiosk() {
         busyRef.current = false;
         return;
       }
-      setResult(data);
+      setResult(data as ScanResult);
       if (data.speak) speak(data.speak);
       const delay = data.next_delay_seconds ?? 3;
       setStatus("cooldown");
