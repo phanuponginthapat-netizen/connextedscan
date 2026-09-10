@@ -52,17 +52,23 @@ function AuthPage() {
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/admin`,
-        data: { full_name: fullName },
-      },
-    });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("สร้างบัญชีแล้ว ถ้าระบบขอยืนยันอีเมล กรุณาตรวจกล่องจดหมาย");
+    try {
+      const res = await createAccount({ data: { email, password, fullName } });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) toast.error(error.message);
+      else {
+        toast.success("สร้างบัญชีแล้ว");
+        navigate({ to: "/admin" });
+      }
+    } catch {
+      toast.error("สร้างบัญชีไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
