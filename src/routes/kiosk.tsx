@@ -26,6 +26,7 @@ type ScanResult = {
   next_delay_seconds?: number;
   student?: { full_name: string; class_room: string | null; student_code: string } | null;
   direction?: "in" | "out";
+  avatar_url?: string | null;
 };
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
