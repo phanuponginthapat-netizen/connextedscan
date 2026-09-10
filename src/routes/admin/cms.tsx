@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, RotateCcw, Save } from "lucide-react";
+import { Loader2, RotateCcw, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,23 @@ export const Route = createFileRoute("/admin/cms")({
   }),
   component: CmsPage,
 });
+
+/** Shrink an uploaded logo and keep it inline so every screen can show it. */
+async function uploadLogo(file: File, apply: (value: string) => void) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const max = 320;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    apply(canvas.toDataURL("image/png"));
+    toast.success("อัปโหลดโลโก้แล้ว กด “บันทึก” เพื่อยืนยัน");
+  } catch {
+    toast.error("อ่านไฟล์รูปไม่สำเร็จ");
+  }
+}
 
 function CmsPage() {
   const { map } = useCms();
@@ -117,6 +134,53 @@ function CmsPage() {
                     value={valueOf(field.key)}
                     onChange={(e) => setValue(field.key, e.target.value)}
                   />
+                </div>
+              ) : field.key === "brand.logo_url" ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    {valueOf(field.key) ? (
+                      <img
+                        src={valueOf(field.key)}
+                        alt="โลโก้ระบบ"
+                        className="size-14 rounded-lg border bg-card object-contain p-1"
+                      />
+                    ) : (
+                      <div className="flex size-14 items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground">
+                        ไม่มี
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild size="sm" variant="secondary">
+                        <label className="cursor-pointer">
+                          <Upload className="size-4" /> อัปโหลดรูปโลโก้
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = "";
+                              if (file) void uploadLogo(file, (v) => setValue(field.key, v));
+                            }}
+                          />
+                        </label>
+                      </Button>
+                      {valueOf(field.key) && (
+                        <Button size="sm" variant="ghost" onClick={() => setValue(field.key, "")}>
+                          ลบโลโก้
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Input
+                    id={field.key}
+                    value={valueOf(field.key).startsWith("data:") ? "" : valueOf(field.key)}
+                    onChange={(e) => setValue(field.key, e.target.value)}
+                    placeholder="หรือวางลิงก์รูปโลโก้"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    อัปโหลดรูป PNG/JPG ระบบจะย่อขนาดให้อัตโนมัติ
+                  </p>
                 </div>
               ) : (
                 <Input

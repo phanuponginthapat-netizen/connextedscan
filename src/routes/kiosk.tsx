@@ -25,7 +25,14 @@ type ScanResult = {
   message: string;
   speak?: string;
   next_delay_seconds?: number;
-  student?: { full_name: string; class_room: string | null; student_code: string } | null;
+  student?: {
+    full_name: string;
+    class_room: string | null;
+    student_code: string;
+    person_type?: string | null;
+    department?: string | null;
+    position?: string | null;
+  } | null;
   direction?: "in" | "out";
   avatar_url?: string | null;
   snapshot_url?: string | null;
@@ -35,11 +42,21 @@ type RecentScan = {
   id: string;
   name: string;
   detail: string;
+  role: string;
   direction: "in" | "out";
   time: string;
   avatarUrl: string | null;
   snapshotUrl: string | null;
 };
+
+/** ตำแหน่ง/ชั้นเรียนของผู้สแกน สำหรับแสดงบนหน้าจอ */
+function personRole(s: NonNullable<ScanResult["student"]>) {
+  if (s.person_type === "staff") {
+    const parts = [s.department, s.position].filter(Boolean).join(" / ");
+    return `บุคลากร${parts ? ` • ${parts}` : ""}`;
+  }
+  return `นักเรียน${s.class_room ? ` • ชั้น ${s.class_room}` : ""}`;
+}
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
 
@@ -159,6 +176,7 @@ function Kiosk() {
           id: string;
           name: string;
           detail: string;
+          role?: string;
           direction: "in" | "out";
           scanned_at: string;
           avatar_url: string | null;
@@ -170,6 +188,7 @@ function Kiosk() {
           id: item.id,
           name: item.name,
           detail: item.detail,
+          role: item.role ?? "",
           direction: item.direction,
           time: new Date(item.scanned_at).toLocaleTimeString("th-TH", {
             hour: "2-digit",
@@ -381,119 +400,144 @@ function Kiosk() {
         ? "border-muted-foreground text-muted-foreground"
         : "border-primary text-primary";
 
+  const logo = t("brand.logo_url");
+
   return (
-    <main className="min-h-screen bg-background p-4 lg:p-6">
-      <header className="text-center">
-        <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-          {t("brand.school_name")}
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight">{t("kiosk.title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("kiosk.subtitle")}</p>
+    <main className="flex h-screen w-screen flex-col overflow-hidden bg-background p-3 lg:p-4">
+      {/* Top bar: brand + live status + controls, all on one line */}
+      <header className="flex shrink-0 flex-wrap items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {logo ? (
+            <img src={logo} alt={t("brand.name")} className="size-11 rounded-xl object-contain" />
+          ) : null}
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+              {t("brand.school_name")}
+            </p>
+            <h1 className="truncate font-display text-xl font-bold tracking-tight lg:text-2xl">
+              {t("kiosk.title")}
+            </h1>
+          </div>
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs">
+            {agentOnline === true ? (
+              <span className="text-primary">
+                โหมดโปรแกรมบนเครื่อง
+                {agentStats
+                  ? ` • ใบหน้า ${agentStats.known_faces ?? 0}${
+                      agentStats.pending_uploads ? ` • รอส่ง ${agentStats.pending_uploads}` : ""
+                    }`
+                  : ""}
+              </span>
+            ) : webError ? (
+              <span className="text-destructive">{webError}</span>
+            ) : webReady ? (
+              <span className="text-primary">โหมดเว็บ • พร้อมสแกน</span>
+            ) : (
+              <span className="text-muted-foreground">โหมดเว็บ • กำลังเตรียม…</span>
+            )}
+          </div>
+          {!voiceOn ? (
+            <Button size="sm" onClick={enableVoice}>
+              <Volume2 className="size-4" /> เปิดเสียง
+            </Button>
+          ) : (
+            <span className="flex items-center gap-1 rounded-full border border-primary/40 px-3 py-1.5 text-xs text-primary">
+              <Volume2 className="size-3.5" /> เสียงพร้อม
+            </span>
+          )}
+          <Link to="/admin">
+            <Button variant="secondary" size="sm">
+              หลังบ้าน
+            </Button>
+          </Link>
+          <Button variant="ghost" size="sm" onClick={() => setShowConfig((v) => !v)}>
+            <Settings2 className="size-4" />
+          </Button>
+        </div>
       </header>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs">
-          {agentOnline === true ? (
-            <span className="text-primary">
-              โหมดโปรแกรมบนเครื่อง (แม่นยำสูง)
-              {agentStats
-                ? ` • ใบหน้าในเครื่อง ${agentStats.known_faces ?? 0}${
-                    agentStats.pending_uploads ? ` • รอส่ง ${agentStats.pending_uploads}` : ""
-                  }`
-                : ""}
-            </span>
-
-          ) : webError ? (
-            <span className="text-destructive">{webError}</span>
-          ) : webReady ? (
-            <span className="text-primary">โหมดเว็บ • พร้อมสแกน</span>
-          ) : (
-            <span className="text-muted-foreground">โหมดเว็บ • กำลังเตรียมตัวตรวจใบหน้า…</span>
-          )}
-        </div>
-        {!voiceOn && (
-          <Button size="sm" onClick={enableVoice}>
-            <Volume2 className="size-4" /> แตะเพื่อเปิดเสียง
-          </Button>
-        )}
-        {voiceOn && (
-          <span className="flex items-center gap-1 rounded-full border border-primary/40 px-3 py-1.5 text-xs text-primary">
-            <Volume2 className="size-3.5" /> เสียงพร้อมใช้งาน
-          </span>
-        )}
-      </div>
-
       {agentOnline === true && knownFaces === 0 && (
-        <div className="mx-auto mt-4 w-full max-w-2xl rounded-2xl border-2 border-accent bg-accent/10 p-4 text-center text-sm">
+        <div className="mt-2 shrink-0 rounded-xl border-2 border-accent bg-accent/10 px-4 py-2 text-center text-sm">
           เชื่อมต่อโปรแกรมแล้ว แต่ยังไม่มีข้อมูลใบหน้าที่พร้อมใช้งาน กรุณาลงทะเบียนใบหน้าในหลังบ้านก่อน
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        {/* Left: live camera + result */}
-        <div className="space-y-4">
-          <div className="relative w-full overflow-hidden rounded-3xl border shadow-panel">
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="aspect-video w-full scale-x-[-1] bg-muted object-cover"
-            />
+      {showConfig && (
+        <div className="mt-2 shrink-0 space-y-2 rounded-xl border p-3">
+          <Label>ที่อยู่โปรแกรมบนเครื่องนี้</Label>
+          <Input
+            value={agentUrl}
+            onChange={(e) => {
+              setAgentUrl(e.target.value);
+              localStorage.setItem(AGENT_KEY, e.target.value);
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            ค่าเริ่มต้นคือ http://127.0.0.1:8899 ตามโปรแกรมที่ติดตั้งบนตู้สแกน
+          </p>
+        </div>
+      )}
 
-            {/* Single-person face guide overlay */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <div
-                className={`flex aspect-[3/4] w-1/2 max-w-[260px] items-center justify-center rounded-[50%] border-4 border-dashed ${guideColor} transition-colors duration-300`}
-              >
-                <User className={`size-16 opacity-40 ${guide === "scanning" ? "animate-pulse" : ""}`} />
-              </div>
+      {/* Body fills the rest of the screen — no page scrolling */}
+      <div className="mt-3 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="relative min-h-0 overflow-hidden rounded-3xl border shadow-panel">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="h-full w-full scale-x-[-1] bg-muted object-cover"
+          />
+
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <div
+              className={`flex aspect-[3/4] h-[70%] items-center justify-center rounded-[50%] border-4 border-dashed ${guideColor} transition-colors duration-300`}
+            >
+              <User className={`size-16 opacity-40 ${guide === "scanning" ? "animate-pulse" : ""}`} />
             </div>
+          </div>
 
-            {/* Guide status badge */}
-            <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow">
-              {agentOnline === false && !webReady && !webError && (
-                <span className="text-muted-foreground">กำลังเตรียมตัวตรวจใบหน้า…</span>
-              )}
-              {(agentOnline !== false || webReady) && (
-                <>
-                  {status === "scanning" && !result && (
-                    <>
-                      <Loader2 className="size-4 animate-spin text-primary" /> {t("kiosk.guide_scanning")}
-                    </>
-                  )}
-                  {guide === "no_face" && status !== "scanning" && !result && (
-                    <span className="text-muted-foreground">{t("kiosk.guide_no_face")}</span>
-                  )}
-                  {guide === "multiple_faces" && !result && (
-                    <span className="text-destructive">{t("kiosk.guide_multiple")}</span>
-                  )}
-                  {guide === "idle" && !result && (
-                    <span className="text-primary">{t("kiosk.guide_idle")}</span>
-                  )}
-                </>
-              )}
-            </div>
-
-            {camError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/90 p-6 text-center text-sm text-destructive">
-                {camError}
-              </div>
+          <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow">
+            {agentOnline === false && !webReady && !webError && (
+              <span className="text-muted-foreground">กำลังเตรียมตัวตรวจใบหน้า…</span>
+            )}
+            {(agentOnline !== false || webReady) && (
+              <>
+                {status === "scanning" && !result && (
+                  <>
+                    <Loader2 className="size-4 animate-spin text-primary" /> {t("kiosk.guide_scanning")}
+                  </>
+                )}
+                {guide === "no_face" && status !== "scanning" && !result && (
+                  <span className="text-muted-foreground">{t("kiosk.guide_no_face")}</span>
+                )}
+                {guide === "multiple_faces" && !result && (
+                  <span className="text-destructive">{t("kiosk.guide_multiple")}</span>
+                )}
+                {guide === "idle" && !result && (
+                  <span className="text-primary">{t("kiosk.guide_idle")}</span>
+                )}
+              </>
             )}
           </div>
 
-          <div className="w-full rounded-2xl border-2 border-dashed p-6 text-center">
-            <p className="text-muted-foreground">{t("kiosk.next_person")}</p>
-          </div>
+          {camError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/90 p-6 text-center text-sm text-destructive">
+              {camError}
+            </div>
+          )}
         </div>
 
         {/* Right: people who already scanned */}
-        <aside className="rounded-3xl border bg-card p-4 shadow-panel">
-          <div className="flex items-baseline justify-between">
+        <aside className="flex min-h-0 flex-col rounded-3xl border bg-card p-4 shadow-panel">
+          <div className="flex shrink-0 items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">สแกนเข้าล่าสุด</h2>
             <span className="text-xs text-muted-foreground">{recent.length} รายการ</span>
           </div>
-          <div className="mt-3 max-h-[70vh] space-y-2 overflow-y-auto pr-1">
+          <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {recent.length === 0 && (
               <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
                 ยังไม่มีรายการสแกน
@@ -515,6 +559,9 @@ function Kiosk() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{item.name}</p>
+                  {item.role && (
+                    <p className="truncate text-[11px] font-medium text-primary">{item.role}</p>
+                  )}
                   <p className="truncate text-xs text-muted-foreground">{item.detail || "-"}</p>
                 </div>
                 <div className="text-right">
@@ -532,45 +579,6 @@ function Kiosk() {
           </div>
         </aside>
       </div>
-
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-        <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
-          ย้อนกลับ
-        </Button>
-        <Link to="/admin">
-          <Button variant="secondary" size="sm">
-            ไปหลังบ้าน
-          </Button>
-        </Link>
-        <Button variant="ghost" size="sm" onClick={() => setShowConfig((v) => !v)}>
-          <Settings2 className="size-4" /> ตั้งค่าเครื่อง
-        </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => {
-            if (!confirm("ต้องการออกจากโปรแกรมใช่หรือไม่")) return;
-            window.close();
-          }}
-        >
-          ออกจากโปรแกรม
-        </Button>
-      </div>
-      {showConfig && (
-        <div className="mx-auto mt-4 w-full max-w-sm space-y-2 rounded-xl border p-4">
-          <Label>ที่อยู่โปรแกรมบนเครื่องนี้</Label>
-          <Input
-            value={agentUrl}
-            onChange={(e) => {
-              setAgentUrl(e.target.value);
-              localStorage.setItem(AGENT_KEY, e.target.value);
-            }}
-          />
-          <p className="text-xs text-muted-foreground">
-            ค่าเริ่มต้นคือ http://127.0.0.1:8899 ตามโปรแกรมที่ติดตั้งบนตู้สแกน
-          </p>
-        </div>
-      )}
 
       {/* Scan result popup */}
       {result && (
@@ -619,9 +627,12 @@ function Kiosk() {
               <p className="text-2xl font-bold">{result.message}</p>
             </div>
             {result.student && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {result.student.student_code} • {result.student.class_room ?? "-"}
-              </p>
+              <>
+                <p className="mt-2 text-base font-semibold text-primary">
+                  {personRole(result.student)}
+                </p>
+                <p className="text-sm text-muted-foreground">รหัส {result.student.student_code}</p>
+              </>
             )}
             <p className="mt-4 text-sm text-muted-foreground">คนถัดไปในอีก {countdown} วินาที</p>
           </div>

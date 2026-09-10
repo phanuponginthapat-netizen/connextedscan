@@ -26,7 +26,9 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
         const { data: people } = ids.length
           ? await supabaseAdmin
               .from("students")
-              .select("id, full_name, nickname, student_code, class_room, avatar_path")
+              .select(
+                "id, full_name, nickname, student_code, class_room, avatar_path, person_type, department, position",
+              )
               .in("id", ids)
           : { data: [] as never[] };
 
@@ -52,7 +54,15 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
             return {
               id: row.id,
               name: person?.full_name ?? "ไม่ทราบชื่อ",
-              detail: [person?.student_code, person?.class_room].filter(Boolean).join(" • "),
+              detail: [
+                person?.student_code,
+                person?.person_type === "staff"
+                  ? [person?.department, person?.position].filter(Boolean).join(" / ")
+                  : person?.class_room,
+              ]
+                .filter(Boolean)
+                .join(" • "),
+              role: person?.person_type === "staff" ? "บุคลากร" : "นักเรียน",
               direction: row.direction === "out" ? "out" : "in",
               scanned_at: row.scanned_at,
               avatar_url: avatarUrl,
