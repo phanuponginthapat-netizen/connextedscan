@@ -286,7 +286,7 @@ def scan(req: ScanRequest):
         settings = dict(state["settings"])
 
     threshold = float(settings.get("match_threshold") or 0.45)
-    delay = int(settings.get("next_person_delay_seconds") or 3)
+    delay = int(settings.get("next_person_delay_seconds") or 5)
 
     if settings.get("require_liveness") and not looks_like_a_real_person(arr, face):
         return {
