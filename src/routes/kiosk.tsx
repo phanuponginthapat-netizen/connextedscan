@@ -250,6 +250,25 @@ function Kiosk() {
     return () => window.speechSynthesis?.removeEventListener?.("voiceschanged", onVoices);
   }, []);
 
+  // Inside the FaceGate program sound may start on its own, so turn the voice
+  // on automatically instead of asking the person to tap a button. On a plain
+  // browser the first touch anywhere on the screen turns it on.
+  useEffect(() => {
+    if (typeof window === "undefined" || voiceOn) return;
+    const desktop = Boolean((window as unknown as { electronAPI?: { isFaceGate?: boolean } }).electronAPI?.isFaceGate);
+    if (desktop) {
+      const timer = setTimeout(() => enableVoice(), 600);
+      return () => clearTimeout(timer);
+    }
+    const onGesture = () => enableVoice();
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("keydown", onGesture, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
+    };
+  }, [voiceOn, enableVoice]);
+
   // Is the face-recognition program on this PC reachable?
   useEffect(() => {
     let cancelled = false;
