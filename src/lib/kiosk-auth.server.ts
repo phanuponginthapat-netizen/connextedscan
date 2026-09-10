@@ -52,11 +52,11 @@ export function bangkokMinutes(date = new Date()): number {
     minute: "2-digit",
     hour12: false,
   }).format(date);
-  const [h, m] = parts.split(":").map(Number);
+  const [h = 0, m = 0] = parts.split(":").map(Number);
   return h * 60 + m;
 }
 
 export function timeToMinutes(value: string): number {
-  const [h, m] = value.split(":").map(Number);
+  const [h = 0, m = 0] = value.split(":").map(Number);
   return h * 60 + (m || 0);
 }

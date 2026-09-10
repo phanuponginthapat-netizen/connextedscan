@@ -85,13 +85,13 @@ function Kiosk() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ image: dataUrl }),
       });
-      const data = (await res.json()) as ScanResult & { result?: string };
+      const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       if (!data.result || data.result === "no_face") {
         setStatus("idle");
         busyRef.current = false;
         return;
       }
-      setResult(data);
+      setResult(data as unknown as ScanResult);
       if (data.speak) speak(data.speak);
       const delay = data.next_delay_seconds ?? 3;
       setStatus("cooldown");

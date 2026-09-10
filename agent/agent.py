@@ -50,6 +50,7 @@ face_app.prepare(ctx_id=-1, det_size=(320, 320))
 state: dict[str, Any] = {
     "matrix": np.zeros((0, 512), dtype=np.float32),  # normalised embeddings
     "owners": [],  # student_id per row
+    "geoms": [],  # landmark geometry per row
     "students": {},
     "settings": {},
     "last_sync": None,
@@ -60,6 +61,79 @@ lock = threading.Lock()
 def normalise(vec: np.ndarray) -> np.ndarray:
     norm = np.linalg.norm(vec)
     return vec / norm if norm else vec
+
+
+# --- Facial geometry -------------------------------------------------------
+# ArcFace gives 5 landmarks: left eye, right eye, nose, left mouth, right mouth.
+# We turn them into scale-invariant ratios (every distance divided by the
+# eye-to-eye distance), which describe the individual layout of the face:
+# how far the nose sits from each eye, mouth width, nose-to-mouth distance and
+# so on. This is used as a second opinion on top of the ArcFace embedding.
+GEOMETRY_KEYS = [
+    "nose_left_eye",
+    "nose_right_eye",
+    "nose_eye_mid",
+    "mouth_width",
+    "nose_mouth_mid",
+    "eye_mid_mouth_mid",
+    "left_eye_mouth_left",
+    "right_eye_mouth_right",
+    "face_width",
+    "face_height",
+    "eye_asymmetry",
+]
+
+
+def geometry_features(face) -> dict[str, float] | None:
+    kps = getattr(face, "kps", None)
+    if kps is None or len(kps) < 5:
+        return None
+    pts = np.array(kps, dtype=np.float32)
+    left_eye, right_eye, nose, mouth_l, mouth_r = pts[0], pts[1], pts[2], pts[3], pts[4]
+    eye_dist = float(np.linalg.norm(right_eye - left_eye))
+    if eye_dist < 1e-3:
+        return None
+
+    eye_mid = (left_eye + right_eye) / 2.0
+    mouth_mid = (mouth_l + mouth_r) / 2.0
+    x1, y1, x2, y2 = [float(v) for v in face.bbox]
+
+    d = lambda a, b: float(np.linalg.norm(a - b)) / eye_dist  # noqa: E731
+    nose_l = d(nose, left_eye)
+    nose_r = d(nose, right_eye)
+
+    feats = {
+        "nose_left_eye": nose_l,
+        "nose_right_eye": nose_r,
+        "nose_eye_mid": d(nose, eye_mid),
+        "mouth_width": d(mouth_l, mouth_r),
+        "nose_mouth_mid": d(nose, mouth_mid),
+        "eye_mid_mouth_mid": d(eye_mid, mouth_mid),
+        "left_eye_mouth_left": d(left_eye, mouth_l),
+        "right_eye_mouth_right": d(right_eye, mouth_r),
+        "face_width": (x2 - x1) / eye_dist,
+        "face_height": (y2 - y1) / eye_dist,
+        "eye_asymmetry": abs(nose_l - nose_r) / max(nose_l + nose_r, 1e-3),
+    }
+    return {k: round(float(v), 5) for k, v in feats.items()}
+
+
+def geometry_similarity(a: dict | None, b: dict | None) -> float | None:
+    """1.0 = identical proportions. Relative difference, averaged."""
+    if not a or not b:
+        return None
+    diffs = []
+    for key in GEOMETRY_KEYS:
+        av, bv = a.get(key), b.get(key)
+        if av is None or bv is None:
+            continue
+        denom = abs(av) + abs(bv)
+        if denom < 1e-6:
+            continue
+        diffs.append(abs(av - bv) / denom)
+    if not diffs:
+        return None
+    return float(max(0.0, 1.0 - 2.0 * (sum(diffs) / len(diffs))))
 
 
 def embed_image(bgr: np.ndarray):
@@ -87,21 +161,38 @@ def looks_like_a_real_person(bgr: np.ndarray, face) -> bool:
     return sharpness > 45 and colour_spread > 18
 
 
+def crop_face_jpeg(bgr: np.ndarray, face, margin: float = 0.35) -> str | None:
+    """JPEG (base64) of the scanned face, kept as evidence in the cloud."""
+    x1, y1, x2, y2 = [int(v) for v in face.bbox]
+    w, h = x2 - x1, y2 - y1
+    mx, my = int(w * margin), int(h * margin)
+    crop = bgr[max(y1 - my, 0): y2 + my, max(x1 - mx, 0): x2 + mx]
+    if crop.size == 0:
+        return None
+    if crop.shape[0] > 480:
+        scale = 480 / crop.shape[0]
+        crop = cv2.resize(crop, (int(crop.shape[1] * scale), 480))
+    ok, buf = cv2.imencode(".jpg", crop, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    return base64.b64encode(buf).decode() if ok else None
+
+
 def sync_once() -> None:
     res = requests.post(f"{CLOUD_URL}/api/public/kiosk/sync", headers=HEADERS, json={}, timeout=30)
     res.raise_for_status()
     data = res.json()
 
-    rows, owners = [], []
+    rows, owners, geoms = [], [], []
     for item in data.get("embeddings", []):
         vec = np.array(item["embedding"], dtype=np.float32)
         if vec.size:
             rows.append(normalise(vec))
             owners.append(item["student_id"])
+            geoms.append(item.get("geometry") or None)
 
     with lock:
         state["matrix"] = np.vstack(rows) if rows else np.zeros((0, 512), dtype=np.float32)
         state["owners"] = owners
+        state["geoms"] = geoms
         state["students"] = {s["id"]: s for s in data.get("students", [])}
         state["settings"] = data.get("settings") or {}
         state["last_sync"] = time.time()
@@ -126,6 +217,7 @@ def process_pending(pending: list[dict]) -> None:
                 {
                     "face_id": item["id"],
                     "embedding": normalise(face.normed_embedding).tolist(),
+                    "geometry": geometry_features(face),
                     "quality": float(getattr(face, "det_score", 0.0)),
                 }
             )
@@ -179,6 +271,7 @@ def scan(req: ScanRequest):
     with lock:
         matrix = state["matrix"]
         owners = list(state["owners"])
+        geoms = list(state["geoms"])
         settings = dict(state["settings"])
 
     threshold = float(settings.get("match_threshold") or 0.45)
@@ -201,11 +294,37 @@ def scan(req: ScanRequest):
         }
 
     query = normalise(face.normed_embedding)
-    scores = matrix @ query
-    best = int(np.argmax(scores))
-    confidence = float(scores[best])
+    live_geometry = geometry_features(face)
+    geo_weight = float(settings.get("geometry_weight") or 0.0)
 
-    if confidence < threshold:
+    scores = matrix @ query
+    # Blend in the landmark-geometry similarity so that a look-alike with a
+    # different eye/nose/mouth layout scores lower than the real student.
+    combined = scores.copy()
+    geo_per_row = [None] * len(owners)
+    if live_geometry and geo_weight > 0:
+        for i, g in enumerate(geoms):
+            sim = geometry_similarity(live_geometry, g)
+            geo_per_row[i] = sim
+            if sim is not None:
+                combined[i] = (1.0 - geo_weight) * scores[i] + geo_weight * sim
+
+    best = int(np.argmax(combined))
+    confidence = float(scores[best])
+    geometry_score = geo_per_row[best]
+
+    # Best geometry match among all photos of the chosen student.
+    if live_geometry:
+        student_geo = [
+            geometry_similarity(live_geometry, geoms[i])
+            for i, owner in enumerate(owners)
+            if owner == owners[best]
+        ]
+        student_geo = [s for s in student_geo if s is not None]
+        if student_geo:
+            geometry_score = max(student_geo)
+
+    if float(combined[best]) < threshold:
         return {
             "result": "denied",
             "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
@@ -214,11 +333,24 @@ def scan(req: ScanRequest):
         }
 
     student_id = owners[best]
+    payload = {
+        "student_id": student_id,
+        "confidence": round(confidence, 4),
+        "embedding": query.tolist(),
+    }
+    if geometry_score is not None:
+        payload["geometry_score"] = round(float(geometry_score), 4)
+    if live_geometry:
+        payload["geometry"] = live_geometry
+    snapshot = crop_face_jpeg(arr, face)
+    if snapshot:
+        payload["snapshot"] = snapshot
+
     res = requests.post(
         f"{CLOUD_URL}/api/public/kiosk/attendance",
         headers=HEADERS,
-        json={"student_id": student_id, "confidence": round(confidence, 4)},
-        timeout=20,
+        json=payload,
+        timeout=30,
     )
     return res.json()
 

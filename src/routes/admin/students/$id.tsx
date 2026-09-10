@@ -148,7 +148,9 @@ function StudentDetail() {
             <div key={f.key} className="space-y-1.5">
               <Label>{f.label}</Label>
               <Input
-                defaultValue={(student as Record<string, string | null>)[f.key] ?? ""}
+                defaultValue={
+                  (student as unknown as Record<string, string | null>)[f.key] ?? ""
+                }
                 onBlur={(e) => saveStudent.mutate({ [f.key]: e.target.value || null })}
               />
             </div>
