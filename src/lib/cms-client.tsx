@@ -36,7 +36,6 @@ export function BrandTheme() {
     set("--primary", primary);
     set("--sidebar", primary);
     set("--sidebar-primary", accent);
-    set("--accent", accent);
     set("--ring", accent);
     set("--background", surface);
   }, [primary, accent, surface]);
