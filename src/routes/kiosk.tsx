@@ -292,6 +292,7 @@ function Kiosk() {
           cached_images?: number;
           pending_uploads?: number;
           last_sync?: number | null;
+          stale?: boolean;
         };
         if (cancelled) return;
         setAgentOnline(!!data.ok);
