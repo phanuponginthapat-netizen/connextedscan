@@ -1,25 +1,28 @@
 import { useEffect } from "react";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Briefcase, CalendarClock, ChevronLeft, ChevronRight, Download, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
+import { Briefcase, CalendarClock, ChevronLeft, ChevronRight, Download, LayoutDashboard, LogOut, PanelsTopLeft, ScanFace, Settings, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCms } from "@/lib/cms-client";
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
 
 const nav = [
-  { to: "/admin", label: "ภาพรวม", icon: LayoutDashboard, exact: true },
-  { to: "/admin/students", label: "นักเรียน", icon: Users },
-  { to: "/admin/staff", label: "บุคลากร", icon: Briefcase },
-  { to: "/admin/attendance", label: "ประวัติเข้า-ออก", icon: CalendarClock },
-  { to: "/admin/install", label: "ติดตั้งตู้สแกน", icon: Download },
-  { to: "/admin/settings", label: "ตั้งค่า", icon: Settings },
+  { to: "/admin", key: "nav.dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/students", key: "nav.students", icon: Users },
+  { to: "/admin/staff", key: "nav.staff", icon: Briefcase },
+  { to: "/admin/attendance", key: "nav.attendance", icon: CalendarClock },
+  { to: "/admin/cms", key: "nav.cms", icon: PanelsTopLeft },
+  { to: "/admin/install", key: "nav.install", icon: Download },
+  { to: "/admin/settings", key: "nav.settings", icon: Settings },
 ];
 
 function AdminLayout() {
+  const { t } = useCms();
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
