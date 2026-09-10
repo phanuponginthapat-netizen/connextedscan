@@ -158,8 +158,16 @@ function openKiosk() {
       // Allow the HTTPS cloud page to call the local HTTP agent on 127.0.0.1:8899
       webSecurity: false,
       preload: path.join(__dirname, "preload.cjs"),
+      autoplayPolicy: "no-user-gesture-required",
+      backgroundThrottling: false,
+      spellcheck: false,
+      enableWebSQL: false,
     },
   });
+
+  // Camera and microphone are always allowed on the kiosk PC.
+  kioskWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, done) => done(true));
+  kioskWindow.webContents.setBackgroundThrottling?.(false);
 
   // Branded loading screen instead of a blank window while the cloud page
   // (or the network) is still coming up.
