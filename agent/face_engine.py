@@ -95,7 +95,7 @@ def _norm_crop(img: np.ndarray, kps: np.ndarray) -> np.ndarray:
 class FaceEngine:
     """Minimal drop-in replacement for insightface's FaceAnalysis."""
 
-    def __init__(self, det_size: tuple[int, int] = (320, 320), det_thresh: float = 0.5) -> None:
+    def __init__(self, det_size: tuple[int, int] = (320, 320), det_thresh: float = 0.35) -> None:
         for path in (DET_MODEL, REC_MODEL):
             if not os.path.exists(path):
                 raise FileNotFoundError(
@@ -167,7 +167,7 @@ class FaceEngine:
             kps_preds = outputs[idx + fmc * 2].reshape(-1, 10) * stride
             centers = self._centers_for(model_h // stride, model_w // stride, stride)
 
-            keep = np.where(scores >= self.det_thresh)[0]
+            keep = np.where(scores >= thresh)[0]
             if keep.size == 0:
                 continue
             scores_list.append(scores[keep])
