@@ -78,6 +78,13 @@
       "when": 1789032281341,
       "tag": "0010_perf_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789034630277,
+      "tag": "0011_add_door_control_settings",
+      "breakpoints": true
     }
   ]
 }

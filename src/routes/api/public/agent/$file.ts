@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import agentSource from "../../../../../agent/agent.py?raw";
 import faceEngineSource from "../../../../../agent/face_engine.py?raw";
+import doorSource from "../../../../../agent/door.py?raw";
+import microbitSource from "../../../../../microbit/door.py?raw";
 import requirements from "../../../../../agent/requirements.txt?raw";
 import installPs1 from "../../../../../agent/install.ps1?raw";
 import installSh from "../../../../../agent/install.sh?raw";
@@ -10,6 +12,13 @@ const files: Record<string, { body: string; type: string; download?: string }> =
   "agent.py": { body: agentSource, type: "text/plain; charset=utf-8" },
   "face_engine.py": { body: faceEngineSource, type: "text/plain; charset=utf-8" },
   "requirements.txt": { body: requirements, type: "text/plain; charset=utf-8" },
+  "door.py": { body: doorSource, type: "text/plain; charset=utf-8" },
+  // โค้ดสำหรับ BBC micro:bit (MicroPython) — นำไปวางที่ python.microbit.org
+  "microbit-door.py": {
+    body: microbitSource,
+    type: "text/plain; charset=utf-8",
+    download: "microbit-door.py",
+  },
   "install.ps1": { body: installPs1, type: "text/plain; charset=utf-8" },
   "install.sh": { body: installSh, type: "text/plain; charset=utf-8" },
   "install.bat": { body: installBat, type: "text/plain; charset=utf-8" },
@@ -27,7 +36,7 @@ const files: Record<string, { body: string; type: string; download?: string }> =
 };
 
 /** Files the FaceGate desktop program keeps up to date automatically. */
-const AGENT_FILES = ["agent.py", "face_engine.py", "requirements.txt"];
+const AGENT_FILES = ["agent.py", "face_engine.py", "door.py", "requirements.txt"];
 
 async function sha256(text: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));

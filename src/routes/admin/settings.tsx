@@ -19,6 +19,7 @@ import {
   Megaphone,
   ShieldCheck,
   Monitor,
+  DoorOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,9 @@ type SettingsRow = {
   kiosk_show_confidence: boolean;
   kiosk_news_enabled: boolean;
   kiosk_news_text: string;
+  door_enabled: boolean;
+  door_open_seconds: number;
+  door_deny_alarm: boolean;
   min_face_coverage: number;
   detector_min_score: number;
   log_unknown_attempts: boolean;
@@ -104,6 +108,7 @@ type SectionId =
   | "time"
   | "calendar"
   | "kiosk"
+  | "door"
   | "privacy"
   | "scan"
   | "accuracy"
@@ -196,6 +201,12 @@ function SettingsPage() {
       title: "หน้าจอตู้สแกน",
       hint: "รายการล่าสุด กระจกสะท้อน และข้อมูลที่แสดง",
       icon: Monitor,
+    },
+    {
+      id: "door",
+      title: "ประตูอัตโนมัติ (micro:bit)",
+      hint: "เปิดประตูเมื่อสแกนผ่าน และเวลาเปิดค้าง",
+      icon: DoorOpen,
     },
     {
       id: "privacy",
@@ -567,6 +578,46 @@ function SettingsPage() {
                       ข้อความนี้จะไหลวนด้านล่างหน้าจอตู้สแกนทุกเครื่อง มีผลทันทีหลังบันทึก
                     </p>
                   </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : section === "door" ? (
+              <div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={form.door_enabled}
+                      onCheckedChange={(v) => set({ door_enabled: v })}
+                    />
+                    <span className="text-sm">
+                      เปิดประตูอัตโนมัติเมื่อสแกนผ่าน (ต่อ micro:bit เข้ากับเครื่องตู้สแกน)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={form.door_deny_alarm}
+                      onCheckedChange={(v) => set({ door_deny_alarm: v })}
+                    />
+                    <span className="text-sm">
+                      ส่งสัญญาณเตือนที่ micro:bit เมื่อเป็นบุคคลภายนอกหรือสแกนไม่ผ่าน
+                    </span>
+                  </div>
+                  <div className="max-w-xs space-y-1.5">
+                    <Label>เวลาเปิดประตูค้าง (วินาที)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={Number(form.door_open_seconds)}
+                      onChange={(e) => set({ door_open_seconds: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ครบเวลาแล้วประตูจะล็อกกลับเองอัตโนมัติ
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    วิธีต่อสายและโค้ดสำหรับ micro:bit ดูได้ที่เมนู “ประตูอัจฉริยะ”
+                  </p>
                 </div>
                 {SaveBar}
               </div>

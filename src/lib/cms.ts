@@ -109,6 +109,7 @@ export const CMS_GROUPS: CmsGroup[] = [
       { key: "nav.staff", label: "เมนู – บุคลากร", default: "บุคลากร" },
       { key: "nav.attendance", label: "เมนู – ประวัติเข้า-ออก", default: "ประวัติเข้า-ออก" },
       { key: "nav.install", label: "เมนู – ติดตั้งตู้สแกน", default: "ติดตั้งตู้สแกน" },
+      { key: "nav.door", label: "เมนู – ประตูอัจฉริยะ", default: "ประตูอัจฉริยะ" },
       { key: "nav.cms", label: "เมนู – จัดการเนื้อหา", default: "จัดการเนื้อหา" },
       { key: "nav.settings", label: "เมนู – ตั้งค่า", default: "ตั้งค่า" },
       { key: "action.back", label: "ปุ่ม – ย้อนกลับ", default: "ย้อนกลับ" },
