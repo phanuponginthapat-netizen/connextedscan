@@ -160,8 +160,8 @@ export async function recordScan(input: RecordScanInput) {
       direction,
       avatar_url: avatarUrl,
       snapshot_url: snapshotUrl,
-      message: `${student.full_name} สแกน${directionLabel}ไปแล้ว`,
-      speak: `${displayName} สแกนไปแล้ว`,
+      message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
+      speak: `สแกนซ้ำ ${displayName} บันทึกเวลาไปแล้ว`,
       next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
     };
   }
@@ -231,7 +231,7 @@ export async function recordScan(input: RecordScanInput) {
     geometry_score: geometryScore,
     auto_enrolled: autoEnrolled,
     message: `สแกนสำเร็จ: ${student.full_name} (${directionLabel})${late ? " • มาสาย" : ""}`,
-    speak: late ? `${speak} มาสาย` : speak,
+    speak: late ? `${speak} มาสายนะคะ` : speak,
     next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
   };
 }
