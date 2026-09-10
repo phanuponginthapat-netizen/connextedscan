@@ -97,6 +97,17 @@ function dateText(value: string) {
   });
 }
 
+function formatThaiDate(value: string) {
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("th-TH", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function durationText(minutes: number | null) {
   if (minutes == null || minutes <= 0) return "-";
   const h = Math.floor(minutes / 60);
