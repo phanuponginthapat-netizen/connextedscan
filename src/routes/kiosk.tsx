@@ -148,6 +148,7 @@ function Kiosk() {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || busyRef.current) return;
     if (agentOnline === null) return;
+    if (!agentOnline && !webReady) return;
     busyRef.current = true;
     setStatus("scanning");
     setGuide("scanning");
