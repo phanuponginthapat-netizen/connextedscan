@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FaceGate - ตั้งค่าเครื่องตู้สแกน</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: "Sarabun", "Prompt", system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 24px;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      h1 { margin: 0 0 8px; font-size: 20px; }
+      p { margin: 0 0 20px; color: #94a3b8; font-size: 14px; }
+      label { display: block; margin-bottom: 6px; font-size: 14px; color: #cbd5e1; }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        margin-bottom: 16px;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        background: #1e293b;
+        color: #f8fafc;
+        font-size: 14px;
+      }
+      input:focus { outline: none; border-color: #3b82f6; }
+      .actions { display: flex; gap: 10px; margin-top: 8px; }
+      button {
+        flex: 1;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .primary { background: #3b82f6; color: white; }
+      .secondary { background: #334155; color: #e2e8f0; }
+      .hint {
+        margin-top: 16px;
+        padding: 12px;
+        background: #1e293b;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #94a3b8;
+        line-height: 1.5;
+      }
+      .error {
+        color: #f87171;
+        font-size: 13px;
+        margin-bottom: 12px;
+        min-height: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ตั้งค่าเครื่องตู้สแกน FaceGate</h1>
+    <p>ใส่รหัสเครื่องจากหน้า "ตั้งค่าระบบ → เครื่องตู้สแกน"</p>
+
+    <label for="deviceKey">รหัสเครื่อง (Device Key)</label>
+    <input id="deviceKey" type="text" placeholder="facegate-xxxxxxxx" autocomplete="off" />
+
+    <label for="cloudUrl">URL ระบบหลังบ้าน</label>
+    <input id="cloudUrl" type="url" placeholder="https://...lovable.app" />
+
+    <div class="error" id="error"></div>
+
+    <div class="actions">
+      <button class="primary" id="saveBtn">บันทึกและเริ่มต้น</button>
+      <button class="secondary" id="quitBtn">ปิด</button>
+    </div>
+
+    <div class="hint">
+      หมายเหตุ: โปรแกรมนี้ต้องการ Python 3.10+ และไลบรารีที่ระบุใน <code>agent/requirements.txt</code>
+      ติดตั้งบนเครื่อง Intel Atom ก่อนเปิดใช้งานครั้งแรก
+    </div>
+
+    <script>
+      async function init() {
+        const cfg = await window.electronAPI.getConfig();
+        document.getElementById("deviceKey").value = cfg.deviceKey || "";
+        document.getElementById("cloudUrl").value = cfg.cloudUrl || "";
+      }
+
+      document.getElementById("saveBtn").addEventListener("click", async () => {
+        const deviceKey = document.getElementById("deviceKey").value.trim();
+        const cloudUrl = document.getElementById("cloudUrl").value.trim();
+        const errorEl = document.getElementById("error");
+
+        if (!deviceKey) {
+          errorEl.textContent = "กรุณาใส่รหัสเครื่อง";
+          return;
+        }
+
+        errorEl.textContent = "";
+        await window.electronAPI.saveConfig({ deviceKey, cloudUrl });
+      });
+
+      document.getElementById("quitBtn").addEventListener("click", () => {
+        window.electronAPI.quit();
+      });
+
+      init();
+    </script>
+  </body>
+</html>

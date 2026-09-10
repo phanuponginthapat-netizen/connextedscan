@@ -264,9 +264,21 @@ def scan(req: ScanRequest):
     if arr is None:
         return {"result": "no_face", "message": ""}
 
-    face = embed_image(arr)
-    if face is None:
+    faces = face_app.get(arr)
+    if not faces:
         return {"result": "no_face", "message": ""}
+
+    # The kiosk is meant for one person at a time. Reject frames with
+    # more than one clearly-detected face to prevent accidental cross-matches.
+    if len(faces) > 1:
+        return {
+            "result": "multiple_faces",
+            "message": "พบหลายใบหน้า กรุณาแสกนทีละคน",
+            "speak": "พบหลายใบหน้า กรุณาเข้ามาคนเดียว",
+            "next_delay_seconds": 3,
+        }
+
+    face = faces[0]
 
     with lock:
         matrix = state["matrix"]
