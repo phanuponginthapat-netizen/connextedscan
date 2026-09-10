@@ -74,7 +74,7 @@ function AttendancePage() {
   });
 
   function exportCsv() {
-    const header = "เวลา,รหัส,ชื่อ,ห้อง,ประเภท,สถานะ,ความมั่นใจ,เครื่อง\n";
+    const header = "เวลา,รหัส,ชื่อ,ห้อง,ประเภท,สถานะ,ความมั่นใจ,สัดส่วนใบหน้า,เครื่อง\n";
     const body = (rows ?? [])
       .map((r) =>
         [
@@ -85,6 +85,7 @@ function AttendancePage() {
           r.direction === "in" ? "เข้า" : "ออก",
           r.status,
           r.confidence?.toFixed(3) ?? "",
+          r.geometry_score?.toFixed(3) ?? "",
           r.device_name ?? "",
         ].join(","),
       )
