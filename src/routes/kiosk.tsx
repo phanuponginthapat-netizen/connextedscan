@@ -107,6 +107,15 @@ function Kiosk() {
       }
     }
     if (!thaiVoice()) void speakViaServer("เปิดเสียงเรียบร้อย").catch(() => {});
+    // Keep the common sentences on this device so they play instantly later.
+    void import("@/lib/voice-cache").then((m) =>
+      m.prewarmVoiceClips([
+        "เปิดเสียงเรียบร้อย",
+        "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่",
+        "ไม่พบข้อมูลใบหน้า กรุณาลงทะเบียนก่อน",
+        "กรุณายื่นใบหน้าให้ตรงกรอบทีละคน",
+      ]),
+    );
     setVoiceOn(true);
   }, [speakViaServer]);
 
