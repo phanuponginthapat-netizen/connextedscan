@@ -596,6 +596,7 @@ function Kiosk() {
             ))}
           </div>
         </aside>
+        )}
       </div>
 
       {/* Scan result popup */}
