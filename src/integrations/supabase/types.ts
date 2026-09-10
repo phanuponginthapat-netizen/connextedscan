@@ -175,6 +175,7 @@ export type Database = {
       settings: {
         Row: {
           absent_check_time: string
+          allow_signup: boolean
           allow_web_scan: boolean
           auto_enroll: boolean
           auto_enroll_max_faces: number
@@ -237,6 +238,7 @@ export type Database = {
         }
         Insert: {
           absent_check_time?: string
+          allow_signup?: boolean
           allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
@@ -299,6 +301,7 @@ export type Database = {
         }
         Update: {
           absent_check_time?: string
+          allow_signup?: boolean
           allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
