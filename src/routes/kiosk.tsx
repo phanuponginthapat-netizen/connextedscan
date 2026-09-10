@@ -59,6 +59,13 @@ function Kiosk() {
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
   const [knownFaces, setKnownFaces] = useState<number | null>(null);
+  const [agentStats, setAgentStats] = useState<{
+    known_faces?: number;
+    cached_images?: number;
+    pending_uploads?: number;
+    last_sync?: number | null;
+  } | null>(null);
+
   const [webReady, setWebReady] = useState(false);
   const [webError, setWebError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentScan[]>([]);
