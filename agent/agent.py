@@ -161,6 +161,21 @@ def looks_like_a_real_person(bgr: np.ndarray, face) -> bool:
     return sharpness > 45 and colour_spread > 18
 
 
+def crop_face_jpeg(bgr: np.ndarray, face, margin: float = 0.35) -> str | None:
+    """JPEG (base64) of the scanned face, kept as evidence in the cloud."""
+    x1, y1, x2, y2 = [int(v) for v in face.bbox]
+    w, h = x2 - x1, y2 - y1
+    mx, my = int(w * margin), int(h * margin)
+    crop = bgr[max(y1 - my, 0): y2 + my, max(x1 - mx, 0): x2 + mx]
+    if crop.size == 0:
+        return None
+    if crop.shape[0] > 480:
+        scale = 480 / crop.shape[0]
+        crop = cv2.resize(crop, (int(crop.shape[1] * scale), 480))
+    ok, buf = cv2.imencode(".jpg", crop, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+    return base64.b64encode(buf).decode() if ok else None
+
+
 def sync_once() -> None:
     res = requests.post(f"{CLOUD_URL}/api/public/kiosk/sync", headers=HEADERS, json={}, timeout=30)
     res.raise_for_status()
