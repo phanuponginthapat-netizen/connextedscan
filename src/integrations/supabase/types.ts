@@ -14,16 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance_logs: {
+        Row: {
+          confidence: number | null
+          device_name: string | null
+          direction: string
+          id: string
+          scanned_at: string
+          snapshot_path: string | null
+          status: string
+          student_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          device_name?: string | null
+          direction: string
+          id?: string
+          scanned_at?: string
+          snapshot_path?: string | null
+          status?: string
+          student_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          device_name?: string | null
+          direction?: string
+          id?: string
+          scanned_at?: string
+          snapshot_path?: string | null
+          status?: string
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          api_key: string
+          created_at: string
+          default_direction: string
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          location: string | null
+          name: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          default_direction?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          location?: string | null
+          name: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          default_direction?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          location?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          checkin_end: string
+          checkin_start: string
+          checkout_end: string
+          checkout_start: string
+          duplicate_cooldown_minutes: number
+          id: boolean
+          late_after: string
+          match_threshold: number
+          next_person_delay_seconds: number
+          require_liveness: boolean
+          school_name: string
+          updated_at: string
+          voice_template: string
+        }
+        Insert: {
+          checkin_end?: string
+          checkin_start?: string
+          checkout_end?: string
+          checkout_start?: string
+          duplicate_cooldown_minutes?: number
+          id?: boolean
+          late_after?: string
+          match_threshold?: number
+          next_person_delay_seconds?: number
+          require_liveness?: boolean
+          school_name?: string
+          updated_at?: string
+          voice_template?: string
+        }
+        Update: {
+          checkin_end?: string
+          checkin_start?: string
+          checkout_end?: string
+          checkout_start?: string
+          duplicate_cooldown_minutes?: number
+          id?: boolean
+          late_after?: string
+          match_threshold?: number
+          next_person_delay_seconds?: number
+          require_liveness?: boolean
+          school_name?: string
+          updated_at?: string
+          voice_template?: string
+        }
+        Relationships: []
+      }
+      student_faces: {
+        Row: {
+          created_at: string
+          embedding: number[] | null
+          error_message: string | null
+          id: string
+          image_path: string
+          processed_at: string | null
+          quality: number | null
+          source: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: number[] | null
+          error_message?: string | null
+          id?: string
+          image_path: string
+          processed_at?: string | null
+          quality?: number | null
+          source?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: number[] | null
+          error_message?: string | null
+          id?: string
+          image_path?: string
+          processed_at?: string | null
+          quality?: number | null
+          source?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_faces_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          class_room: string | null
+          created_at: string
+          full_name: string
+          guardian_phone: string | null
+          id: string
+          is_active: boolean
+          nickname: string | null
+          student_code: string
+          updated_at: string
+        }
+        Insert: {
+          class_room?: string | null
+          created_at?: string
+          full_name: string
+          guardian_phone?: string | null
+          id?: string
+          is_active?: boolean
+          nickname?: string | null
+          student_code: string
+          updated_at?: string
+        }
+        Update: {
+          class_room?: string | null
+          created_at?: string
+          full_name?: string
+          guardian_phone?: string | null
+          id?: string
+          is_active?: boolean
+          nickname?: string | null
+          student_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +403,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff"],
+    },
   },
 } as const
