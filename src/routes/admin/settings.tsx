@@ -43,6 +43,8 @@ type SettingsRow = {
   auto_enroll_max_faces: number;
   geometry_weight: number;
   geometry_min_score: number;
+  web_match_threshold: number;
+  allow_web_scan: boolean;
 };
 
 function SettingsPage() {
