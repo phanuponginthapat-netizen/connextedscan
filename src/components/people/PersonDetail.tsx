@@ -75,7 +75,9 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
         student_id: id,
         image_path: path,
         source,
-        status: "pending",
+        // Measured right here in the browser, so scanning works without the
+        // FaceGate program installed.
+        status: face ? "ready" : "pending",
         quality: quality ?? null,
         web_embedding: face?.descriptor ?? null,
         web_geometry: face?.geometry ?? null,
