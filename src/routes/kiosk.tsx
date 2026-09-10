@@ -515,6 +515,62 @@ function Kiosk() {
           </p>
         </div>
       )}
+
+      {/* Scan result popup */}
+      {result && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm"
+        >
+          <div
+            className={`w-full max-w-lg rounded-3xl border-4 bg-card p-8 text-center shadow-panel ${tone}`}
+          >
+            {(result.avatar_url || result.snapshot_url) && (
+              <div className="flex items-end justify-center gap-6">
+                <figure className="space-y-1">
+                  {result.avatar_url ? (
+                    <img
+                      src={result.avatar_url}
+                      alt={result.student ? `รูปโปรไฟล์ของ ${result.student.full_name}` : "รูปโปรไฟล์"}
+                      className="size-32 rounded-2xl border-4 border-primary/40 object-cover shadow"
+                    />
+                  ) : (
+                    <div className="flex size-32 items-center justify-center rounded-2xl border-4 border-dashed text-muted-foreground">
+                      <User className="size-9" />
+                    </div>
+                  )}
+                  <figcaption className="text-xs text-muted-foreground">รูปโปรไฟล์</figcaption>
+                </figure>
+                {result.snapshot_url && (
+                  <figure className="space-y-1">
+                    <img
+                      src={result.snapshot_url}
+                      alt="ภาพขณะสแกนจริง"
+                      className="size-32 rounded-2xl border-4 border-accent/50 object-cover shadow"
+                    />
+                    <figcaption className="text-xs text-muted-foreground">ภาพตอนสแกน</figcaption>
+                  </figure>
+                )}
+              </div>
+            )}
+            <div className="mt-5 flex items-center justify-center gap-2">
+              {result.result === "ok" ? (
+                <CheckCircle2 className="size-8 shrink-0 text-primary" />
+              ) : (
+                <XCircle className="size-8 shrink-0 text-destructive" />
+              )}
+              <p className="text-2xl font-bold">{result.message}</p>
+            </div>
+            {result.student && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {result.student.student_code} • {result.student.class_room ?? "-"}
+              </p>
+            )}
+            <p className="mt-4 text-sm text-muted-foreground">คนถัดไปในอีก {countdown} วินาที</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
