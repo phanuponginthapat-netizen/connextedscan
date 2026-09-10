@@ -12,7 +12,26 @@ const bodySchema = z.object({
   student_id: z.string().uuid(),
   confidence: z.number().min(0).max(1),
   direction: z.enum(["in", "out"]).optional(),
+  /** cosine score of the facial landmark geometry (eye/nose/mouth distances) */
+  geometry_score: z.number().min(0).max(1).optional(),
+  geometry: z.record(z.string(), z.number()).optional(),
+  /** ArcFace embedding of the live scan, used for automatic re-enrolment */
+  embedding: z.array(z.number()).min(64).max(2048).optional(),
+  /** base64 JPEG of the captured face, stored as scan evidence */
+  snapshot: z.string().optional(),
 });
+
+function decodeBase64Jpeg(value: string): Uint8Array | null {
+  try {
+    const raw = value.includes(",") ? value.slice(value.indexOf(",") + 1) : value;
+    const binary = atob(raw);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return bytes.length > 0 && bytes.length < 5_000_000 ? bytes : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Records a scan. Enforces the duplicate-scan cooldown and decides whether the
