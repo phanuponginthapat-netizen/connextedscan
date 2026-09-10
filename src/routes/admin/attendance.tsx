@@ -97,6 +97,17 @@ function dateText(value: string) {
   });
 }
 
+function formatThaiDate(value: string) {
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("th-TH", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function durationText(minutes: number | null) {
   if (minutes == null || minutes <= 0) return "-";
   const h = Math.floor(minutes / 60);
@@ -458,6 +469,7 @@ function AttendancePage() {
                 max={to}
                 onChange={(e) => applyRange(e.target.value, to)}
               />
+              {from && <p className="text-xs text-muted-foreground">{formatThaiDate(from)}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>ถึงวันที่</Label>
@@ -467,6 +479,7 @@ function AttendancePage() {
                 min={from}
                 onChange={(e) => applyRange(from, e.target.value)}
               />
+              {to && <p className="text-xs text-muted-foreground">{formatThaiDate(to)}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>บุคคล</Label>

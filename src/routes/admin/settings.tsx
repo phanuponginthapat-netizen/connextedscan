@@ -6,6 +6,7 @@ import { Copy, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TimeInput24 } from "@/components/ui/time-input-24";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -141,10 +142,9 @@ function SettingsPage() {
           {timeFields.map(([key, label]) => (
             <div key={key} className="space-y-1.5">
               <Label>{label}</Label>
-              <Input
-                type="time"
+              <TimeInput24
                 value={String(form[key]).slice(0, 5)}
-                onChange={(e) => set({ [key]: `${e.target.value}:00` } as Partial<SettingsRow>)}
+                onChange={(v) => set({ [key]: `${v}:00` } as Partial<SettingsRow>)}
               />
             </div>
           ))}
