@@ -118,69 +118,135 @@ export type Database = {
           auto_enroll: boolean
           auto_enroll_max_faces: number
           auto_enroll_min_confidence: number
+          block_non_work_days: boolean
           checkin_end: string
           checkin_start: string
           checkout_end: string
           checkout_start: string
+          default_report_days: number
+          detector_min_score: number
           duplicate_cooldown_minutes: number
+          early_leave_before: string
           geometry_min_score: number
           geometry_weight: number
           id: boolean
+          kiosk_mirror: boolean
+          kiosk_recent_limit: number
+          kiosk_show_clock: boolean
+          kiosk_show_confidence: boolean
+          kiosk_show_recent: boolean
           late_after: string
+          late_grace_minutes: number
+          log_retention_days: number
+          log_unknown_attempts: boolean
           match_threshold: number
+          min_face_coverage: number
           next_person_delay_seconds: number
           require_liveness: boolean
           save_snapshots: boolean
           school_name: string
+          snapshot_retention_days: number
           updated_at: string
+          voice_denied_text: string
+          voice_duplicate_template: string
+          voice_enabled: boolean
+          voice_late_suffix: string
+          voice_out_of_window_text: string
+          voice_rate: number
           voice_template: string
+          voice_volume: number
           web_match_threshold: number
+          work_days: string
         }
         Insert: {
           allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
+          block_non_work_days?: boolean
           checkin_end?: string
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
+          default_report_days?: number
+          detector_min_score?: number
           duplicate_cooldown_minutes?: number
+          early_leave_before?: string
           geometry_min_score?: number
           geometry_weight?: number
           id?: boolean
+          kiosk_mirror?: boolean
+          kiosk_recent_limit?: number
+          kiosk_show_clock?: boolean
+          kiosk_show_confidence?: boolean
+          kiosk_show_recent?: boolean
           late_after?: string
+          late_grace_minutes?: number
+          log_retention_days?: number
+          log_unknown_attempts?: boolean
           match_threshold?: number
+          min_face_coverage?: number
           next_person_delay_seconds?: number
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
+          snapshot_retention_days?: number
           updated_at?: string
+          voice_denied_text?: string
+          voice_duplicate_template?: string
+          voice_enabled?: boolean
+          voice_late_suffix?: string
+          voice_out_of_window_text?: string
+          voice_rate?: number
           voice_template?: string
+          voice_volume?: number
           web_match_threshold?: number
+          work_days?: string
         }
         Update: {
           allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
+          block_non_work_days?: boolean
           checkin_end?: string
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
+          default_report_days?: number
+          detector_min_score?: number
           duplicate_cooldown_minutes?: number
+          early_leave_before?: string
           geometry_min_score?: number
           geometry_weight?: number
           id?: boolean
+          kiosk_mirror?: boolean
+          kiosk_recent_limit?: number
+          kiosk_show_clock?: boolean
+          kiosk_show_confidence?: boolean
+          kiosk_show_recent?: boolean
           late_after?: string
+          late_grace_minutes?: number
+          log_retention_days?: number
+          log_unknown_attempts?: boolean
           match_threshold?: number
+          min_face_coverage?: number
           next_person_delay_seconds?: number
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
+          snapshot_retention_days?: number
           updated_at?: string
+          voice_denied_text?: string
+          voice_duplicate_template?: string
+          voice_enabled?: boolean
+          voice_late_suffix?: string
+          voice_out_of_window_text?: string
+          voice_rate?: number
           voice_template?: string
+          voice_volume?: number
           web_match_threshold?: number
+          work_days?: string
         }
         Relationships: []
       }
