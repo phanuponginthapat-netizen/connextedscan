@@ -70,16 +70,11 @@ function Kiosk() {
     return window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("th")) ?? null;
   };
 
-  // Play a sentence through the cloud voice service. Needed on machines with
-  // no Thai system voice, such as the FaceGate desktop app on Windows.
+  // Play a sentence with the voice clip stored on this device. Needed on
+  // machines with no Thai system voice, such as the FaceGate desktop app.
   const speakViaServer = useCallback(async (text: string) => {
-    const res = await fetch("/api/public/kiosk/tts", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error("tts failed");
-    const blob = await res.blob();
+    const { getVoiceClip } = await import("@/lib/voice-cache");
+    const blob = await getVoiceClip(text);
     const audio = audioRef.current ?? new Audio();
     audioRef.current = audio;
     const url = URL.createObjectURL(blob);
@@ -112,6 +107,15 @@ function Kiosk() {
       }
     }
     if (!thaiVoice()) void speakViaServer("เปิดเสียงเรียบร้อย").catch(() => {});
+    // Keep the common sentences on this device so they play instantly later.
+    void import("@/lib/voice-cache").then((m) =>
+      m.prewarmVoiceClips([
+        "เปิดเสียงเรียบร้อย",
+        "ยืนยันตัวตนไม่สำเร็จ กรุณาลองใหม่",
+        "ไม่พบข้อมูลใบหน้า กรุณาลงทะเบียนก่อน",
+        "กรุณายื่นใบหน้าให้ตรงกรอบทีละคน",
+      ]),
+    );
     setVoiceOn(true);
   }, [speakViaServer]);
 
@@ -136,6 +140,48 @@ function Kiosk() {
     },
     [voiceOn, speakViaServer],
   );
+
+  // The latest scans come from the shared record, so every screen shows the
+  // same list and it stays complete after the program is restarted.
+  const loadRecent = useCallback(async () => {
+    try {
+      const res = await fetch("/api/public/kiosk/recent");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        items?: Array<{
+          id: string;
+          name: string;
+          detail: string;
+          direction: "in" | "out";
+          scanned_at: string;
+          avatar_url: string | null;
+          snapshot_url: string | null;
+        }>;
+      };
+      setRecent(
+        (data.items ?? []).map((item) => ({
+          id: item.id,
+          name: item.name,
+          detail: item.detail,
+          direction: item.direction,
+          time: new Date(item.scanned_at).toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          avatarUrl: item.avatar_url,
+          snapshotUrl: item.snapshot_url,
+        })),
+      );
+    } catch {
+      /* offline: keep showing the list already on screen */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRecent();
+    const t = setInterval(() => void loadRecent(), 15000);
+    return () => clearInterval(t);
+  }, [loadRecent]);
 
   useEffect(() => {
     const saved = localStorage.getItem(AGENT_KEY);
@@ -271,22 +317,7 @@ function Kiosk() {
       const scan = data as unknown as ScanResult;
       const shotUrl = scan.snapshot_url ?? lastShotRef.current;
       setResult({ ...scan, snapshot_url: shotUrl });
-      if (scan.result === "ok" && scan.student) {
-        setRecent((list) =>
-          [
-            {
-              id: `${Date.now()}`,
-              name: scan.student!.full_name,
-              detail: [scan.student!.student_code, scan.student!.class_room].filter(Boolean).join(" • "),
-              direction: scan.direction ?? "in",
-              time: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
-              avatarUrl: scan.avatar_url ?? null,
-              snapshotUrl: shotUrl ?? null,
-            },
-            ...list,
-          ].slice(0, 12),
-        );
-      }
+      if (scan.result === "ok" && scan.student) void loadRecent();
       if (scan.speak) speak(scan.speak);
       const delay = scan.next_delay_seconds ?? 5;
       setStatus("cooldown");
@@ -310,7 +341,7 @@ function Kiosk() {
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, capture, scanViaWeb, speak]);
+  }, [agentUrl, agentOnline, capture, scanViaWeb, speak, loadRecent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -440,7 +471,7 @@ function Kiosk() {
           <div className="mt-3 max-h-[70vh] space-y-2 overflow-y-auto pr-1">
             {recent.length === 0 && (
               <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                ยังไม่มีการสแกนในรอบนี้
+                ยังไม่มีรายการสแกน
               </p>
             )}
             {recent.map((item) => (

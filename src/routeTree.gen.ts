@@ -25,6 +25,7 @@ import { Route as AdminStudentsIdRouteImport } from './routes/admin/students/$id
 import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agent/$file'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
+import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/kiosk/recent'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
@@ -111,6 +112,11 @@ const ApiPublicKioskEmbeddingsRoute =
     path: '/api/public/kiosk/embeddings',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicKioskRecentRoute = ApiPublicKioskRecentRouteImport.update({
+  id: '/api/public/kiosk/recent',
+  path: '/api/public/kiosk/recent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
   id: '/api/public/kiosk/sync',
   path: '/api/public/kiosk/sync',
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/api/public/agent/$file'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/web-scan'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/api/public/agent/$file'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/web-scan'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/api/public/agent/$file'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/web-scan'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
+  ApiPublicKioskRecentRoute: typeof ApiPublicKioskRecentRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskEmbeddingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/recent': {
+      id: '/api/public/kiosk/recent'
+      path: '/api/public/kiosk/recent'
+      fullPath: '/api/public/kiosk/recent'
+      preLoaderRoute: typeof ApiPublicKioskRecentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/sync': {
       id: '/api/public/kiosk/sync'
       path: '/api/public/kiosk/sync'
@@ -442,6 +462,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
+  ApiPublicKioskRecentRoute: ApiPublicKioskRecentRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
