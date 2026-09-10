@@ -8,6 +8,13 @@
       "when": 1789007472781,
       "tag": "0000_face_attendance_core",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789007500744,
+      "tag": "0001_faces_storage_policies",
+      "breakpoints": true
     }
   ]
 }
