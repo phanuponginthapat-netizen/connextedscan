@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 
 const IndexRoute = IndexRouteImport.update({
@@ -17,6 +18,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskEmbeddingsRoute =
+  ApiPublicKioskEmbeddingsRouteImport.update({
+    id: '/api/public/kiosk/embeddings',
+    path: '/api/public/kiosk/embeddings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
   id: '/api/public/kiosk/sync',
   path: '/api/public/kiosk/sync',
@@ -25,27 +32,32 @@ const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/kiosk/sync'
+  fullPaths: '/' | '/api/public/kiosk/embeddings' | '/api/public/kiosk/sync'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/kiosk/sync'
-  id: '__root__' | '/' | '/api/public/kiosk/sync'
+  to: '/' | '/api/public/kiosk/embeddings' | '/api/public/kiosk/sync'
+  id:
+    '__root__' | '/' | '/api/public/kiosk/embeddings' | '/api/public/kiosk/sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
 }
 
@@ -56,6 +68,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/kiosk/embeddings': {
+      id: '/api/public/kiosk/embeddings'
+      path: '/api/public/kiosk/embeddings'
+      fullPath: '/api/public/kiosk/embeddings'
+      preLoaderRoute: typeof ApiPublicKioskEmbeddingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/kiosk/sync': {
@@ -70,6 +89,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
 }
 export const routeTree = rootRouteImport
