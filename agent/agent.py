@@ -62,6 +62,79 @@ def normalise(vec: np.ndarray) -> np.ndarray:
     return vec / norm if norm else vec
 
 
+# --- Facial geometry -------------------------------------------------------
+# ArcFace gives 5 landmarks: left eye, right eye, nose, left mouth, right mouth.
+# We turn them into scale-invariant ratios (every distance divided by the
+# eye-to-eye distance), which describe the individual layout of the face:
+# how far the nose sits from each eye, mouth width, nose-to-mouth distance and
+# so on. This is used as a second opinion on top of the ArcFace embedding.
+GEOMETRY_KEYS = [
+    "nose_left_eye",
+    "nose_right_eye",
+    "nose_eye_mid",
+    "mouth_width",
+    "nose_mouth_mid",
+    "eye_mid_mouth_mid",
+    "left_eye_mouth_left",
+    "right_eye_mouth_right",
+    "face_width",
+    "face_height",
+    "eye_asymmetry",
+]
+
+
+def geometry_features(face) -> dict[str, float] | None:
+    kps = getattr(face, "kps", None)
+    if kps is None or len(kps) < 5:
+        return None
+    pts = np.array(kps, dtype=np.float32)
+    left_eye, right_eye, nose, mouth_l, mouth_r = pts[0], pts[1], pts[2], pts[3], pts[4]
+    eye_dist = float(np.linalg.norm(right_eye - left_eye))
+    if eye_dist < 1e-3:
+        return None
+
+    eye_mid = (left_eye + right_eye) / 2.0
+    mouth_mid = (mouth_l + mouth_r) / 2.0
+    x1, y1, x2, y2 = [float(v) for v in face.bbox]
+
+    d = lambda a, b: float(np.linalg.norm(a - b)) / eye_dist  # noqa: E731
+    nose_l = d(nose, left_eye)
+    nose_r = d(nose, right_eye)
+
+    feats = {
+        "nose_left_eye": nose_l,
+        "nose_right_eye": nose_r,
+        "nose_eye_mid": d(nose, eye_mid),
+        "mouth_width": d(mouth_l, mouth_r),
+        "nose_mouth_mid": d(nose, mouth_mid),
+        "eye_mid_mouth_mid": d(eye_mid, mouth_mid),
+        "left_eye_mouth_left": d(left_eye, mouth_l),
+        "right_eye_mouth_right": d(right_eye, mouth_r),
+        "face_width": (x2 - x1) / eye_dist,
+        "face_height": (y2 - y1) / eye_dist,
+        "eye_asymmetry": abs(nose_l - nose_r) / max(nose_l + nose_r, 1e-3),
+    }
+    return {k: round(float(v), 5) for k, v in feats.items()}
+
+
+def geometry_similarity(a: dict | None, b: dict | None) -> float | None:
+    """1.0 = identical proportions. Relative difference, averaged."""
+    if not a or not b:
+        return None
+    diffs = []
+    for key in GEOMETRY_KEYS:
+        av, bv = a.get(key), b.get(key)
+        if av is None or bv is None:
+            continue
+        denom = abs(av) + abs(bv)
+        if denom < 1e-6:
+            continue
+        diffs.append(abs(av - bv) / denom)
+    if not diffs:
+        return None
+    return float(max(0.0, 1.0 - 2.0 * (sum(diffs) / len(diffs))))
+
+
 def embed_image(bgr: np.ndarray):
     faces = face_app.get(bgr)
     if not faces:
