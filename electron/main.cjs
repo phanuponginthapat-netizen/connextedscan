@@ -135,6 +135,9 @@ function openKiosk() {
     fullscreen: true,
     kiosk: true,
     autoHideMenuBar: true,
+    title: "FaceGate",
+    backgroundColor: "#0a1424",
+    show: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -144,10 +147,21 @@ function openKiosk() {
     },
   });
 
-  kioskWindow.loadURL(url);
+  // Branded loading screen instead of a blank window while the cloud page
+  // (or the network) is still coming up.
+  kioskWindow.loadFile(path.join(__dirname, "loading.html"));
+  kioskWindow.once("ready-to-show", () => {
+    if (kioskWindow) kioskWindow.show();
+  });
+  setTimeout(() => {
+    if (kioskWindow) kioskWindow.loadURL(url);
+  }, 800);
 
-  // Retry when the kiosk PC boots before the network is ready.
+  // Retry when the kiosk PC boots before the network is ready — keep the
+  // branded screen visible between attempts instead of an error page.
   kioskWindow.webContents.on("did-fail-load", () => {
+    if (!kioskWindow) return;
+    kioskWindow.loadFile(path.join(__dirname, "loading.html"));
     setTimeout(() => {
       if (kioskWindow) kioskWindow.loadURL(url);
     }, 5000);
@@ -165,10 +179,12 @@ function openSettings() {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 560,
-    height: 460,
+    width: 640,
+    height: 600,
     resizable: false,
     autoHideMenuBar: true,
+    title: "FaceGate — ตั้งค่าเครื่องตู้สแกน",
+    backgroundColor: "#0a1424",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
