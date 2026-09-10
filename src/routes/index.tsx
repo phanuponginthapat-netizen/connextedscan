@@ -162,7 +162,7 @@ function Landing() {
           <p className="animate-rise text-xs font-semibold text-[#1d6fe0] sm:tracking-[0.18em]">
             {t("home.eyebrow")}
           </p>
-          <h1 className="animate-rise mx-auto mt-4 max-w-6xl text-balance font-display text-4xl leading-[1.2] font-bold sm:text-5xl lg:whitespace-nowrap lg:text-6xl [animation-delay:0.08s]">
+          <h1 className="animate-rise mx-auto mt-4 max-w-6xl whitespace-nowrap font-display text-2xl leading-[1.2] font-bold sm:text-4xl md:text-5xl lg:text-6xl [animation-delay:0.08s]">
             {t("home.title")}
           </h1>
           <p className="animate-rise mx-auto mt-5 max-w-4xl text-pretty text-base leading-8 text-slate-500 sm:text-lg lg:whitespace-nowrap [animation-delay:0.15s]">
