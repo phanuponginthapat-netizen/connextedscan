@@ -26,7 +26,9 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
         const { data: people } = ids.length
           ? await supabaseAdmin
               .from("students")
-              .select("id, full_name, nickname, student_code, class_room, avatar_path")
+              .select(
+                "id, full_name, nickname, student_code, class_room, avatar_path, person_type, department, position",
+              )
               .in("id", ids)
           : { data: [] as never[] };
 
