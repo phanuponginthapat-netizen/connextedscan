@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Briefcase, CalendarClock, ChevronLeft, ChevronRight, Download, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
+import { Briefcase, CalendarClock, ChevronLeft, ChevronRight, DoorOpen, Download, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const nav = [
   { to: "/admin/staff", key: "nav.staff", icon: Briefcase },
   { to: "/admin/attendance", key: "nav.attendance", icon: CalendarClock },
   { to: "/admin/install", key: "nav.install", icon: Download },
+  { to: "/admin/door", key: "nav.door", icon: DoorOpen },
   { to: "/admin/settings", key: "nav.settings", icon: Settings },
 ];
 

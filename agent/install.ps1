@@ -48,6 +48,7 @@ if (-not $py) {
 Write-Host "[2/5] ดาวน์โหลดโปรแกรมตรวจใบหน้า..." -ForegroundColor Cyan
 Invoke-WebRequest "$($env:FACEGATE_CLOUD_URL)/api/public/agent/agent.py"        -OutFile (Join-Path $root "agent.py")
 Invoke-WebRequest "$($env:FACEGATE_CLOUD_URL)/api/public/agent/face_engine.py"  -OutFile (Join-Path $root "face_engine.py")
+Invoke-WebRequest "$($env:FACEGATE_CLOUD_URL)/api/public/agent/door.py"         -OutFile (Join-Path $root "door.py")
 Invoke-WebRequest "$($env:FACEGATE_CLOUD_URL)/api/public/agent/requirements.txt" -OutFile (Join-Path $root "requirements.txt")
 
 Write-Host "[3/5] ติดตั้งไลบรารี (ครั้งแรกใช้เวลา 5-15 นาที ประมาณ 300 MB)..." -ForegroundColor Cyan

@@ -125,6 +125,9 @@ export type Database = {
           checkout_start: string
           default_report_days: number
           detector_min_score: number
+          door_deny_alarm: boolean
+          door_enabled: boolean
+          door_open_seconds: number
           duplicate_cooldown_minutes: number
           early_leave_before: string
           geometry_min_score: number
@@ -172,6 +175,9 @@ export type Database = {
           checkout_start?: string
           default_report_days?: number
           detector_min_score?: number
+          door_deny_alarm?: boolean
+          door_enabled?: boolean
+          door_open_seconds?: number
           duplicate_cooldown_minutes?: number
           early_leave_before?: string
           geometry_min_score?: number
@@ -219,6 +225,9 @@ export type Database = {
           checkout_start?: string
           default_report_days?: number
           detector_min_score?: number
+          door_deny_alarm?: boolean
+          door_enabled?: boolean
+          door_open_seconds?: number
           duplicate_cooldown_minutes?: number
           early_leave_before?: string
           geometry_min_score?: number

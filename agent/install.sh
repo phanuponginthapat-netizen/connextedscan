@@ -72,6 +72,7 @@ fi
 echo "[2/5] ดาวน์โหลดโปรแกรมตรวจใบหน้า..."
 curl -fsSL "$CLOUD_URL/api/public/agent/agent.py" -o "$ROOT/agent.py"
 curl -fsSL "$CLOUD_URL/api/public/agent/face_engine.py" -o "$ROOT/face_engine.py"
+curl -fsSL "$CLOUD_URL/api/public/agent/door.py" -o "$ROOT/door.py"
 curl -fsSL "$CLOUD_URL/api/public/agent/requirements.txt" -o "$ROOT/requirements.txt"
 
 # ---------- 3) ไลบรารี ----------

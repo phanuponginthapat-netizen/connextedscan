@@ -26,6 +26,7 @@ import numpy as np
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import door
 from face_engine import Face, FaceEngine
 from pydantic import BaseModel
 
@@ -463,6 +464,41 @@ def detection_payload(dets: np.ndarray, kpss: np.ndarray, index: int, width: flo
     }
 
 
+def door_react(body: dict) -> dict:
+    """Drive the micro:bit door lock from the decision made in the cloud."""
+    with lock:
+        settings = dict(state["settings"])
+    if not settings.get("door_enabled", True):
+        return body
+    seconds = float(settings.get("door_open_seconds") or 0) or None
+    result = body.get("result")
+    try:
+        if result == "ok":
+            body["door"] = "opened" if door.open_door(seconds) else "offline"
+        elif result in ("denied", "duplicate", "out_of_window", "multiple_faces"):
+            if settings.get("door_deny_alarm", True):
+                door.deny()
+            body["door"] = "locked"
+    except Exception as exc:  # noqa: BLE001
+        print(f"[door] control failed: {exc}")
+    return body
+
+
+class DoorRequest(BaseModel):
+    seconds: float | None = None
+
+
+@app.get("/door/status")
+def door_status():
+    return door.status()
+
+
+@app.post("/door/test")
+def door_test(req: DoorRequest):
+    ok = door.open_door(req.seconds)
+    return {"ok": ok, **door.status()}
+
+
 @app.get("/health")
 def health():
     with lock:
@@ -483,6 +519,7 @@ def health():
         "cached_images": cached_images,
         "pending_uploads": outbox_count(),
         "cache_dir": CACHE_DIR,
+        "door": door.status(),
     }
 
 
@@ -649,13 +686,13 @@ def scan(req: ScanRequest):
     runner_up = ranked[1][1] if len(ranked) > 1 else -1.0
 
     if best_score < threshold:
-        return {
+        return door_react({
             "result": "denied",
             "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
             "speak": settings.get("voice_denied_text") or "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
             "next_delay_seconds": delay,
             "face_detection": visual,
-        }
+        })
 
     # Two people scoring almost the same means the frame is not good enough to
     # tell them apart — ask for another scan instead of guessing.
@@ -702,7 +739,7 @@ def scan(req: ScanRequest):
                 timeout=15,
             )
             res.raise_for_status()
-            return {**res.json(), "face_detection": visual}
+            return door_react({**res.json(), "face_detection": visual})
         except Exception as exc:  # noqa: BLE001
             last_error = exc
             if attempt == 0:
@@ -715,14 +752,14 @@ def scan(req: ScanRequest):
     with lock:
         person = state["students"].get(student_id) or {}
     name = person.get("full_name") or "ผู้ใช้งาน"
-    return {
+    return door_react({
         "result": "ok",
         "offline": True,
         "message": f"บันทึกเวลาแบบออฟไลน์ให้ {name} แล้ว",
         "speak": f"สแกนสำเร็จ {name}",
         "next_delay_seconds": delay,
         "face_detection": visual,
-    }
+    })
 
 
 
@@ -732,6 +769,7 @@ if __name__ == "__main__":
     if not DEVICE_KEY:
         raise SystemExit("ตั้งค่า FACEGATE_DEVICE_KEY ก่อนเริ่มโปรแกรม (ดูรหัสได้ในหน้าตั้งค่าระบบ)")
     load_cache()
+    door.start()
     threading.Thread(target=sync_loop, daemon=True).start()
     threading.Thread(target=outbox_loop, daemon=True).start()
 
