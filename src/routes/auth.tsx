@@ -35,6 +35,14 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const createAccount = useServerFn(createStaffAccount);
+  const signupStatus = useServerFn(getSignupOpen);
+  const { data: signup } = useQuery({
+    queryKey: ["signup-open"],
+    queryFn: () => signupStatus(),
+    staleTime: 60_000,
+  });
+  const signupOpen = signup?.open ?? false;
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/admin" });
