@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Briefcase, CalendarClock, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
+import { Briefcase, CalendarClock, Download, LayoutDashboard, LogOut, ScanFace, Settings, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ const nav = [
   { to: "/admin/students", label: "นักเรียน", icon: Users },
   { to: "/admin/staff", label: "บุคลากร", icon: Briefcase },
   { to: "/admin/attendance", label: "ประวัติเข้า-ออก", icon: CalendarClock },
+  { to: "/admin/install", label: "ติดตั้งตู้สแกน", icon: Download },
   { to: "/admin/settings", label: "ตั้งค่า", icon: Settings },
 ];
 
