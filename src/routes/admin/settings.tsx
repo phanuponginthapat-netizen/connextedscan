@@ -16,6 +16,9 @@ import {
   ScanFace,
   Settings2,
   Volume2,
+  CalendarDays,
+  ShieldCheck,
+  Monitor,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -69,10 +72,35 @@ type SettingsRow = {
   geometry_min_score: number;
   web_match_threshold: number;
   allow_web_scan: boolean;
+  work_days: string;
+  block_non_work_days: boolean;
+  late_grace_minutes: number;
+  early_leave_before: string;
+  voice_enabled: boolean;
+  voice_rate: number;
+  voice_volume: number;
+  voice_duplicate_template: string;
+  voice_late_suffix: string;
+  voice_denied_text: string;
+  voice_out_of_window_text: string;
+  kiosk_show_recent: boolean;
+  kiosk_recent_limit: number;
+  kiosk_mirror: boolean;
+  kiosk_show_clock: boolean;
+  kiosk_show_confidence: boolean;
+  min_face_coverage: number;
+  detector_min_score: number;
+  log_unknown_attempts: boolean;
+  snapshot_retention_days: number;
+  log_retention_days: number;
+  default_report_days: number;
 };
 
 type SectionId =
   | "time"
+  | "calendar"
+  | "kiosk"
+  | "privacy"
   | "scan"
   | "accuracy"
   | "web"
@@ -155,9 +183,27 @@ function SettingsPage() {
 
   const systemNav: Array<{ id: SectionId; title: string; hint: string; icon: typeof Clock }> = [
     { id: "time", title: "ช่วงเวลาเข้า-ออก", hint: "กำหนดเวลารับสแกนและเวลาสาย", icon: Clock },
+    {
+      id: "calendar",
+      title: "วันทำการและการมาสาย",
+      hint: "วันเปิดรับสแกน ผ่อนผันสาย และออกก่อนเวลา",
+      icon: CalendarDays,
+    },
     { id: "scan", title: "การสแกนและเสียง", hint: "กันสแกนซ้ำ หน่วงเวลา และเสียงพูด", icon: Volume2 },
     { id: "accuracy", title: "ความแม่นยำและรูปถ่าย", hint: "ค่าความเหมือนและการเก็บรูป", icon: Gauge },
     { id: "web", title: "โหมดสแกนผ่านเว็บ", hint: "ใช้งานได้โดยไม่ต้องติดตั้งโปรแกรม", icon: Globe },
+    {
+      id: "kiosk",
+      title: "หน้าจอตู้สแกน",
+      hint: "รายการล่าสุด กระจกสะท้อน และข้อมูลที่แสดง",
+      icon: Monitor,
+    },
+    {
+      id: "privacy",
+      title: "ข้อมูลและความเป็นส่วนตัว",
+      hint: "อายุการเก็บรูปและประวัติ รายงานเริ่มต้น",
+      icon: ShieldCheck,
+    },
     { id: "devices", title: "เครื่องตู้สแกน", hint: "รหัสเครื่องและสถานะเชื่อมต่อ", icon: MonitorSmartphone },
   ];
 
