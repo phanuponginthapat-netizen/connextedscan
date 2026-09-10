@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bar,
@@ -177,6 +178,8 @@ type SummarySort = "date" | "name" | "code" | "inAt" | "outAt" | "minutes";
 
 function AttendancePage() {
   const { t } = useCms();
+  const deleteAttendanceLogFn = useServerFn(deleteAttendanceLog);
+  const deleteAttendanceRangeFn = useServerFn(deleteAttendanceRange);
   const [from, setFrom] = useState(todayStr());
   const [to, setTo] = useState(todayStr());
   const [personType, setPersonType] = useState("all");
@@ -225,7 +228,7 @@ function AttendancePage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await deleteAttendanceLog({ data: { id: deleteTarget.id } });
+      const res = await deleteAttendanceLogFn({ data: { id: deleteTarget.id } });
       if (!res.ok) {
         toast.error(res.error ?? "ลบไม่สำเร็จ");
         return;
@@ -243,7 +246,7 @@ function AttendancePage() {
   async function onDeleteRange() {
     setDeleting(true);
     try {
-      const result = await deleteAttendanceRange({ data: { from, to } });
+      const result = await deleteAttendanceRangeFn({ data: { from, to } });
       if (!result.ok) {
         toast.error(result.error ?? "ลบไม่สำเร็จ");
         return;
