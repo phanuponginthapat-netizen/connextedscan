@@ -215,6 +215,8 @@ export const Route = createFileRoute("/api/public/kiosk/attendance")({
           direction,
           late,
           log: inserted,
+          geometry_score: geometryScore,
+          auto_enrolled: autoEnrolled,
           message: `สแกนสำเร็จ: ${student.full_name} (${directionLabel})${late ? " • มาสาย" : ""}`,
           speak: late ? `${speak} มาสาย` : speak,
           next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
