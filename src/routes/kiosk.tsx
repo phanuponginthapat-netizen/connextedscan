@@ -378,7 +378,15 @@ function Kiosk() {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs">
           {agentOnline === true ? (
-            <span className="text-primary">โหมดโปรแกรมบนเครื่อง (แม่นยำสูง)</span>
+            <span className="text-primary">
+              โหมดโปรแกรมบนเครื่อง (แม่นยำสูง)
+              {agentStats
+                ? ` • ใบหน้าในเครื่อง ${agentStats.known_faces ?? 0}${
+                    agentStats.pending_uploads ? ` • รอส่ง ${agentStats.pending_uploads}` : ""
+                  }`
+                : ""}
+            </span>
+
           ) : webError ? (
             <span className="text-destructive">{webError}</span>
           ) : webReady ? (
