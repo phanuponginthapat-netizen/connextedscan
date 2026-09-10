@@ -79,23 +79,15 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
 
         const byId = new Map((people ?? []).map((p) => [p.id, p]));
 
+        const storage = supabaseAdmin.storage.from("faces");
+
         const items = await Promise.all(
           rows.map(async (row) => {
             const person = row.student_id ? byId.get(row.student_id) : undefined;
-            let avatarUrl: string | null = null;
-            let snapshotUrl: string | null = null;
-            if (person?.avatar_path) {
-              const { data } = await supabaseAdmin.storage
-                .from("faces")
-                .createSignedUrl(person.avatar_path, 60 * 60);
-              avatarUrl = data?.signedUrl ?? null;
-            }
-            if (row.snapshot_path) {
-              const { data } = await supabaseAdmin.storage
-                .from("faces")
-                .createSignedUrl(row.snapshot_path, 60 * 60);
-              snapshotUrl = data?.signedUrl ?? null;
-            }
+            const [avatarUrl, snapshotUrl] = await Promise.all([
+              signedUrl(storage, person?.avatar_path),
+              signedUrl(storage, row.snapshot_path),
+            ]);
             return {
               id: row.id,
               name: person?.full_name ?? "ไม่ทราบชื่อ",
