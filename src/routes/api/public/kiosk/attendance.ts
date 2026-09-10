@@ -140,6 +140,8 @@ export const Route = createFileRoute("/api/public/kiosk/attendance")({
             direction,
             status: "duplicate",
             confidence,
+            geometry_score: geometryScore,
+            snapshot_path: snapshotPath,
             device_name: device.name,
           });
           return jsonResponse({
@@ -162,10 +164,43 @@ export const Route = createFileRoute("/api/public/kiosk/attendance")({
             direction,
             status: "ok",
             confidence,
+            geometry_score: geometryScore,
+            snapshot_path: snapshotPath,
             device_name: device.name,
           })
           .select("id, scanned_at")
           .maybeSingle();
+
+        // Long-term accuracy: fold confident scans back into the enrolled set,
+        // so the face stays up to date as the student grows or changes look.
+        let autoEnrolled = false;
+        const autoMin = settings?.auto_enroll_min_confidence ?? 0.62;
+        if (
+          (settings?.auto_enroll ?? true) &&
+          snapshotPath &&
+          parsed.data.embedding &&
+          confidence >= autoMin
+        ) {
+          const { count } = await supabaseAdmin
+            .from("student_faces")
+            .select("id", { count: "exact", head: true })
+            .eq("student_id", student_id)
+            .eq("source", "auto");
+          if ((count ?? 0) < (settings?.auto_enroll_max_faces ?? 12)) {
+            const { error } = await supabaseAdmin.from("student_faces").insert({
+              student_id,
+              image_path: snapshotPath,
+              source: "auto",
+              status: "ready",
+              embedding: parsed.data.embedding,
+              geometry: parsed.data.geometry ?? null,
+              quality: confidence,
+              processed_at: new Date().toISOString(),
+            });
+            autoEnrolled = !error;
+          }
+        }
+
 
         const template = settings?.voice_template ?? "สแกนสำเร็จ {name} {direction}";
         const speak = template
