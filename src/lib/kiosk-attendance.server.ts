@@ -106,8 +106,27 @@ export async function recordScan(input: RecordScanInput) {
     const outEnd = timeToMinutes(settings.checkout_end);
     if (now >= inStart && now <= inEnd) direction = "in";
     else if (now >= outStart && now <= outEnd) direction = "out";
+    else if (now < inStart) direction = "in";
+    else if (now > outEnd) direction = "out";
+    // Between the two windows: follow what this person already did today.
+    else {
+      const dayStart = new Date();
+      dayStart.setUTCHours(17, 0, 0, 0); // 00:00 Bangkok
+      if (dayStart.getTime() > Date.now()) dayStart.setUTCDate(dayStart.getUTCDate() - 1);
+      const { data: today } = await supabaseAdmin
+        .from("attendance_logs")
+        .select("direction")
+        .eq("student_id", studentId)
+        .eq("status", "ok")
+        .gte("scanned_at", dayStart.toISOString())
+        .order("scanned_at", { ascending: false })
+        .limit(1);
+      const last = today?.[0]?.direction ?? null;
+      direction = last === "in" ? "out" : "in";
+    }
   }
   if (!direction) direction = now < 720 ? "in" : "out";
+
 
   // Duplicate protection.
   const since = new Date(Date.now() - cooldown * 60 * 1000).toISOString();
