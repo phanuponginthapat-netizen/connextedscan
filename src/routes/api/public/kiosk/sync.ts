@@ -31,9 +31,11 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
             .in("status", ["pending", "ready"]),
         ]);
 
-        const pending = (faces ?? []).filter((f) => f.status === "pending");
+        // A photo still needs local ArcFace work whenever it has no ArcFace
+        // embedding yet, even if the browser already measured it (status ready).
+        const pending = (faces ?? []).filter((f) => !f.embedding);
         const ready = (faces ?? [])
-          .filter((f) => f.status === "ready" && f.embedding)
+          .filter((f) => f.embedding)
           .map((f) => ({
             id: f.id,
             student_id: f.student_id,

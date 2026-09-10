@@ -75,7 +75,9 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
         student_id: id,
         image_path: path,
         source,
-        status: "pending",
+        // Measured right here in the browser, so scanning works without the
+        // FaceGate program installed.
+        status: face ? "ready" : "pending",
         quality: quality ?? null,
         web_embedding: face?.descriptor ?? null,
         web_geometry: face?.geometry ?? null,
@@ -106,13 +108,33 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
         (f) => f.image_path === person.avatar_path && f.status !== "failed",
       );
       if (already) throw new Error("รูปโปรไฟล์นี้ถูกใช้ลงทะเบียนใบหน้าแล้ว");
-      const { error } = await supabase
-        .from("student_faces")
-        .insert({ student_id: id, image_path: person.avatar_path, source: "profile", status: "pending" });
+
+      // Measure the profile photo in the browser so it is usable right away.
+      const { data: signed } = await supabase.storage
+        .from("faces")
+        .createSignedUrl(person.avatar_path, 600);
+      let face: { descriptor: number[]; geometry: Record<string, number> } | null = null;
+      if (signed?.signedUrl) {
+        const { measureImageUrl } = await import("@/lib/face-web");
+        const outcome = await measureImageUrl(signed.signedUrl);
+        if (outcome.status === "multiple_faces") throw new Error("รูปโปรไฟล์มีหลายใบหน้า");
+        if (outcome.status === "no_face") throw new Error("ไม่พบใบหน้าในรูปโปรไฟล์");
+        face = { descriptor: outcome.face.descriptor, geometry: outcome.face.geometry };
+      }
+
+      const { error } = await supabase.from("student_faces").insert({
+        student_id: id,
+        image_path: person.avatar_path,
+        source: "profile",
+        status: face ? "ready" : "pending",
+        web_embedding: face?.descriptor ?? null,
+        web_geometry: face?.geometry ?? null,
+        processed_at: face ? new Date().toISOString() : null,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("ส่งรูปโปรไฟล์ไปลงทะเบียนใบหน้าแล้ว รอตู้สแกนประมวลผล");
+      toast.success("ลงทะเบียนใบหน้าจากรูปโปรไฟล์แล้ว ใช้สแกนได้ทันที");
       qc.invalidateQueries({ queryKey: ["faces", id] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -318,8 +340,8 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-muted-foreground">
-            รูปที่ผ่านการจับใบหน้าแล้วจะใช้กับโหมดเว็บได้ทันที และจะขึ้น “พร้อมใช้”
-            เมื่อเครื่องตู้สแกนคำนวณด้วย ArcFace เสร็จ
+            รูปที่ขึ้น “พร้อมใช้” จะใช้สแกนได้ทันทีโดยไม่ต้องเปิดโปรแกรม FaceGate
+            และถ้าเปิดเครื่องตู้สแกนไว้ ระบบจะคำนวณซ้ำด้วย ArcFace ให้แม่นขึ้นอัตโนมัติ
           </p>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {(faces ?? []).map((f) => (
