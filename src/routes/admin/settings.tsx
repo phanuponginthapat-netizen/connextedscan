@@ -255,6 +255,45 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">สแกนผ่านหน้าเว็บ (ไม่ต้องติดตั้งโปรแกรม)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-3 sm:col-span-3">
+            <Switch
+              checked={form.allow_web_scan}
+              onCheckedChange={(v) => set({ allow_web_scan: v })}
+            />
+            <span className="text-sm">
+              อนุญาตให้ตู้สแกนใช้หน้าเว็บตรวจใบหน้าได้ เมื่อไม่มีโปรแกรมบนเครื่อง
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            <Label>ความคล้ายขั้นต่ำของโหมดเว็บ</Label>
+            <Input
+              type="number"
+              step={0.01}
+              min={0}
+              max={1}
+              value={Number(form.web_match_threshold)}
+              onChange={(e) => set({ web_match_threshold: Number(e.target.value) })}
+            />
+            <p className="text-xs text-muted-foreground">
+              ตัวเลขน้อย = เข้มงวดขึ้น (แนะนำ 0.42)
+            </p>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>เตรียมรูปที่ลงทะเบียนไว้ให้โหมดเว็บ</Label>
+            <Button variant="secondary" onClick={() => prepare.mutate()} disabled={prepare.isPending}>
+              {prepare.isPending ? "กำลังเตรียมรูป…" : "เตรียมรูปทั้งหมด"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              ต้องกดหนึ่งครั้งหลังลงทะเบียนรูปใหม่ เพื่อให้โหมดเว็บรู้จักคนเหล่านั้น
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
         บันทึกการตั้งค่า
