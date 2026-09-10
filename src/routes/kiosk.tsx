@@ -288,7 +288,7 @@ function Kiosk() {
         );
       }
       if (scan.speak) speak(scan.speak);
-      const delay = scan.next_delay_seconds ?? 3;
+      const delay = scan.next_delay_seconds ?? 5;
       setStatus("cooldown");
       setCountdown(delay);
       const timer = setInterval(() => {
