@@ -87,6 +87,11 @@ function Kiosk() {
   const [webError, setWebError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentScan[]>([]);
   const [voiceOn, setVoiceOn] = useState(false);
+  const [display, setDisplay] = useState({
+    show_recent: true,
+    mirror: true,
+    show_clock: true,
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const thaiVoice = () => {
@@ -182,7 +187,15 @@ function Kiosk() {
           avatar_url: string | null;
           snapshot_url: string | null;
         }>;
+        display?: { show_recent?: boolean; mirror?: boolean; show_clock?: boolean };
       };
+      if (data.display) {
+        setDisplay({
+          show_recent: data.display.show_recent ?? true,
+          mirror: data.display.mirror ?? true,
+          show_clock: data.display.show_clock ?? true,
+        });
+      }
       setRecent(
         (data.items ?? []).map((item) => ({
           id: item.id,
@@ -482,14 +495,18 @@ function Kiosk() {
       )}
 
       {/* Body fills the rest of the screen — no page scrolling */}
-      <div className="mt-3 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div
+        className={`mt-3 grid min-h-0 flex-1 gap-4 ${
+          display.show_recent ? "lg:grid-cols-[minmax(0,1fr)_340px]" : "grid-cols-1"
+        }`}
+      >
         <div className="relative min-h-0 overflow-hidden rounded-3xl border shadow-panel">
           <video
             ref={videoRef}
             autoPlay
             muted
             playsInline
-            className="h-full w-full scale-x-[-1] bg-muted object-cover"
+            className={`h-full w-full bg-muted object-cover ${display.mirror ? "scale-x-[-1]" : ""}`}
           />
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -532,6 +549,7 @@ function Kiosk() {
         </div>
 
         {/* Right: people who already scanned */}
+        {display.show_recent && (
         <aside className="flex min-h-0 flex-col rounded-3xl border bg-card p-4 shadow-panel">
           <div className="flex shrink-0 items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">สแกนเข้าล่าสุด</h2>
