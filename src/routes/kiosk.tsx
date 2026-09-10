@@ -202,6 +202,13 @@ function Kiosk() {
         {!result && <p className="text-muted-foreground">รอสแกนคนถัดไป…</p>}
         {result && (
           <div className="space-y-2">
+            {result.avatar_url && (
+              <img
+                src={result.avatar_url}
+                alt={result.student ? `รูปของ ${result.student.full_name}` : "รูปโปรไฟล์"}
+                className="mx-auto size-24 rounded-full border-4 border-primary/40 object-cover shadow"
+              />
+            )}
             <div className="flex items-center justify-center gap-2">
               {result.result === "ok" ? (
                 <CheckCircle2 className="size-7 text-primary" />

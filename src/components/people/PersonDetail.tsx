@@ -298,6 +298,21 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
                 e.target.value = "";
               }}
             />
+            {person.avatar_path && (
+              <Button
+                variant="secondary"
+                className="w-full"
+                disabled={enrollAvatar.isPending}
+                onClick={() => enrollAvatar.mutate()}
+              >
+                {enrollAvatar.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Camera className="size-4" />
+                )}
+                ใช้รูปโปรไฟล์ลงทะเบียนใบหน้า
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
