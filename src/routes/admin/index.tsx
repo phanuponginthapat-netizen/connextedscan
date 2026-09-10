@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, LogIn, LogOut, UserCheck, Users } from "lucide-react";
+import { ArrowRight, Briefcase, LogIn, LogOut, UserCheck, Users } from "lucide-react";
+import { personGroupLabel } from "@/components/people/people";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,7 @@ function Dashboard() {
         <p className="text-sm text-muted-foreground">อัปเดตอัตโนมัติทุก 15 วินาที</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((s) => (
           <Card key={s.label}>
             <CardContent className="flex items-center gap-4 pt-6">
@@ -118,7 +119,7 @@ function Dashboard() {
               <div>
                 <p className="font-medium">{row.students?.full_name ?? "ไม่ทราบชื่อ"}</p>
                 <p className="text-xs text-muted-foreground">
-                  {row.students?.class_room ?? "-"} •{" "}
+                  {row.students ? personGroupLabel(row.students) : "-"} •{" "}
                   {new Date(row.scanned_at).toLocaleTimeString("th-TH", {
                     hour: "2-digit",
                     minute: "2-digit",
