@@ -113,6 +113,7 @@ function AttendancePage() {
         )
         .gte("scanned_at", start.toISOString())
         .lte("scanned_at", end.toISOString())
+        .neq("status", "duplicate")
         .order("scanned_at", { ascending: false });
       if (personType !== "all") query = query.eq("students.person_type", personType);
       const { data, error } = await query;
