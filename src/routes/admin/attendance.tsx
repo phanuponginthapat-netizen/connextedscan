@@ -58,6 +58,21 @@ function AttendancePage() {
     },
   });
 
+  const paths = (rows ?? []).map((r) => r.snapshot_path).filter(Boolean) as string[];
+
+  const { data: snapshots } = useQuery({
+    queryKey: ["attendance-snapshots", paths],
+    enabled: paths.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase.storage.from("faces").createSignedUrls(paths, 3600);
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((item) => {
+        if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
+      });
+      return map;
+    },
+  });
+
   function exportCsv() {
     const header = "เวลา,รหัส,ชื่อ,ห้อง,ประเภท,สถานะ,ความมั่นใจ,เครื่อง\n";
     const body = (rows ?? [])
