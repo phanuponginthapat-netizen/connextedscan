@@ -197,7 +197,7 @@ function SettingsPage() {
     },
     { id: "scan", title: "การสแกนและเสียง", hint: "กันสแกนซ้ำ หน่วงเวลา และเสียงพูด", icon: Volume2 },
     { id: "accuracy", title: "ความแม่นยำและรูปถ่าย", hint: "ค่าความเหมือนและการเก็บรูป", icon: Gauge },
-    { id: "web", title: "โหมดสแกนผ่านเว็บ", hint: "ใช้งานได้โดยไม่ต้องติดตั้งโปรแกรม", icon: Globe },
+    
     {
       id: "kiosk",
       title: "หน้าจอตู้สแกน",
