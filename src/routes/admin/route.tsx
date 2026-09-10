@@ -40,11 +40,26 @@ function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       <aside className="hidden w-64 shrink-0 flex-col bg-sidebar p-5 text-sidebar-foreground md:flex">
-        <Link to="/" className="flex items-center gap-2">
-          <ScanFace className="size-6 text-sidebar-primary" />
-          <span className="text-lg font-semibold">FaceGate</span>
+        <Link to="/" className="flex items-center gap-3">
+          {t("brand.logo_url") ? (
+            <img
+              src={t("brand.logo_url")}
+              alt={t("brand.name")}
+              className="size-9 rounded-md object-contain"
+            />
+          ) : (
+            <span className="grid size-9 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+              <ScanFace className="size-5" />
+            </span>
+          )}
+          <span className="leading-tight">
+            <span className="block font-display text-base font-semibold">{t("brand.name")}</span>
+            <span className="block text-xs text-sidebar-foreground/70">
+              {t("brand.school_name")}
+            </span>
+          </span>
         </Link>
         <nav className="mt-8 flex-1 space-y-1">
           {nav.map((item) => {
