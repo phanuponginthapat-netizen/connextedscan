@@ -39,8 +39,8 @@ function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="relative hidden w-64 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground md:flex">
+    <div className="dark admin-theme flex min-h-screen bg-background text-foreground">
+      <aside className="relative hidden w-64 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
         <div className="pointer-events-none absolute -top-24 -left-24 size-64 rounded-full bg-sidebar-primary/10 blur-3xl" />
         <div className="pointer-events-none absolute right-0 bottom-24 size-48 rounded-full bg-sidebar-primary/5 blur-3xl" />
 
