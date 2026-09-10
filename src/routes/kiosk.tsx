@@ -56,6 +56,8 @@ function Kiosk() {
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
   const [knownFaces, setKnownFaces] = useState<number | null>(null);
+  const [webReady, setWebReady] = useState(false);
+  const [webError, setWebError] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(AGENT_KEY);
