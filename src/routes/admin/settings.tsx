@@ -141,7 +141,11 @@ function SettingsPage() {
       if (!form) return;
       const { error } = await supabase
         .from("settings")
-        .update({ ...form, updated_at: new Date().toISOString() })
+        .update({
+          ...form,
+          school_name: t("brand.school_name"),
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", true);
       if (error) throw error;
     },
