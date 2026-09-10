@@ -180,12 +180,12 @@ function Kiosk() {
         });
       }, 1000);
     } catch {
-      setAgentOnline(false);
+      if (agentOnline) setAgentOnline(false);
       setGuide("idle");
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl]);
+  }, [agentUrl, agentOnline, scanViaWeb]);
 
   useEffect(() => {
     const interval = setInterval(() => {
