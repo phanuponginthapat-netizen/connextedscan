@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FaceGate</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: "Sarabun", "Prompt", "Segoe UI", system-ui, sans-serif;
+        background: radial-gradient(1200px 700px at 50% -10%, #1e3a5f 0%, #0f1e33 50%, #0a1424 100%);
+        color: #e8eef6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 26px;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .logo {
+        width: 96px; height: 96px;
+        border-radius: 26px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 46px;
+        box-shadow: 0 16px 48px rgba(37, 99, 235, 0.45);
+        animation: pulse 2.2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { box-shadow: 0 16px 48px rgba(37, 99, 235, 0.45); }
+        50% { box-shadow: 0 16px 64px rgba(37, 99, 235, 0.7); }
+      }
+      h1 { margin: 0; font-size: 34px; letter-spacing: 0.5px; }
+      .sub { color: #8ba3c4; font-size: 15px; margin-top: -14px; }
+      .spinner {
+        width: 44px; height: 44px;
+        border: 4px solid rgba(148, 163, 184, 0.2);
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #msg { color: #b7c9e2; font-size: 15px; min-height: 22px; }
+      .warn { color: #fbbf24 !important; }
+    </style>
+  </head>
+  <body>
+    <div class="logo">🛡️</div>
+    <h1>FaceGate</h1>
+    <div class="sub">ระบบสแกนใบหน้าเข้า–ออกโรงเรียน</div>
+    <div class="spinner" id="spinner"></div>
+    <div id="msg">กำลังเปิดระบบ…</div>
+    <script>
+      let seconds = 0;
+      const msg = document.getElementById("msg");
+      const spinner = document.getElementById("spinner");
+      setInterval(() => {
+        seconds += 1;
+        if (seconds === 8) {
+          msg.textContent = "กำลังรอการเชื่อมต่ออินเทอร์เน็ต…";
+        } else if (seconds === 20) {
+          msg.textContent = "ยังเชื่อมต่อไม่ได้ — ตรวจสอบสายแลน / Wi-Fi ของเครื่องตู้";
+          msg.className = "warn";
+        } else if (seconds > 20 && seconds % 10 === 0) {
+          msg.textContent = "ยังเชื่อมต่อไม่ได้ — ระบบจะลองใหม่เรื่อย ๆ อัตโนมัติ (" + seconds + " วินาที)";
+        }
+      }, 1000);
+      window.addEventListener("offline", () => {
+        msg.textContent = "ไม่มีอินเทอร์เน็ต — รอการเชื่อมต่อ";
+        msg.className = "warn";
+      });
+    </script>
+  </body>
+</html>
