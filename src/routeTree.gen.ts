@@ -10,33 +10,175 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as KioskRouteImport } from './routes/kiosk'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminStudentsIndexRouteImport } from './routes/admin/students/index'
+import { Route as AdminStudentsIdRouteImport } from './routes/admin/students/$id'
+import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
+import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
+import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KioskRoute = KioskRouteImport.update({
+  id: '/kiosk',
+  path: '/kiosk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAttendanceRoute = AdminAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminStudentsIndexRoute = AdminStudentsIndexRouteImport.update({
+  id: '/students/',
+  path: '/students/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminStudentsIdRoute = AdminStudentsIdRouteImport.update({
+  id: '/students/$id',
+  path: '/students/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const ApiPublicKioskAttendanceRoute =
+  ApiPublicKioskAttendanceRouteImport.update({
+    id: '/api/public/kiosk/attendance',
+    path: '/api/public/kiosk/attendance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicKioskEmbeddingsRoute =
+  ApiPublicKioskEmbeddingsRouteImport.update({
+    id: '/api/public/kiosk/embeddings',
+    path: '/api/public/kiosk/embeddings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
+  id: '/api/public/kiosk/sync',
+  path: '/api/public/kiosk/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/kiosk': typeof KioskRoute
+  '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/students/$id': typeof AdminStudentsIdRoute
+  '/admin/students/': typeof AdminStudentsIndexRoute
+  '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
+  '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/kiosk': typeof KioskRoute
+  '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/students/$id': typeof AdminStudentsIdRoute
+  '/admin/students': typeof AdminStudentsIndexRoute
+  '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
+  '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/kiosk': typeof KioskRoute
+  '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/students/$id': typeof AdminStudentsIdRoute
+  '/admin/students/': typeof AdminStudentsIndexRoute
+  '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
+  '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/kiosk'
+    | '/admin/attendance'
+    | '/admin/settings'
+    | '/admin/'
+    | '/admin/students/$id'
+    | '/admin/students/'
+    | '/api/public/kiosk/attendance'
+    | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/sync'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/kiosk'
+    | '/admin/attendance'
+    | '/admin/settings'
+    | '/admin'
+    | '/admin/students/$id'
+    | '/admin/students'
+    | '/api/public/kiosk/attendance'
+    | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/sync'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/kiosk'
+    | '/admin/attendance'
+    | '/admin/settings'
+    | '/admin/'
+    | '/admin/students/$id'
+    | '/admin/students/'
+    | '/api/public/kiosk/attendance'
+    | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  KioskRoute: typeof KioskRoute
+  ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
+  ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
+  ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +190,114 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kiosk': {
+      id: '/kiosk'
+      path: '/kiosk'
+      fullPath: '/kiosk'
+      preLoaderRoute: typeof KioskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/attendance': {
+      id: '/admin/attendance'
+      path: '/attendance'
+      fullPath: '/admin/attendance'
+      preLoaderRoute: typeof AdminAttendanceRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/students/': {
+      id: '/admin/students/'
+      path: '/students'
+      fullPath: '/admin/students/'
+      preLoaderRoute: typeof AdminStudentsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/students/$id': {
+      id: '/admin/students/$id'
+      path: '/students/$id'
+      fullPath: '/admin/students/$id'
+      preLoaderRoute: typeof AdminStudentsIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/api/public/kiosk/attendance': {
+      id: '/api/public/kiosk/attendance'
+      path: '/api/public/kiosk/attendance'
+      fullPath: '/api/public/kiosk/attendance'
+      preLoaderRoute: typeof ApiPublicKioskAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/kiosk/embeddings': {
+      id: '/api/public/kiosk/embeddings'
+      path: '/api/public/kiosk/embeddings'
+      fullPath: '/api/public/kiosk/embeddings'
+      preLoaderRoute: typeof ApiPublicKioskEmbeddingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/kiosk/sync': {
+      id: '/api/public/kiosk/sync'
+      path: '/api/public/kiosk/sync'
+      fullPath: '/api/public/kiosk/sync'
+      preLoaderRoute: typeof ApiPublicKioskSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminAttendanceRoute: typeof AdminAttendanceRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminStudentsIdRoute: typeof AdminStudentsIdRoute
+  AdminStudentsIndexRoute: typeof AdminStudentsIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAttendanceRoute: AdminAttendanceRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminStudentsIdRoute: AdminStudentsIdRoute,
+  AdminStudentsIndexRoute: AdminStudentsIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  KioskRoute: KioskRoute,
+  ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
+  ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
+  ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
