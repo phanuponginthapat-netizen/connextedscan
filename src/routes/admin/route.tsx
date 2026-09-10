@@ -76,7 +76,7 @@ function AdminLayout() {
                 )}
               >
                 <item.icon className="size-4" />
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}
@@ -92,7 +92,7 @@ function AdminLayout() {
               navigate({ to: "/auth" });
             }}
           >
-            <LogOut className="size-4" /> ออกจากระบบ
+            <LogOut className="size-4" /> {t("action.logout")}
           </Button>
         </div>
       </aside>
@@ -105,23 +105,23 @@ function AdminLayout() {
               to={item.to}
               className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground"
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
         </div>
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-card/95 px-4 py-2 backdrop-blur">
           <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
-            <ChevronLeft className="size-4" /> ย้อนกลับ
+            <ChevronLeft className="size-4" /> {t("action.back")}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => window.history.forward()}>
-            ไปต่อ <ChevronRight className="size-4" />
+            {t("action.forward")} <ChevronRight className="size-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/admin" })}>
-            <LayoutDashboard className="size-4" /> หน้าภาพรวม
+            <LayoutDashboard className="size-4" /> {t("action.dashboard")}
           </Button>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/kiosk" })}>
-              <ScanFace className="size-4" /> ไปหน้าสแกน
+              <ScanFace className="size-4" /> {t("action.kiosk")}
             </Button>
             <Button
               variant="destructive"
@@ -132,7 +132,7 @@ function AdminLayout() {
                 navigate({ to: "/auth" });
               }}
             >
-              <LogOut className="size-4" /> ออกจากระบบ
+              <LogOut className="size-4" /> {t("action.logout")}
             </Button>
           </div>
         </div>
