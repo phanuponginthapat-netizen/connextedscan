@@ -92,7 +92,14 @@ function Kiosk() {
     voice_enabled: true,
     voice_rate: 1,
     voice_volume: 1,
+    news_enabled: false,
+    news_text: "",
   });
+  // Boot gate: the scan screen only appears once the camera, the FaceGate
+  // program and the voice are all ready, so the kiosk works at full speed
+  // from the very first scan.
+  const [camReady, setCamReady] = useState(false);
+  const [booted, setBooted] = useState(false);
   const displayRef = useRef(display);
   displayRef.current = display;
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -200,6 +207,8 @@ function Kiosk() {
           voice_enabled?: boolean;
           voice_rate?: number;
           voice_volume?: number;
+          news_enabled?: boolean;
+          news_text?: string;
         };
       };
       if (data.display) {
@@ -210,6 +219,8 @@ function Kiosk() {
           voice_enabled: data.display.voice_enabled ?? true,
           voice_rate: Number(data.display.voice_rate ?? 1),
           voice_volume: Number(data.display.voice_volume ?? 1),
+          news_enabled: data.display.news_enabled ?? false,
+          news_text: data.display.news_text ?? "",
         });
       }
       setRecent(
@@ -308,10 +319,20 @@ function Kiosk() {
       .then((s) => {
         stream = s;
         if (videoRef.current) videoRef.current.srcObject = s;
+        setCamReady(true);
       })
       .catch(() => setCamError("เปิดกล้องไม่ได้ กรุณาอนุญาตการใช้กล้องแล้วรีเฟรชหน้าจอ"));
     return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
+
+  // Enter the scan screen only when everything the kiosk needs is ready.
+  // On the desktop program the voice turns itself on; in a plain browser the
+  // person taps the boot screen once (browsers require a gesture for sound).
+  useEffect(() => {
+    if (booted) return;
+    const voiceReady = voiceOn || !display.voice_enabled;
+    if (camReady && agentOnline === true && voiceReady) setBooted(true);
+  }, [booted, camReady, agentOnline, voiceOn, display.voice_enabled]);
 
   const capture = useCallback((video: HTMLVideoElement, quality: number) => {
     const canvas = document.createElement("canvas");
@@ -324,7 +345,7 @@ function Kiosk() {
   const scanOnce = useCallback(async () => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || busyRef.current) return;
-    if (!agentOnline) return;
+    if (!agentOnline || !booted) return;
     busyRef.current = true;
     setStatus("scanning");
     setGuide("scanning");
@@ -376,7 +397,7 @@ function Kiosk() {
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, capture, speak, loadRecent]);
+  }, [agentUrl, agentOnline, booted, capture, speak, loadRecent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -588,6 +609,76 @@ function Kiosk() {
         </aside>
         )}
       </div>
+
+      {/* Scrolling announcement bar, configured in Settings > หน้าจอตู้สแกน */}
+      {display.news_enabled && display.news_text.trim() !== "" && (
+        <footer className="mt-3 shrink-0 overflow-hidden rounded-full border bg-card/80 px-5 py-2 shadow-panel backdrop-blur">
+          <div className="animate-marquee flex w-max gap-16 whitespace-nowrap text-sm font-medium">
+            <span>{display.news_text}</span>
+            <span aria-hidden="true">{display.news_text}</span>
+          </div>
+        </footer>
+      )}
+
+      {/* Boot screen: wait until camera, FaceGate and voice are all ready */}
+      {!booted && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-background p-6">
+          <div className="animate-soft-in w-full max-w-md space-y-6 rounded-3xl border bg-card p-8 text-center shadow-panel">
+            {logo ? (
+              <img
+                src={logo}
+                alt={t("brand.name")}
+                className="animate-float-soft mx-auto size-16 rounded-2xl object-contain"
+              />
+            ) : null}
+            <div>
+              <h2 className="font-display text-xl font-bold">{t("kiosk.title")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">กำลังเตรียมระบบให้พร้อมก่อนเริ่มสแกน</p>
+            </div>
+            <ul className="space-y-2 text-left text-sm">
+              <li className="flex items-center gap-3 rounded-xl border p-3">
+                {camReady ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                ) : (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                <span>{camReady ? "กล้องพร้อมใช้งาน" : "กำลังเปิดกล้อง…"}</span>
+              </li>
+              <li className="flex items-center gap-3 rounded-xl border p-3">
+                {agentOnline === true ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                ) : (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                <span>
+                  {agentOnline === true
+                    ? `โปรแกรม FaceGate พร้อม (ใบหน้า ${knownFaces ?? 0} คน)`
+                    : "กำลังรอโปรแกรม FaceGate… กรุณาเปิดโปรแกรมบนเครื่องนี้"}
+                </span>
+              </li>
+              <li className="flex items-center gap-3 rounded-xl border p-3">
+                {voiceOn || !display.voice_enabled ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                ) : (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                <span>
+                  {!display.voice_enabled
+                    ? "ปิดเสียงประกาศไว้ในการตั้งค่า"
+                    : voiceOn
+                      ? "เสียงประกาศพร้อมใช้งาน"
+                      : "กำลังเตรียมเสียงประกาศ…"}
+                </span>
+              </li>
+            </ul>
+            {display.voice_enabled && !voiceOn && (
+              <Button className="w-full" onClick={enableVoice}>
+                <Volume2 className="size-4" /> แตะเพื่อเปิดเสียงและเริ่มใช้งาน
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Scan result popup */}
       {result && (

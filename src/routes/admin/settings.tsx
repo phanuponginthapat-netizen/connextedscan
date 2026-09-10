@@ -16,12 +16,14 @@ import {
   Settings2,
   Volume2,
   CalendarDays,
+  Megaphone,
   ShieldCheck,
   Monitor,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TimeInput24 } from "@/components/ui/time-input-24";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -88,6 +90,8 @@ type SettingsRow = {
   kiosk_mirror: boolean;
   kiosk_show_clock: boolean;
   kiosk_show_confidence: boolean;
+  kiosk_news_enabled: boolean;
+  kiosk_news_text: string;
   min_face_coverage: number;
   detector_min_score: number;
   log_unknown_attempts: boolean;
@@ -541,6 +545,27 @@ function SettingsPage() {
                       value={Number(form.kiosk_recent_limit)}
                       onChange={(e) => set({ kiosk_recent_limit: Number(e.target.value) })}
                     />
+                  </div>
+                  <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={form.kiosk_news_enabled}
+                        onCheckedChange={(v) => set({ kiosk_news_enabled: v })}
+                      />
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Megaphone className="size-4 text-primary" />
+                        แถบข้อความประชาสัมพันธ์วิ่งไหลด้านล่างจอตู้สแกน
+                      </span>
+                    </div>
+                    <Textarea
+                      rows={2}
+                      placeholder="เช่น ประกาศ: พรุ่งนี้ปิดเรียนชดเชยวันหยุด ขอให้นักเรียนทุกคนสแกนเข้าก่อน 07:45 น."
+                      value={form.kiosk_news_text}
+                      onChange={(e) => set({ kiosk_news_text: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ข้อความนี้จะไหลวนด้านล่างหน้าจอตู้สแกนทุกเครื่อง มีผลทันทีหลังบันทึก
+                    </p>
                   </div>
                 </div>
                 {SaveBar}

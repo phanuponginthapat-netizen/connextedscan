@@ -131,6 +131,8 @@ export type Database = {
           geometry_weight: number
           id: boolean
           kiosk_mirror: boolean
+          kiosk_news_enabled: boolean
+          kiosk_news_text: string
           kiosk_recent_limit: number
           kiosk_show_clock: boolean
           kiosk_show_confidence: boolean
@@ -176,6 +178,8 @@ export type Database = {
           geometry_weight?: number
           id?: boolean
           kiosk_mirror?: boolean
+          kiosk_news_enabled?: boolean
+          kiosk_news_text?: string
           kiosk_recent_limit?: number
           kiosk_show_clock?: boolean
           kiosk_show_confidence?: boolean
@@ -221,6 +225,8 @@ export type Database = {
           geometry_weight?: number
           id?: boolean
           kiosk_mirror?: boolean
+          kiosk_news_enabled?: boolean
+          kiosk_news_text?: string
           kiosk_recent_limit?: number
           kiosk_show_clock?: boolean
           kiosk_show_confidence?: boolean

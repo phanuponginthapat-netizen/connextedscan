@@ -229,6 +229,17 @@
   animation: float-soft 5s ease-in-out infinite;
 }
 
+/* Scrolling announcement bar on the kiosk screen. Content is duplicated so
+   translating -50% loops seamlessly. */
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@utility animate-marquee {
+  animation: marquee-x 28s linear infinite;
+}
+
 /* Children fade up one after another. */
 @utility stagger-children {
   & > * {

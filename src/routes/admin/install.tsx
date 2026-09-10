@@ -18,6 +18,37 @@ export const Route = createFileRoute("/admin/install")({
   }),
 });
 
+const ZIP_PATH = "FaceGate-Setup-windows-x64-v3.zip";
+
+function ZipDownloadButton() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="space-y-2">
+      <Button
+        disabled={loading}
+        onClick={async () => {
+          setLoading(true);
+          setError(null);
+          const { data, error: err } = await supabase.storage
+            .from("downloads")
+            .createSignedUrl(ZIP_PATH, 3600, { download: ZIP_PATH });
+          setLoading(false);
+          if (err || !data?.signedUrl) {
+            setError("สร้างลิงก์ดาวน์โหลดไม่สำเร็จ กรุณาลองใหม่");
+            return;
+          }
+          window.open(data.signedUrl, "_blank");
+        }}
+      >
+        <Download className="size-4" />
+        {loading ? "กำลังสร้างลิงก์ดาวน์โหลด..." : "ดาวน์โหลด FaceGate ZIP"}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 function CopyBox({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -132,6 +163,24 @@ function InstallPage() {
           </ol>
           <p className="mt-3 text-xs text-muted-foreground">
             ครั้งแรกจะใช้เวลาสักครู่ เพราะต้องดาวน์โหลดไฟล์ประมวลผลใบหน้าประมาณ 300 MB
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Download className="size-4" /> ดาวน์โหลดโปรแกรม FaceGate (ZIP)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            ไฟล์ ZIP แบบติดตั้งได้ทันที — ไม่ต้องลง Python เอง แตกไฟล์แล้วเปิด FaceGate.exe ได้เลย
+            ใส่รหัสเครื่องครั้งแรกเพียงครั้งเดียว
+          </p>
+          <ZipDownloadButton />
+          <p className="text-xs text-muted-foreground">
+            ขนาดประมาณ 250 MB · สำหรับ Windows 64-bit
           </p>
         </CardContent>
       </Card>
