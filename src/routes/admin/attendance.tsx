@@ -129,19 +129,38 @@ function AttendancePage() {
             <p className="p-8 text-center text-sm text-muted-foreground">ไม่มีข้อมูลในวันที่เลือก</p>
           )}
           {(rows ?? []).map((r) => (
-            <div key={r.id} className="flex items-center justify-between px-5 py-3">
-              <div>
-                <p className="font-medium">{r.students?.full_name ?? "ไม่ทราบชื่อ"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {r.students?.student_code ?? "-"} • {r.students?.class_room ?? "-"} •{" "}
-                  {new Date(r.scanned_at).toLocaleTimeString("th-TH", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+            <div key={r.id} className="flex items-center justify-between gap-3 px-5 py-3">
+              <div className="flex items-center gap-3">
+                {r.snapshot_path && snapshots?.[r.snapshot_path] ? (
+                  <img
+                    src={snapshots[r.snapshot_path]}
+                    alt={`ภาพขณะสแกนของ ${r.students?.full_name ?? "นักเรียน"}`}
+                    loading="lazy"
+                    className="size-12 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="size-12 rounded-lg bg-muted" />
+                )}
+                <div>
+                  <p className="font-medium">{r.students?.full_name ?? "ไม่ทราบชื่อ"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.students?.student_code ?? "-"} • {r.students?.class_room ?? "-"} •{" "}
+                    {new Date(r.scanned_at).toLocaleTimeString("th-TH", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ความเหมือน {r.confidence != null ? r.confidence.toFixed(2) : "-"}
+                    {r.geometry_score != null && ` • สัดส่วนใบหน้า ${r.geometry_score.toFixed(2)}`}
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {r.status === "duplicate" && <Badge variant="outline">สแกนซ้ำ</Badge>}
+                {r.status === "geometry_reject" && (
+                  <Badge variant="destructive">สัดส่วนไม่ตรง</Badge>
+                )}
                 <Badge variant={r.direction === "in" ? "default" : "secondary"}>
                   {r.direction === "in" ? "เข้า" : "ออก"}
                 </Badge>
