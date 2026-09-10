@@ -179,10 +179,12 @@ function openSettings() {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 560,
-    height: 460,
+    width: 640,
+    height: 600,
     resizable: false,
     autoHideMenuBar: true,
+    title: "FaceGate — ตั้งค่าเครื่องตู้สแกน",
+    backgroundColor: "#0a1424",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
