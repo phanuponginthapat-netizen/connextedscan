@@ -91,7 +91,12 @@ function Kiosk() {
     show_recent: true,
     mirror: true,
     show_clock: true,
+    voice_enabled: true,
+    voice_rate: 1,
+    voice_volume: 1,
   });
+  const displayRef = useRef(display);
+  displayRef.current = display;
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const thaiVoice = () => {
@@ -151,6 +156,8 @@ function Kiosk() {
   const speak = useCallback(
     (text: string) => {
       if (typeof window === "undefined" || !voiceOn) return;
+      const cfg = displayRef.current;
+      if (!cfg.voice_enabled) return;
       const voice = thaiVoice();
       if (voice && "speechSynthesis" in window) {
         const synth = window.speechSynthesis;
@@ -158,7 +165,8 @@ function Kiosk() {
         synth.resume();
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = "th-TH";
-        utter.rate = 1;
+        utter.rate = cfg.voice_rate || 1;
+        utter.volume = cfg.voice_volume ?? 1;
         utter.voice = voice;
         utter.onerror = () => void speakViaServer(text).catch(() => {});
         synth.speak(utter);
@@ -187,13 +195,23 @@ function Kiosk() {
           avatar_url: string | null;
           snapshot_url: string | null;
         }>;
-        display?: { show_recent?: boolean; mirror?: boolean; show_clock?: boolean };
+        display?: {
+          show_recent?: boolean;
+          mirror?: boolean;
+          show_clock?: boolean;
+          voice_enabled?: boolean;
+          voice_rate?: number;
+          voice_volume?: number;
+        };
       };
       if (data.display) {
         setDisplay({
           show_recent: data.display.show_recent ?? true,
           mirror: data.display.mirror ?? true,
           show_clock: data.display.show_clock ?? true,
+          voice_enabled: data.display.voice_enabled ?? true,
+          voice_rate: Number(data.display.voice_rate ?? 1),
+          voice_volume: Number(data.display.voice_volume ?? 1),
         });
       }
       setRecent(
