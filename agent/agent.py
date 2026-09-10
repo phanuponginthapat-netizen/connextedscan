@@ -591,5 +591,8 @@ if __name__ == "__main__":
 
     if not DEVICE_KEY:
         raise SystemExit("ตั้งค่า FACEGATE_DEVICE_KEY ก่อนเริ่มโปรแกรม (ดูรหัสได้ในหน้าตั้งค่าระบบ)")
+    load_cache()
     threading.Thread(target=sync_loop, daemon=True).start()
+    threading.Thread(target=outbox_loop, daemon=True).start()
+
     uvicorn.run(app, host="127.0.0.1", port=PORT)
