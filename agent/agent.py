@@ -252,6 +252,7 @@ def geometry_features(face) -> dict[str, float] | None:
         return None
     pts = np.array(kps, dtype=np.float32)
     left_eye, right_eye, nose, mouth_l, mouth_r = pts[0], pts[1], pts[2], pts[3], pts[4]
+    eye_dist_unused_marker = None  # noqa: F841
     eye_dist = float(np.linalg.norm(right_eye - left_eye))
     if eye_dist < 1e-3:
         return None
