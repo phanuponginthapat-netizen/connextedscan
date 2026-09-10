@@ -452,6 +452,17 @@ class ScanRequest(BaseModel):
     image: str
 
 
+def detection_payload(dets: np.ndarray, kpss: np.ndarray, index: int, width: float, height: float):
+    """Small visual payload for the kiosk overlay; recognition stays local."""
+    x1, y1, x2, y2 = [float(value) for value in dets[index, :4]]
+    return {
+        "box": {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1},
+        "landmarks": [{"x": float(point[0]), "y": float(point[1])} for point in kpss[index]],
+        "frame": {"width": width, "height": height},
+        "score": round(float(dets[index, 4]), 4),
+    }
+
+
 @app.get("/health")
 def health():
     with lock:
@@ -477,7 +488,7 @@ def health():
 
 
 
-_motion: dict[str, Any] = {"prev": None}
+_motion: dict[str, Any] = {"prev": None, "visual": None}
 
 
 def scene_is_static(bgr: np.ndarray) -> bool:
@@ -514,12 +525,17 @@ def scan(req: ScanRequest):
     min_coverage = float(settings.get("min_face_coverage") or 0.0)
 
     if scene_is_static(arr):
-        return {"result": "no_face", "message": ""}
+        return {
+            "result": "no_face",
+            "message": "",
+            "face_detection": _motion.get("visual"),
+        }
 
     # Detect only (cheap); the expensive embedding runs for one face at most.
     dets, kpss = face_app.detect(arr)
     strong = [i for i in range(dets.shape[0]) if float(dets[i, 4]) >= det_min]
     if not strong:
+        _motion["visual"] = None
         return {"result": "no_face", "message": ""}
 
     frame_h, frame_w = float(arr.shape[0]), float(arr.shape[1])
@@ -552,11 +568,13 @@ def scan(req: ScanRequest):
             "message": "กรุณาจัดใบหน้าให้อยู่ในกรอบ",
         }
     if len(present) > 1:
+        visual_index = max(present, key=lambda i: areas[i])
         return {
             "result": "multiple_faces",
             "message": "พบหลายใบหน้าในกรอบ กรุณาแสกนทีละคน",
             "speak": "พบหลายใบหน้า กรุณาเข้ามาคนเดียว",
             "next_delay_seconds": 3,
+            "face_detection": detection_payload(dets, kpss, visual_index, frame_w, frame_h),
         }
     # A second person inside the frame but outside the oval is fine; someone
     # crowding right at the edge of the oval is not.
@@ -573,6 +591,8 @@ def scan(req: ScanRequest):
             }
 
     idx = present[0]
+    visual = detection_payload(dets, kpss, idx, frame_w, frame_h)
+    _motion["visual"] = visual
     face = Face(
         bbox=dets[idx, :4],
         kps=kpss[idx],
@@ -586,6 +606,7 @@ def scan(req: ScanRequest):
             "message": "ตรวจพบว่าไม่ใช่บุคคลจริง",
             "speak": "ไม่สามารถยืนยันตัวตนได้ กรุณามองกล้องอีกครั้ง",
             "next_delay_seconds": delay,
+            "face_detection": visual,
         }
 
     if matrix.shape[0] == 0:
@@ -594,6 +615,7 @@ def scan(req: ScanRequest):
             "message": "ยังไม่มีข้อมูลใบหน้าในระบบ",
             "speak": "ยังไม่มีข้อมูลใบหน้าในระบบ",
             "next_delay_seconds": delay,
+            "face_detection": visual,
         }
 
     query = normalise(face.normed_embedding)
@@ -632,6 +654,7 @@ def scan(req: ScanRequest):
             "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
             "speak": settings.get("voice_denied_text") or "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
             "next_delay_seconds": delay,
+            "face_detection": visual,
         }
 
     # Two people scoring almost the same means the frame is not good enough to
@@ -642,6 +665,7 @@ def scan(req: ScanRequest):
             "message": "ภาพไม่ชัดพอ กรุณามองกล้องตรงๆ อีกครั้ง",
             "speak": "กรุณามองกล้องอีกครั้ง",
             "next_delay_seconds": 2,
+            "face_detection": visual,
         }
 
     rows_of_student = [i for i, owner in enumerate(owners) if owner == student_id]
@@ -678,7 +702,7 @@ def scan(req: ScanRequest):
                 timeout=15,
             )
             res.raise_for_status()
-            return res.json()
+            return {**res.json(), "face_detection": visual}
         except Exception as exc:  # noqa: BLE001
             last_error = exc
             if attempt == 0:
@@ -697,6 +721,7 @@ def scan(req: ScanRequest):
         "message": f"บันทึกเวลาแบบออฟไลน์ให้ {name} แล้ว",
         "speak": f"สแกนสำเร็จ {name}",
         "next_delay_seconds": delay,
+        "face_detection": visual,
     }
 
 

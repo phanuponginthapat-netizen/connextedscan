@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCms } from "@/lib/cms-client";
+import { FaceBoxOverlay } from "@/components/people/FaceBoxOverlay";
+import type { FaceBox, FacePoint } from "@/lib/face-web";
 
 export const Route = createFileRoute("/kiosk")({
   head: () => ({
@@ -36,6 +38,14 @@ type ScanResult = {
   direction?: "in" | "out";
   avatar_url?: string | null;
   snapshot_url?: string | null;
+  face_detection?: LiveDetection;
+};
+
+type LiveDetection = {
+  box: FaceBox;
+  landmarks: FacePoint[];
+  frame: { width: number; height: number };
+  score: number;
 };
 
 type RecentScan = {
@@ -73,6 +83,7 @@ function Kiosk() {
   const [status, setStatus] = useState<"idle" | "scanning" | "cooldown">("idle");
   const [guide, setGuide] = useState<GuideState>("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [liveDetection, setLiveDetection] = useState<LiveDetection | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
@@ -376,6 +387,7 @@ function Kiosk() {
       });
       lastDurationRef.current = performance.now() - startedAt;
       const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
+      setLiveDetection(data.face_detection ?? null);
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
         setStatus("idle");
@@ -410,6 +422,7 @@ function Kiosk() {
         });
       }, 1000);
     } catch {
+      setLiveDetection(null);
       setAgentOnline(false);
       setGuide("idle");
       setStatus("idle");
@@ -548,6 +561,18 @@ function Kiosk() {
             playsInline
             className={`h-full w-full bg-muted object-cover ${display.mirror ? "scale-x-[-1]" : ""}`}
           />
+
+          {liveDetection && !result ? (
+            <FaceBoxOverlay
+              boxes={[liveDetection.box]}
+              frame={liveDetection.frame}
+              mirrored={display.mirror}
+              landmarks={liveDetection.landmarks}
+              tech
+              tone={guide === "multiple_faces" ? "bad" : "ok"}
+              label={`FACE DETECTED ${Math.round(liveDetection.score * 100)}%`}
+            />
+          ) : null}
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <div

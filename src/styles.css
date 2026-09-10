@@ -266,6 +266,21 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
+@keyframes face-pulse {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@utility animate-face-pulse {
+  animation: face-pulse 1.25s ease-in-out infinite;
+}
+
+@utility face-detection-box {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ring) 28%, transparent),
+    0 0 24px color-mix(in oklab, var(--ring) 32%, transparent),
+    inset 0 0 18px color-mix(in oklab, var(--ring) 10%, transparent);
+}
 
 @utility animate-rise {
   animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
