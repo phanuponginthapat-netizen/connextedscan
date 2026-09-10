@@ -363,13 +363,15 @@ function Kiosk() {
     setStatus("scanning");
     setGuide("scanning");
     try {
-      const dataUrl = capture(video, 0.85);
+      const startedAt = performance.now();
+      const dataUrl = capture(video, 0.72);
       lastShotRef.current = dataUrl;
       const res = await fetch(`${agentUrl.replace(/\/$/, "")}/scan`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ image: dataUrl }),
       });
+      lastDurationRef.current = performance.now() - startedAt;
       const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
@@ -412,11 +414,23 @@ function Kiosk() {
     }
   }, [agentUrl, agentOnline, booted, capture, speak, loadRecent]);
 
+  // Pace the scanning to how fast this PC actually answers: a slow machine
+  // gets breathing room instead of piling up frames it cannot process.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!busyRef.current) scanOnce();
-    }, 1200);
-    return () => clearInterval(interval);
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      if (!busyRef.current) void scanOnce();
+      const last = lastDurationRef.current;
+      const wait = Math.min(2000, Math.max(500, last ? last * 0.5 : 900));
+      timer = setTimeout(tick, wait);
+    };
+    timer = setTimeout(tick, 500);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [scanOnce]);
 
   const tone =
