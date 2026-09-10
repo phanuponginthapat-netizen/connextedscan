@@ -334,11 +334,24 @@ function Kiosk() {
     if (camReady && agentOnline === true && voiceReady) setBooted(true);
   }, [booted, camReady, agentOnline, voiceOn, display.voice_enabled]);
 
+  // One reusable drawing surface: creating a canvas for every frame makes the
+  // kiosk PC work much harder than it needs to.
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const capture = useCallback((video: HTMLVideoElement, quality: number) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    const maxWidth = 640;
+    const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
+    const width = Math.round(video.videoWidth * scale);
+    const height = Math.round(video.videoHeight * scale);
+    let canvas = canvasRef.current;
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvasRef.current = canvas;
+    }
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    canvas.getContext("2d")?.drawImage(video, 0, 0, width, height);
     return canvas.toDataURL("image/jpeg", quality);
   }, []);
 
