@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
+import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminInstallRouteImport } from './routes/admin/install'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
@@ -55,6 +56,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAttendanceRoute = AdminAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCmsRoute = AdminCmsRouteImport.update({
+  id: '/cms',
+  path: '/cms',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminInstallRoute = AdminInstallRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/kiosk': typeof KioskRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/cms': typeof AdminCmsRoute
   '/admin/install': typeof AdminInstallRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/kiosk': typeof KioskRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/cms': typeof AdminCmsRoute
   '/admin/install': typeof AdminInstallRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/kiosk': typeof KioskRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/cms': typeof AdminCmsRoute
   '/admin/install': typeof AdminInstallRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/kiosk'
     | '/admin/attendance'
+    | '/admin/cms'
     | '/admin/install'
     | '/admin/settings'
     | '/admin/'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/kiosk'
     | '/admin/attendance'
+    | '/admin/cms'
     | '/admin/install'
     | '/admin/settings'
     | '/admin'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/kiosk'
     | '/admin/attendance'
+    | '/admin/cms'
     | '/admin/install'
     | '/admin/settings'
     | '/admin/'
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/admin/attendance'
       preLoaderRoute: typeof AdminAttendanceRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/cms': {
+      id: '/admin/cms'
+      path: '/cms'
+      fullPath: '/admin/cms'
+      preLoaderRoute: typeof AdminCmsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/install': {
@@ -369,6 +388,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
+  AdminCmsRoute: typeof AdminCmsRoute
   AdminInstallRoute: typeof AdminInstallRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -380,6 +400,7 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
+  AdminCmsRoute: AdminCmsRoute,
   AdminInstallRoute: AdminInstallRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,

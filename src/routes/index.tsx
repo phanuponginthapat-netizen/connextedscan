@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ScanFace, ShieldCheck, Users, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCms } from "@/lib/cms-client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,62 +24,104 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-const features = [
-  {
-    icon: ScanFace,
-    title: "จดจำใบหน้าแม่นยำ",
-    body: "ประมวลผลด้วย ArcFace บนเครื่องตู้ ทำงานได้แม้อินเทอร์เน็ตหลุด",
-  },
-  {
-    icon: Volume2,
-    title: "ขานชื่ออัตโนมัติ",
-    body: "พูด “สแกนสำเร็จ” พร้อมชื่อ แล้วนับถอยหลังเรียกคนถัดไป",
-  },
-  {
-    icon: ShieldCheck,
-    title: "กันสแกนซ้ำ",
-    body: "ตั้งเวลาเว้นระยะได้ ใครยังไม่ลงทะเบียนจะไม่ผ่านประตู",
-  },
-  {
-    icon: Users,
-    title: "ลงทะเบียนหลายรูป",
-    body: "อัปโหลดรูปหลายมุม หรือถ่ายสดแบบตรวจจับการมีชีวิต",
-  },
-];
+const icons = [ScanFace, Volume2, ShieldCheck, Users];
 
 function Landing() {
+  const { t } = useCms();
+  const logo = t("brand.logo_url");
+
+  const features = [1, 2, 3, 4].map((n, i) => ({
+    icon: icons[i]!,
+    title: t(`home.feature${n}_title`),
+    body: t(`home.feature${n}_body`),
+  }));
+
   return (
-    <main className="min-h-screen">
-      <section className="kiosk-shell text-slate-100">
-        <div className="mx-auto max-w-5xl px-6 py-24 text-center">
-          <p className="text-sm font-medium tracking-[0.3em] text-accent uppercase">FaceGate</p>
-          <h1 className="mt-4 text-4xl leading-tight font-bold sm:text-5xl">
-            ระบบสแกนใบหน้าเข้า-ออกโรงเรียน
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-slate-300">
-            ตู้สแกนสำหรับเครื่อง PC สเปกเบา ทำงานคู่กับโปรแกรมจดจำใบหน้าในเครื่อง
-            พร้อมหลังบ้านสำหรับลงทะเบียนใบหน้า ตั้งเวลาเข้า-ออก และดูรายงานย้อนหลัง
-          </p>
-          <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg">
-              <Link to="/kiosk">เปิดหน้าจอตู้สแกน</Link>
+    <main className="min-h-screen bg-background">
+      <header className="border-b bg-card">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            {logo ? (
+              <img src={logo} alt={t("brand.name")} className="size-9 rounded-md object-contain" />
+            ) : (
+              <span className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground">
+                <ScanFace className="size-5" />
+              </span>
+            )}
+            <div className="leading-tight">
+              <p className="font-display text-base font-semibold">{t("brand.name")}</p>
+              <p className="text-xs text-muted-foreground">{t("brand.school_name")}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="secondary" size="sm">
+              <Link to="/admin">{t("home.cta_secondary")}</Link>
             </Button>
-            <Button asChild size="lg" variant="secondary">
-              <Link to="/admin">เข้าระบบหลังบ้าน</Link>
+            <Button asChild size="sm">
+              <Link to="/kiosk">{t("home.cta_primary")}</Link>
             </Button>
+          </div>
+        </div>
+      </header>
+
+      <section className="brand-hero text-slate-100">
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:items-center">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.28em] text-slate-300 uppercase">
+              {t("home.eyebrow")}
+            </p>
+            <h1 className="mt-4 font-display text-4xl leading-tight font-bold sm:text-5xl">
+              {t("home.title")}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300">
+              {t("home.subtitle")}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link to="/kiosk">{t("home.cta_primary")}</Link>
+              </Button>
+              <Button asChild size="lg" variant="secondary">
+                <Link to="/admin">{t("home.cta_secondary")}</Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur">
+            <div className="aspect-4/3 rounded-xl border border-dashed border-white/30 p-6">
+              <div className="grid h-full place-items-center text-center">
+                <div>
+                  <ScanFace className="mx-auto size-16 text-slate-200" />
+                  <p className="mt-4 text-sm text-slate-300">{t("kiosk.subtitle")}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-5 px-6 py-16 sm:grid-cols-2">
-        {features.map((f) => (
-          <div key={f.title} className="rounded-2xl border bg-card p-6 shadow-panel">
-            <f.icon className="size-7 text-primary" />
-            <h2 className="mt-4 text-lg font-semibold">{f.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{f.body}</p>
-          </div>
-        ))}
+      <section className="mx-auto max-w-6xl px-6 py-16">
+        <h2 className="font-display text-2xl font-semibold">{t("home.features_title")}</h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((f) => (
+            <div key={f.title} className="panel-card p-6">
+              <span className="grid size-10 place-items-center rounded-lg bg-accent text-accent-foreground">
+                <f.icon className="size-5" />
+              </span>
+              <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+            </div>
+          ))}
+        </div>
       </section>
+
+      <footer className="border-t bg-card">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-6 py-6 text-sm text-muted-foreground">
+          <span>
+            {t("brand.name")} · {t("brand.school_name")}
+          </span>
+          <span>{t("home.footer")}</span>
+        </div>
+      </footer>
     </main>
   );
 }

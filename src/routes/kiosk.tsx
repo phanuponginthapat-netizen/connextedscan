@@ -4,6 +4,7 @@ import { CheckCircle2, Loader2, Settings2, User, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCms } from "@/lib/cms-client";
 
 export const Route = createFileRoute("/kiosk")({
   head: () => ({
@@ -45,6 +46,7 @@ function speak(text: string) {
 }
 
 function Kiosk() {
+  const { t } = useCms();
   const videoRef = useRef<HTMLVideoElement>(null);
   const busyRef = useRef(false);
   const [agentUrl, setAgentUrl] = useState("http://127.0.0.1:8899");
@@ -229,12 +231,13 @@ function Kiosk() {
         : "border-primary text-primary";
 
   return (
-    <main className="kiosk-bg flex min-h-screen flex-col items-center justify-center gap-6 p-6">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6">
       <header className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">ระบบสแกนใบหน้าเข้า-ออกโรงเรียน</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          ยืนให้ใบหน้าอยู่ในกรอบคนเดียว ระบบจะขานชื่อเมื่อสแกนสำเร็จ
+        <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
+          {t("brand.school_name")}
         </p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight">{t("kiosk.title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("kiosk.subtitle")}</p>
       </header>
 
       <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs">
@@ -283,17 +286,17 @@ function Kiosk() {
             <>
               {status === "scanning" && !result && (
                 <>
-                  <Loader2 className="size-4 animate-spin text-primary" /> กำลังตรวจใบหน้า…
+                  <Loader2 className="size-4 animate-spin text-primary" /> {t("kiosk.guide_scanning")}
                 </>
               )}
               {guide === "no_face" && status !== "scanning" && !result && (
-                <span className="text-muted-foreground">ไม่พบใบหน้าในกรอบ</span>
+                <span className="text-muted-foreground">{t("kiosk.guide_no_face")}</span>
               )}
               {guide === "multiple_faces" && !result && (
-                <span className="text-destructive">พบหลายใบหน้า กรุณาเข้ามาคนเดียว</span>
+                <span className="text-destructive">{t("kiosk.guide_multiple")}</span>
               )}
               {guide === "idle" && !result && (
-                <span className="text-primary">ยืนให้ใบหน้าอยู่ในกรอบคนเดียว</span>
+                <span className="text-primary">{t("kiosk.guide_idle")}</span>
               )}
             </>
           )}
@@ -307,7 +310,7 @@ function Kiosk() {
       </div>
 
       <div className={`w-full max-w-2xl rounded-2xl border-2 p-6 text-center ${result ? tone : "border-dashed"}`}>
-        {!result && <p className="text-muted-foreground">รอสแกนคนถัดไป…</p>}
+        {!result && <p className="text-muted-foreground">{t("kiosk.next_person")}</p>}
         {result && (
           <div className="space-y-2">
             {result.avatar_url && (
