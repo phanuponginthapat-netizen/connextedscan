@@ -225,7 +225,11 @@ function AttendancePage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteAttendanceLog({ data: { id: deleteTarget.id } });
+      const res = await deleteAttendanceLog({ data: { id: deleteTarget.id } });
+      if (!res.ok) {
+        toast.error(res.error ?? "ลบไม่สำเร็จ");
+        return;
+      }
       toast.success("ลบรายการสแกนแล้ว");
       setDeleteTarget(null);
       await refreshRows();
@@ -240,6 +244,10 @@ function AttendancePage() {
     setDeleting(true);
     try {
       const result = await deleteAttendanceRange({ data: { from, to } });
+      if (!result.ok) {
+        toast.error(result.error ?? "ลบไม่สำเร็จ");
+        return;
+      }
       toast.success(`ลบประวัติแล้ว ${result.deleted.toLocaleString("th-TH")} รายการ`);
       setConfirmClearRange(false);
       await refreshRows();
