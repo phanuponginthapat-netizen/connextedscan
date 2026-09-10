@@ -319,10 +319,20 @@ function Kiosk() {
       .then((s) => {
         stream = s;
         if (videoRef.current) videoRef.current.srcObject = s;
+        setCamReady(true);
       })
       .catch(() => setCamError("เปิดกล้องไม่ได้ กรุณาอนุญาตการใช้กล้องแล้วรีเฟรชหน้าจอ"));
     return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
+
+  // Enter the scan screen only when everything the kiosk needs is ready.
+  // On the desktop program the voice turns itself on; in a plain browser the
+  // person taps the boot screen once (browsers require a gesture for sound).
+  useEffect(() => {
+    if (booted) return;
+    const voiceReady = voiceOn || !display.voice_enabled;
+    if (camReady && agentOnline === true && voiceReady) setBooted(true);
+  }, [booted, camReady, agentOnline, voiceOn, display.voice_enabled]);
 
   const capture = useCallback((video: HTMLVideoElement, quality: number) => {
     const canvas = document.createElement("canvas");
@@ -335,7 +345,7 @@ function Kiosk() {
   const scanOnce = useCallback(async () => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || busyRef.current) return;
-    if (!agentOnline) return;
+    if (!agentOnline || !booted) return;
     busyRef.current = true;
     setStatus("scanning");
     setGuide("scanning");
@@ -387,7 +397,7 @@ function Kiosk() {
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, capture, speak, loadRecent]);
+  }, [agentUrl, agentOnline, booted, capture, speak, loadRecent]);
 
   useEffect(() => {
     const interval = setInterval(() => {
