@@ -487,6 +487,11 @@ function Kiosk() {
               <span className="text-muted-foreground">กำลังเชื่อมต่อโปรแกรม FaceGate…</span>
             )}
           </div>
+          {agentStats?.stale ? (
+            <div className="rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              ข้อมูลใบหน้ายังไม่อัปเดต กำลังเชื่อมต่อระบบใหม่
+            </div>
+          ) : null}
           {!voiceOn ? (
             <Button size="sm" onClick={enableVoice}>
               <Volume2 className="size-4" /> เปิดเสียง
