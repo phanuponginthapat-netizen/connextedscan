@@ -31,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CMS_GROUPS } from "@/lib/cms";
 import { CmsSection } from "@/components/admin/CmsSection";
+import { useCms } from "@/lib/cms-client";
 
 export const Route = createFileRoute("/admin/settings")({
   head: () => ({
