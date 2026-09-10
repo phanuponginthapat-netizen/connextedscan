@@ -426,54 +426,8 @@ function Kiosk() {
             )}
           </div>
 
-          <div className={`w-full rounded-2xl border-2 p-6 text-center ${result ? tone : "border-dashed"}`}>
-            {!result && <p className="text-muted-foreground">{t("kiosk.next_person")}</p>}
-            {result && (
-              <div className="space-y-3">
-                {(result.avatar_url || result.snapshot_url) && (
-                  <div className="flex items-end justify-center gap-6">
-                    <figure className="space-y-1">
-                      {result.avatar_url ? (
-                        <img
-                          src={result.avatar_url}
-                          alt={result.student ? `รูปโปรไฟล์ของ ${result.student.full_name}` : "รูปโปรไฟล์"}
-                          className="size-28 rounded-2xl border-4 border-primary/40 object-cover shadow"
-                        />
-                      ) : (
-                        <div className="flex size-28 items-center justify-center rounded-2xl border-4 border-dashed text-muted-foreground">
-                          <User className="size-8" />
-                        </div>
-                      )}
-                      <figcaption className="text-xs text-muted-foreground">รูปโปรไฟล์</figcaption>
-                    </figure>
-                    {result.snapshot_url && (
-                      <figure className="space-y-1">
-                        <img
-                          src={result.snapshot_url}
-                          alt="ภาพขณะสแกนจริง"
-                          className="size-28 rounded-2xl border-4 border-accent/50 object-cover shadow"
-                        />
-                        <figcaption className="text-xs text-muted-foreground">ภาพตอนสแกน</figcaption>
-                      </figure>
-                    )}
-                  </div>
-                )}
-                <div className="flex items-center justify-center gap-2">
-                  {result.result === "ok" ? (
-                    <CheckCircle2 className="size-7 text-primary" />
-                  ) : (
-                    <XCircle className="size-7 text-destructive" />
-                  )}
-                  <p className="text-2xl font-semibold">{result.message}</p>
-                </div>
-                {result.student && (
-                  <p className="text-sm text-muted-foreground">
-                    {result.student.student_code} • {result.student.class_room ?? "-"}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">คนถัดไปในอีก {countdown} วินาที</p>
-              </div>
-            )}
+          <div className="w-full rounded-2xl border-2 border-dashed p-6 text-center">
+            <p className="text-muted-foreground">{t("kiosk.next_person")}</p>
           </div>
         </div>
 
