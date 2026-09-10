@@ -121,6 +121,7 @@ function SettingsPage() {
   const qc = useQueryClient();
   const [form, setForm] = useState<SettingsRow | null>(null);
   const [section, setSection] = useState<SectionId>("time");
+  const { t } = useCms();
 
   const { data } = useQuery({
     queryKey: ["settings"],
