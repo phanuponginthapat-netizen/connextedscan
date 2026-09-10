@@ -176,6 +176,38 @@ function openSettings() {
   });
 }
 
+/**
+ * Check the cloud for a newer version of the scanning engine and the kiosk
+ * page. New agent code restarts the background engine; a new web version
+ * simply reloads the kiosk window.
+ */
+async function checkForUpdates({ initial = false } = {}) {
+  const cfg = loadConfig();
+  const cloudUrl = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "");
+  const bundledAgentDir = path
+    .join(__dirname, "..", "agent")
+    .replace("app.asar", "app.asar.unpacked");
+
+  try {
+    const result = await syncAgent(cloudUrl, UPDATE_DIR, bundledAgentDir);
+    const versionChanged =
+      currentAppVersion !== null && result.appVersion !== currentAppVersion;
+    currentAppVersion = result.appVersion;
+
+    if (initial) return;
+
+    if (result.changed) {
+      console.log("[update] restarting scanning engine with the new version");
+      startAgent();
+    }
+    if ((versionChanged || result.changed) && kioskWindow) {
+      kioskWindow.reload();
+    }
+  } catch (err) {
+    console.warn("[update] check failed:", err.message);
+  }
+}
+
 // IPC exposed to the settings page.
 ipcMain.handle("get-config", () => loadConfig());
 ipcMain.handle("save-config", (_event, cfg) => {
@@ -190,14 +222,18 @@ ipcMain.handle("quit", () => {
   app.quit();
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const cfg = loadConfig();
   if (!cfg.deviceKey || !cfg.deviceKey.trim()) {
     openSettings();
   } else {
+    await checkForUpdates({ initial: true });
     startAgent();
     openKiosk();
   }
+  setInterval(() => {
+    void checkForUpdates();
+  }, UPDATE_INTERVAL_MS);
 });
 
 app.on("window-all-closed", () => {
