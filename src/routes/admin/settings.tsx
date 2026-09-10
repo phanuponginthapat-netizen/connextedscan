@@ -7,7 +7,6 @@ import {
   Copy,
   FileText,
   Gauge,
-  Globe,
   Image as ImageIcon,
   LayoutTemplate,
   MonitorSmartphone,
@@ -104,7 +103,6 @@ type SectionId =
   | "privacy"
   | "scan"
   | "accuracy"
-  | "web"
   | "devices"
   | `cms:${string}`;
 
