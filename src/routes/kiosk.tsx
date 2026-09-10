@@ -188,6 +188,7 @@ function Kiosk() {
           id: item.id,
           name: item.name,
           detail: item.detail,
+          role: item.role ?? "",
           direction: item.direction,
           time: new Date(item.scanned_at).toLocaleTimeString("th-TH", {
             hour: "2-digit",
