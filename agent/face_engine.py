@@ -103,6 +103,7 @@ class FaceEngine:
                 )
 
         opts = onnxruntime.SessionOptions()
+        opts.log_severity_level = 3
         opts.intra_op_num_threads = max(1, min(4, (os.cpu_count() or 2)))
         providers = ["CPUExecutionProvider"]
 
