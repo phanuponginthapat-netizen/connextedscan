@@ -18,6 +18,20 @@ const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
   "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app";
 
+// Let the kiosk page speak the moment it loads — no "enable sound" tap needed.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+// Give the kiosk everything this PC has: no throttling, full GPU use.
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+app.commandLine.appendSwitch("ignore-gpu-blocklist");
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-zero-copy");
+app.commandLine.appendSwitch("canvas-oop-rasterization");
+app.commandLine.appendSwitch("force_high_performance_gpu");
+app.commandLine.appendSwitch("enable-features", "CanvasOopRasterization,WebAssemblySimd,WebAssemblyLazyCompilation");
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=2048");
+
 let kioskWindow = null;
 let settingsWindow = null;
 let agentProcess = null;
