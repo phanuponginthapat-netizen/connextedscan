@@ -57,9 +57,14 @@ function startAgent() {
   }
 
   // Files spawned by a child process must live outside the asar archive.
-  const agentDir = path
+  const bundledAgentDir = path
     .join(__dirname, "..", "agent")
     .replace("app.asar", "app.asar.unpacked");
+  // Prefer the auto-updated copy in user data when it is complete.
+  const hasUpdate =
+    fs.existsSync(path.join(UPDATE_DIR, "agent.py")) &&
+    fs.existsSync(path.join(UPDATE_DIR, "face_engine.py"));
+  const agentDir = hasUpdate ? UPDATE_DIR : bundledAgentDir;
   const script = path.join(agentDir, "agent.py");
 
   // The packaged build ships its own Python runtime + libraries next to the
