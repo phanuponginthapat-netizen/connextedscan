@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -19,9 +19,15 @@ import {
   LogOut,
   Printer,
   ScanFace,
+  Trash2,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  deleteAttendanceLog,
+  deleteAttendanceRange,
+} from "@/lib/attendance-admin.functions";
 import { useCms } from "@/lib/cms-client";
 import { personGroupLabel, personTypeLabel } from "@/components/people/people";
 import { StatCard, SortHeader, TablePager } from "@/components/reports/report-ui";
@@ -46,6 +52,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/admin/attendance")({
   head: () => ({
@@ -179,6 +195,60 @@ function AttendancePage() {
     staleTime: 60_000,
   });
   const lateAfter = settings?.late_after?.slice(0, 5) ?? null;
+
+  const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<LogRow | null>(null);
+  const [confirmClearRange, setConfirmClearRange] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Only admins may delete scan history (enforced again on the server).
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return false;
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: userData.user.id,
+        _role: "admin",
+      });
+      if (error) return false;
+      return data === true;
+    },
+    staleTime: 60_000,
+  });
+
+  async function refreshRows() {
+    await queryClient.invalidateQueries({ queryKey: ["attendance"] });
+  }
+
+  async function onDeleteOne() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteAttendanceLog({ data: { id: deleteTarget.id } });
+      toast.success("ลบรายการสแกนแล้ว");
+      setDeleteTarget(null);
+      await refreshRows();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ลบไม่สำเร็จ");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function onDeleteRange() {
+    setDeleting(true);
+    try {
+      const result = await deleteAttendanceRange({ data: { from, to } });
+      toast.success(`ลบประวัติแล้ว ${result.deleted.toLocaleString("th-TH")} รายการ`);
+      setConfirmClearRange(false);
+      await refreshRows();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ลบไม่สำเร็จ");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["attendance", from, to, personType],
@@ -691,9 +761,21 @@ function AttendancePage() {
                 <CardTitle className="text-base">ประวัติการสแกนทั้งหมด</CardTitle>
                 <CardDescription>ไม่รวมรายการที่ระบบตัดเป็นการสแกนซ้ำ</CardDescription>
               </div>
-              <Button variant="secondary" size="sm" onClick={exportLogs} className="print:hidden">
-                <Download className="size-4" /> ดาวน์โหลดประวัติ
-              </Button>
+              <div className="flex gap-2 print:hidden">
+                <Button variant="secondary" size="sm" onClick={exportLogs}>
+                  <Download className="size-4" /> ดาวน์โหลดประวัติ
+                </Button>
+                {isAdmin && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setConfirmClearRange(true)}
+                    disabled={filtered.length === 0}
+                  >
+                    <Trash2 className="size-4" /> ลบประวัติช่วงนี้
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="px-0 pb-0">
               <div className="overflow-x-auto">
@@ -708,12 +790,16 @@ function AttendancePage() {
                       <TableHead className="text-center">สถานะ</TableHead>
                       <TableHead className="text-center">ความเหมือน</TableHead>
                       <TableHead>เครื่อง</TableHead>
+                      {isAdmin && <TableHead className="text-center print:hidden">จัดการ</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {logRows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                        <TableCell
+                          colSpan={isAdmin ? 9 : 8}
+                          className="py-12 text-center text-muted-foreground"
+                        >
                           {isLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงวันที่เลือก"}
                         </TableCell>
                       </TableRow>
@@ -750,6 +836,18 @@ function AttendancePage() {
                         <TableCell className="text-muted-foreground">
                           {r.device_name ?? "-"}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-center print:hidden">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="ลบรายการนี้"
+                              onClick={() => setDeleteTarget(r)}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -765,6 +863,58 @@ function AttendancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบรายการสแกนนี้?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `${deleteTarget.students?.full_name ?? "ไม่ทราบชื่อ"} • ${dateText(deleteTarget.scanned_at)} ${timeText(deleteTarget.scanned_at)} — ลบแล้วไม่สามารถกู้คืนได้`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void onDeleteOne();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "กำลังลบ…" : "ลบรายการ"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmClearRange} onOpenChange={setConfirmClearRange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบประวัติทั้งช่วงวันที่?</AlertDialogTitle>
+            <AlertDialogDescription>
+              จะลบประวัติการสแกนทั้งหมด {filtered.length.toLocaleString("th-TH")} รายการ
+              ตั้งแต่ {dateText(from)} ถึง {dateText(to)} รวมถึงรูปสแกนที่บันทึกไว้
+              ลบแล้วไม่สามารถกู้คืนได้ แนะนำให้ดาวน์โหลดไฟล์เก็บไว้ก่อน
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void onDeleteRange();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "กำลังลบ…" : "ลบทั้งหมด"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
