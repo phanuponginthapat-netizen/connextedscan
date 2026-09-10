@@ -48,6 +48,13 @@ export function CmsSection({ group }: { group: CmsGroup }) {
       updated_at: new Date().toISOString(),
     }));
     const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
+    // Keep the single source of truth: mirror the school name into settings too.
+    if (!error && group.fields.some((f) => f.key === "brand.school_name")) {
+      await supabase
+        .from("settings")
+        .update({ school_name: valueOf("brand.school_name"), updated_at: new Date().toISOString() })
+        .eq("id", true);
+    }
     setSaving(false);
     if (error) {
       toast.error("บันทึกไม่สำเร็จ: " + error.message);
