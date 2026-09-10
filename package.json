@@ -12,8 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "electron": "electron .",
-    "electron:package:win": "npx @electron/packager . FaceGate --platform=win32 --arch=x64 --out=electron-release --overwrite --asar.unpack='agent/**' --ignore='^/node_modules' --ignore='^/src' --ignore='^/public' --ignore='^/electron-release' --ignore='^/dist' --ignore='^/.git'",
-    "electron:package:linux": "npx @electron/packager . FaceGate --platform=linux --arch=x64 --out=electron-release --overwrite --asar.unpack='agent/**' --ignore='^/node_modules' --ignore='^/src' --ignore='^/public' --ignore='^/electron-release' --ignore='^/dist' --ignore='^/.git'"
+    "electron:package:win": "npx @electron/packager . FaceGate --platform=win32 --arch=x64 --out=electron-release --overwrite --asar.unpack='**/agent/**' --ignore='^/node_modules' --ignore='^/src' --ignore='^/public' --ignore='^/electron-release' --ignore='^/dist' --ignore='^/.git'",
+    "electron:package:linux": "npx @electron/packager . FaceGate --platform=linux --arch=x64 --out=electron-release --overwrite --asar.unpack='**/agent/**' --ignore='^/node_modules' --ignore='^/src' --ignore='^/public' --ignore='^/electron-release' --ignore='^/dist' --ignore='^/.git'"
   },
   "overrides": {
     "rolldown": "1.2.1"
