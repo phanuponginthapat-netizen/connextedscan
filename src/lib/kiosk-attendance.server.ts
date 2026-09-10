@@ -1,5 +1,10 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { bangkokMinutes, timeToMinutes } from "@/lib/kiosk-auth.server";
+import {
+  bangkokMinutes,
+  bangkokWeekday,
+  parseWorkDays,
+  timeToMinutes,
+} from "@/lib/kiosk-auth.server";
 
 export type RecordScanInput = {
   studentId: string;
