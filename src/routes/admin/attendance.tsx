@@ -790,12 +790,16 @@ function AttendancePage() {
                       <TableHead className="text-center">สถานะ</TableHead>
                       <TableHead className="text-center">ความเหมือน</TableHead>
                       <TableHead>เครื่อง</TableHead>
+                      {isAdmin && <TableHead className="text-center print:hidden">จัดการ</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {logRows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                        <TableCell
+                          colSpan={isAdmin ? 9 : 8}
+                          className="py-12 text-center text-muted-foreground"
+                        >
                           {isLoading ? "กำลังโหลด…" : "ไม่มีข้อมูลในช่วงวันที่เลือก"}
                         </TableCell>
                       </TableRow>
