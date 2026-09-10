@@ -196,6 +196,60 @@ function AttendancePage() {
   });
   const lateAfter = settings?.late_after?.slice(0, 5) ?? null;
 
+  const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<LogRow | null>(null);
+  const [confirmClearRange, setConfirmClearRange] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Only admins may delete scan history (enforced again on the server).
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return false;
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: userData.user.id,
+        _role: "admin",
+      });
+      if (error) return false;
+      return data === true;
+    },
+    staleTime: 60_000,
+  });
+
+  async function refreshRows() {
+    await queryClient.invalidateQueries({ queryKey: ["attendance"] });
+  }
+
+  async function onDeleteOne() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteAttendanceLog({ data: { id: deleteTarget.id } });
+      toast.success("ลบรายการสแกนแล้ว");
+      setDeleteTarget(null);
+      await refreshRows();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ลบไม่สำเร็จ");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function onDeleteRange() {
+    setDeleting(true);
+    try {
+      const result = await deleteAttendanceRange({ data: { from, to } });
+      toast.success(`ลบประวัติแล้ว ${result.deleted.toLocaleString("th-TH")} รายการ`);
+      setConfirmClearRange(false);
+      await refreshRows();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "ลบไม่สำเร็จ");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const { data: rows, isLoading } = useQuery({
     queryKey: ["attendance", from, to, personType],
     queryFn: async () => {
