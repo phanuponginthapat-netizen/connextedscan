@@ -458,6 +458,7 @@ function AttendancePage() {
                 max={to}
                 onChange={(e) => applyRange(e.target.value, to)}
               />
+              {from && <p className="text-xs text-muted-foreground">{formatThaiDate(from)}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>ถึงวันที่</Label>
@@ -467,6 +468,7 @@ function AttendancePage() {
                 min={from}
                 onChange={(e) => applyRange(from, e.target.value)}
               />
+              {to && <p className="text-xs text-muted-foreground">{formatThaiDate(to)}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>บุคคล</Label>
