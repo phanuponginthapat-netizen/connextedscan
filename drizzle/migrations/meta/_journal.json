@@ -43,6 +43,13 @@
       "when": 1789012448066,
       "tag": "0005_web_scan_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789015597185,
+      "tag": "0006_site_content_cms",
+      "breakpoints": true
     }
   ]
 }
