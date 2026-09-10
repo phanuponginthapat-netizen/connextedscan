@@ -94,7 +94,10 @@ function Dashboard() {
         rows,
       };
     },
-    refetchInterval: 15000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+    staleTime: 15000,
+    placeholderData: (prev) => prev,
   });
 
   const rows = data?.rows ?? [];
