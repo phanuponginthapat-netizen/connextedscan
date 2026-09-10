@@ -95,39 +95,49 @@ export async function recordScan(input: RecordScanInput) {
     }
   }
 
-  // Decide direction from the configured windows.
+  // Decide direction strictly from the configured windows.
   let direction = input.direction ?? null;
   const deviceDefault = input.deviceDefaultDirection ?? "auto";
   if (!direction && deviceDefault !== "auto") {
     direction = deviceDefault === "out" ? "out" : "in";
   }
-  if (!direction && settings) {
+
+  if (settings) {
     const inStart = timeToMinutes(settings.checkin_start);
     const inEnd = timeToMinutes(settings.checkin_end);
     const outStart = timeToMinutes(settings.checkout_start);
     const outEnd = timeToMinutes(settings.checkout_end);
-    if (now >= inStart && now <= inEnd) direction = "in";
-    else if (now >= outStart && now <= outEnd) direction = "out";
-    else if (now < inStart) direction = "in";
-    else if (now > outEnd) direction = "out";
-    // Between the two windows: follow what this person already did today.
-    else {
-      const dayStart = new Date();
-      dayStart.setUTCHours(17, 0, 0, 0); // 00:00 Bangkok
-      if (dayStart.getTime() > Date.now()) dayStart.setUTCDate(dayStart.getUTCDate() - 1);
-      const { data: today } = await supabaseAdmin
-        .from("attendance_logs")
-        .select("direction")
-        .eq("student_id", studentId)
-        .eq("status", "ok")
-        .gte("scanned_at", dayStart.toISOString())
-        .order("scanned_at", { ascending: false })
-        .limit(1);
-      const last = today?.[0]?.direction ?? null;
-      direction = last === "in" ? "out" : "in";
+    const inWindow = now >= inStart && now <= inEnd;
+    const outWindow = now >= outStart && now <= outEnd;
+
+    if (!direction) {
+      if (inWindow) direction = "in";
+      else if (outWindow) direction = "out";
+    }
+
+    // Outside the configured windows nothing is recorded.
+    const allowed = direction === "in" ? inWindow : direction === "out" ? outWindow : false;
+    if (!allowed) {
+      const fmt = (v: string) => v.slice(0, 5);
+      await supabaseAdmin.from("attendance_logs").insert({
+        student_id: studentId,
+        direction: direction ?? "in",
+        status: "out_of_window",
+        confidence,
+        geometry_score: geometryScore,
+        device_name: deviceName,
+        snapshot_path: snapshotPath,
+      });
+      return {
+        result: "denied" as const,
+        message: `นอกช่วงเวลาที่กำหนด (เข้า ${fmt(settings.checkin_start)}-${fmt(settings.checkin_end)} / ออก ${fmt(settings.checkout_start)}-${fmt(settings.checkout_end)})`,
+        speak: "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
+        next_delay_seconds: settings.next_person_delay_seconds ?? 5,
+      };
     }
   }
   if (!direction) direction = now < 720 ? "in" : "out";
+
 
 
   // Duplicate protection.
