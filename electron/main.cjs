@@ -53,7 +53,10 @@ function startAgent() {
   }
 
   const python = process.platform === "win32" ? "python" : "python3";
-  const script = path.join(__dirname, "..", "agent", "agent.py");
+  // Files spawned by a child process must live outside the asar archive.
+  const script = path
+    .join(__dirname, "..", "agent", "agent.py")
+    .replace("app.asar", "app.asar.unpacked");
   const env = {
     ...process.env,
     FACEGATE_DEVICE_KEY: deviceKey,
