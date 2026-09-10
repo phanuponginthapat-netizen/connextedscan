@@ -141,6 +141,48 @@ function Kiosk() {
     [voiceOn, speakViaServer],
   );
 
+  // The latest scans come from the shared record, so every screen shows the
+  // same list and it stays complete after the program is restarted.
+  const loadRecent = useCallback(async () => {
+    try {
+      const res = await fetch("/api/public/kiosk/recent");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        items?: Array<{
+          id: string;
+          name: string;
+          detail: string;
+          direction: "in" | "out";
+          scanned_at: string;
+          avatar_url: string | null;
+          snapshot_url: string | null;
+        }>;
+      };
+      setRecent(
+        (data.items ?? []).map((item) => ({
+          id: item.id,
+          name: item.name,
+          detail: item.detail,
+          direction: item.direction,
+          time: new Date(item.scanned_at).toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          avatarUrl: item.avatar_url,
+          snapshotUrl: item.snapshot_url,
+        })),
+      );
+    } catch {
+      /* offline: keep showing the list already on screen */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRecent();
+    const t = setInterval(() => void loadRecent(), 15000);
+    return () => clearInterval(t);
+  }, [loadRecent]);
+
   useEffect(() => {
     const saved = localStorage.getItem(AGENT_KEY);
     if (saved) setAgentUrl(saved);
