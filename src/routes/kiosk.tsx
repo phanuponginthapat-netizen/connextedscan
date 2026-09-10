@@ -100,24 +100,55 @@ function Kiosk() {
     return () => stream?.getTracks().forEach((t) => t.stop());
   }, []);
 
+  // Web mode: measure the face in the browser, let the server decide.
+  const scanViaWeb = useCallback(async (video: HTMLVideoElement) => {
+    const { measureSingleFace } = await import("@/lib/face-web");
+    const outcome = await measureSingleFace(video);
+    if (outcome.status !== "ok") {
+      return { result: outcome.status } as { result: string };
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+
+    const res = await fetch("/api/public/kiosk/web-scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        descriptor: outcome.face.descriptor,
+        geometry: outcome.face.geometry,
+        snapshot: canvas.toDataURL("image/jpeg", 0.8),
+      }),
+    });
+    return (await res.json()) as { result?: string };
+  }, []);
+
   const scanOnce = useCallback(async () => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || busyRef.current) return;
+    if (agentOnline === null) return;
     busyRef.current = true;
     setStatus("scanning");
     setGuide("scanning");
     try {
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext("2d")?.drawImage(video, 0, 0);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-      const res = await fetch(`${agentUrl.replace(/\/$/, "")}/scan`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ image: dataUrl }),
-      });
-      const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
+      let data: Omit<ScanResult, "result"> & { result?: string };
+      if (agentOnline) {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d")?.drawImage(video, 0, 0);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const res = await fetch(`${agentUrl.replace(/\/$/, "")}/scan`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+        data = (await res.json()) as typeof data;
+      } else {
+        data = (await scanViaWeb(video)) as typeof data;
+      }
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
         setStatus("idle");
@@ -126,6 +157,9 @@ function Kiosk() {
       }
       if (data.result === "multiple_faces") {
         setGuide("multiple_faces");
+        setStatus("idle");
+        busyRef.current = false;
+        return;
       }
       setResult(data as unknown as ScanResult);
       if (data.speak) speak(data.speak);
