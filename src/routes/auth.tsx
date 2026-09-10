@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { createStaffAccount, getSignupOpen } from "@/lib/signup.functions";
 import { toast } from "sonner";
 import { ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
