@@ -628,7 +628,7 @@ def scan(req: ScanRequest):
         }
 
     # Detect only (cheap); the expensive embedding runs for one face at most.
-    dets, kpss = face_app.detect(arr)
+    dets, kpss, arr = detect_adaptive(arr, det_min)
     strong = [i for i in range(dets.shape[0]) if float(dets[i, 4]) >= det_min]
     if not strong:
         _motion["visual"] = None
