@@ -863,6 +863,58 @@ function AttendancePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบรายการสแกนนี้?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `${deleteTarget.students?.full_name ?? "ไม่ทราบชื่อ"} • ${dateText(deleteTarget.scanned_at)} ${timeText(deleteTarget.scanned_at)} — ลบแล้วไม่สามารถกู้คืนได้`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void onDeleteOne();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "กำลังลบ…" : "ลบรายการ"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmClearRange} onOpenChange={setConfirmClearRange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบประวัติทั้งช่วงวันที่?</AlertDialogTitle>
+            <AlertDialogDescription>
+              จะลบประวัติการสแกนทั้งหมด {filtered.length.toLocaleString("th-TH")} รายการ
+              ตั้งแต่ {dateText(from)} ถึง {dateText(to)} รวมถึงรูปสแกนที่บันทึกไว้
+              ลบแล้วไม่สามารถกู้คืนได้ แนะนำให้ดาวน์โหลดไฟล์เก็บไว้ก่อน
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void onDeleteRange();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "กำลังลบ…" : "ลบทั้งหมด"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
