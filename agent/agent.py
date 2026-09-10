@@ -26,7 +26,7 @@ import numpy as np
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from face_engine import FaceEngine
+from face_engine import Face, FaceEngine
 from pydantic import BaseModel
 
 CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app")
@@ -459,28 +459,30 @@ def health():
 
 
 
+_motion: dict[str, Any] = {"prev": None}
+
+
+def scene_is_static(bgr: np.ndarray) -> bool:
+    """True when the frame looks the same as the previous one (nobody there).
+
+    Detection + recognition are by far the heaviest part on a low-power CPU,
+    so an unchanged frame is skipped before any model runs.
+    """
+    small = cv2.resize(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY), (64, 48))
+    prev = _motion.get("prev")
+    _motion["prev"] = small
+    if prev is None:
+        return False
+    diff = float(np.mean(cv2.absdiff(prev, small)))
+    return diff < 2.0
+
+
 @app.post("/scan")
 def scan(req: ScanRequest):
     raw = req.image.split(",", 1)[-1]
     arr = cv2.imdecode(np.frombuffer(base64.b64decode(raw), np.uint8), cv2.IMREAD_COLOR)
     if arr is None:
         return {"result": "no_face", "message": ""}
-
-    faces = face_app.get(arr)
-    if not faces:
-        return {"result": "no_face", "message": ""}
-
-    # The kiosk is meant for one person at a time. Reject frames with
-    # more than one clearly-detected face to prevent accidental cross-matches.
-    if len(faces) > 1:
-        return {
-            "result": "multiple_faces",
-            "message": "พบหลายใบหน้า กรุณาแสกนทีละคน",
-            "speak": "พบหลายใบหน้า กรุณาเข้ามาคนเดียว",
-            "next_delay_seconds": 3,
-        }
-
-    face = faces[0]
 
     with lock:
         matrix = state["matrix"]
@@ -490,6 +492,44 @@ def scan(req: ScanRequest):
 
     threshold = float(settings.get("match_threshold") or 0.45)
     delay = int(settings.get("next_person_delay_seconds") or 5)
+    det_min = float(settings.get("detector_min_score") or 0.5)
+    min_coverage = float(settings.get("min_face_coverage") or 0.0)
+
+    if scene_is_static(arr):
+        return {"result": "no_face", "message": ""}
+
+    # Detect only (cheap); the expensive embedding runs for one face at most.
+    dets, kpss = face_app.detect(arr)
+    strong = [i for i in range(dets.shape[0]) if float(dets[i, 4]) >= det_min]
+    if not strong:
+        return {"result": "no_face", "message": ""}
+
+    frame_area = float(arr.shape[0] * arr.shape[1])
+    areas = {
+        i: float((dets[i, 2] - dets[i, 0]) * (dets[i, 3] - dets[i, 1])) for i in strong
+    }
+    # Only faces big enough to matter count as "people standing at the kiosk".
+    present = [i for i in strong if areas[i] / frame_area >= max(min_coverage, 0.01)]
+    if not present:
+        return {
+            "result": "no_face",
+            "message": "กรุณาเข้าใกล้กล้องอีกนิด",
+        }
+    if len(present) > 1:
+        return {
+            "result": "multiple_faces",
+            "message": "พบหลายใบหน้า กรุณาแสกนทีละคน",
+            "speak": "พบหลายใบหน้า กรุณาเข้ามาคนเดียว",
+            "next_delay_seconds": 3,
+        }
+
+    idx = present[0]
+    face = Face(
+        bbox=dets[idx, :4],
+        kps=kpss[idx],
+        det_score=float(dets[idx, 4]),
+        normed_embedding=face_app.embed(arr, kpss[idx]),
+    )
 
     if settings.get("require_liveness") and not looks_like_a_real_person(arr, face):
         return {
@@ -512,41 +552,60 @@ def scan(req: ScanRequest):
     geo_weight = float(settings.get("geometry_weight") or 0.0)
 
     scores = matrix @ query
-    # Blend in the landmark-geometry similarity so that a look-alike with a
-    # different eye/nose/mouth layout scores lower than the real student.
-    combined = scores.copy()
-    geo_per_row = [None] * len(owners)
+    combined = scores.astype(np.float32, copy=True)
+    geo_per_row: list[float | None] = [None] * len(owners)
+
+    # Geometry is only worth computing for the few rows that already look close
+    # to the live face — comparing every photo wastes CPU on the kiosk PC.
     if live_geometry and geo_weight > 0:
-        for i, g in enumerate(geoms):
-            sim = geometry_similarity(live_geometry, g)
-            geo_per_row[i] = sim
+        top = np.argsort(scores)[::-1][: min(len(owners), 30)]
+        for i in top:
+            sim = geometry_similarity(live_geometry, geoms[int(i)])
+            geo_per_row[int(i)] = sim
             if sim is not None:
-                combined[i] = (1.0 - geo_weight) * scores[i] + geo_weight * sim
+                combined[int(i)] = (1.0 - geo_weight) * scores[int(i)] + geo_weight * sim
 
-    best = int(np.argmax(combined))
-    confidence = float(scores[best])
-    geometry_score = geo_per_row[best]
+    # Decide per person, not per photo: a student with several good photos
+    # should beat a stranger who happens to match one odd-angle photo.
+    per_student: dict[str, float] = {}
+    for i, owner in enumerate(owners):
+        value = float(combined[i])
+        if value > per_student.get(owner, -2.0):
+            per_student[owner] = value
 
-    # Best geometry match among all photos of the chosen student.
-    if live_geometry:
-        student_geo = [
-            geometry_similarity(live_geometry, geoms[i])
-            for i, owner in enumerate(owners)
-            if owner == owners[best]
-        ]
-        student_geo = [s for s in student_geo if s is not None]
-        if student_geo:
-            geometry_score = max(student_geo)
+    ranked = sorted(per_student.items(), key=lambda kv: kv[1], reverse=True)
+    student_id, best_score = ranked[0]
+    runner_up = ranked[1][1] if len(ranked) > 1 else -1.0
 
-    if float(combined[best]) < threshold:
+    if best_score < threshold:
         return {
             "result": "denied",
             "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
-            "speak": "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
+            "speak": settings.get("voice_denied_text") or "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
             "next_delay_seconds": delay,
         }
 
-    student_id = owners[best]
+    # Two people scoring almost the same means the frame is not good enough to
+    # tell them apart — ask for another scan instead of guessing.
+    if best_score - runner_up < 0.04 and runner_up > 0:
+        return {
+            "result": "denied",
+            "message": "ภาพไม่ชัดพอ กรุณามองกล้องตรงๆ อีกครั้ง",
+            "speak": "กรุณามองกล้องอีกครั้ง",
+            "next_delay_seconds": 2,
+        }
+
+    rows_of_student = [i for i, owner in enumerate(owners) if owner == student_id]
+    confidence = float(max(scores[i] for i in rows_of_student))
+    geometry_score = None
+    if live_geometry:
+        sims = [
+            geometry_similarity(live_geometry, geoms[i]) for i in rows_of_student
+        ]
+        sims = [s for s in sims if s is not None]
+        if sims:
+            geometry_score = max(sims)
+
     payload = {
         "student_id": student_id,
         "confidence": round(confidence, 4),
@@ -560,29 +619,36 @@ def scan(req: ScanRequest):
     if snapshot:
         payload["snapshot"] = snapshot
 
-    try:
-        res = requests.post(
-            f"{CLOUD_URL}/api/public/kiosk/attendance",
-            headers=HEADERS,
-            json=payload,
-            timeout=30,
-        )
-        res.raise_for_status()
-        return res.json()
-    except Exception:  # noqa: BLE001
-        # Offline: keep the scan on disk and retry in the background so the
-        # kiosk can still greet the person straight away.
-        outbox_append(payload)
-        with lock:
-            person = state["students"].get(student_id) or {}
-        name = person.get("full_name") or "ผู้ใช้งาน"
-        return {
-            "result": "ok",
-            "offline": True,
-            "message": f"บันทึกเวลาแบบออฟไลน์ให้ {name} แล้ว",
-            "speak": f"สแกนสำเร็จ {name}",
-            "next_delay_seconds": delay,
-        }
+    last_error = None
+    for attempt in range(2):
+        try:
+            res = requests.post(
+                f"{CLOUD_URL}/api/public/kiosk/attendance",
+                headers=HEADERS,
+                json=payload,
+                timeout=15,
+            )
+            res.raise_for_status()
+            return res.json()
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            if attempt == 0:
+                time.sleep(0.6)
+
+    # Offline: keep the scan on disk and retry in the background so the
+    # kiosk can still greet the person straight away.
+    print(f"[agent] upload failed, queued offline: {last_error}")
+    outbox_append(payload)
+    with lock:
+        person = state["students"].get(student_id) or {}
+    name = person.get("full_name") or "ผู้ใช้งาน"
+    return {
+        "result": "ok",
+        "offline": True,
+        "message": f"บันทึกเวลาแบบออฟไลน์ให้ {name} แล้ว",
+        "speak": f"สแกนสำเร็จ {name}",
+        "next_delay_seconds": delay,
+    }
 
 
 
