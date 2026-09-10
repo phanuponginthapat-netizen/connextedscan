@@ -146,6 +146,13 @@ function openKiosk() {
 
   kioskWindow.loadURL(url);
 
+  // Retry when the kiosk PC boots before the network is ready.
+  kioskWindow.webContents.on("did-fail-load", () => {
+    setTimeout(() => {
+      if (kioskWindow) kioskWindow.loadURL(url);
+    }, 5000);
+  });
+
   kioskWindow.on("closed", () => {
     kioskWindow = null;
   });
