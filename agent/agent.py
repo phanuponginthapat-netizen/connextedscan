@@ -506,24 +506,55 @@ def scan(req: ScanRequest):
     if not strong:
         return {"result": "no_face", "message": ""}
 
-    frame_area = float(arr.shape[0] * arr.shape[1])
+    frame_h, frame_w = float(arr.shape[0]), float(arr.shape[1])
+    frame_area = frame_h * frame_w
     areas = {
         i: float((dets[i, 2] - dets[i, 0]) * (dets[i, 3] - dets[i, 1])) for i in strong
     }
     # Only faces big enough to matter count as "people standing at the kiosk".
-    present = [i for i in strong if areas[i] / frame_area >= max(min_coverage, 0.01)]
-    if not present:
+    big = [i for i in strong if areas[i] / frame_area >= max(min_coverage, 0.01)]
+    if not big:
         return {
             "result": "no_face",
             "message": "กรุณาเข้าใกล้กล้องอีกนิด",
         }
+
+    # Anyone walking past behind the person being scanned is simply ignored:
+    # only faces sitting inside the on-screen oval guide are considered.
+    cx, cy = frame_w / 2.0, frame_h / 2.0
+    rx, ry = frame_w * GUIDE_RX, frame_h * GUIDE_RY
+
+    def inside_guide(i: int) -> bool:
+        fx = (float(dets[i, 0]) + float(dets[i, 2])) / 2.0
+        fy = (float(dets[i, 1]) + float(dets[i, 3])) / 2.0
+        return ((fx - cx) / rx) ** 2 + ((fy - cy) / ry) ** 2 <= 1.0
+
+    present = [i for i in big if inside_guide(i)]
+    if not present:
+        return {
+            "result": "no_face",
+            "message": "กรุณาจัดใบหน้าให้อยู่ในกรอบ",
+        }
     if len(present) > 1:
         return {
             "result": "multiple_faces",
-            "message": "พบหลายใบหน้า กรุณาแสกนทีละคน",
+            "message": "พบหลายใบหน้าในกรอบ กรุณาแสกนทีละคน",
             "speak": "พบหลายใบหน้า กรุณาเข้ามาคนเดียว",
             "next_delay_seconds": 3,
         }
+    # A second person inside the frame but outside the oval is fine; someone
+    # crowding right at the edge of the oval is not.
+    idx_main = max(present, key=lambda i: areas[i])
+    for i in big:
+        if i == idx_main:
+            continue
+        if areas[i] >= areas[idx_main] * 0.6 and inside_guide_margin(dets, i, cx, cy, rx, ry):
+            return {
+                "result": "multiple_faces",
+                "message": "มีคนอื่นอยู่ใกล้กรอบเกินไป กรุณาแสกนทีละคน",
+                "speak": "กรุณาเข้ามาคนเดียว",
+                "next_delay_seconds": 3,
+            }
 
     idx = present[0]
     face = Face(
