@@ -206,16 +206,25 @@ function Kiosk() {
     const check = async () => {
       try {
         const res = await fetch(`${agentUrl.replace(/\/$/, "")}/health`);
-        const data = (await res.json()) as { ok?: boolean; known_faces?: number };
+        const data = (await res.json()) as {
+          ok?: boolean;
+          known_faces?: number;
+          cached_images?: number;
+          pending_uploads?: number;
+          last_sync?: number | null;
+        };
         if (cancelled) return;
         setAgentOnline(!!data.ok);
         setKnownFaces(data.known_faces ?? null);
+        setAgentStats(data.ok ? data : null);
       } catch {
         if (!cancelled) {
           setAgentOnline(false);
           setKnownFaces(null);
+          setAgentStats(null);
         }
       }
+
     };
     check();
     const t = setInterval(check, 10000);
