@@ -90,6 +90,23 @@ function Kiosk() {
     };
   }, [agentUrl]);
 
+  // Warm up the in-browser face model whenever the local program is absent.
+  useEffect(() => {
+    if (agentOnline !== false || webReady) return;
+    let cancelled = false;
+    import("@/lib/face-web")
+      .then((m) => m.loadFaceApi())
+      .then(() => {
+        if (!cancelled) setWebReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setWebError("โหลดตัวตรวจใบหน้าไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วรีเฟรช");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agentOnline, webReady]);
+
   useEffect(() => {
     let stream: MediaStream | null = null;
     navigator.mediaDevices
