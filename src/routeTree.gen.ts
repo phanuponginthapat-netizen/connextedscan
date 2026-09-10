@@ -22,6 +22,7 @@ import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
 import { Route as AdminStudentsIndexRouteImport } from './routes/admin/students/index'
 import { Route as AdminStudentsIdRouteImport } from './routes/admin/students/$id'
+import { Route as ApiPublicAdminAttendanceDeleteRouteImport } from './routes/api/public/admin/attendance-delete'
 import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agent/$file'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
@@ -94,6 +95,12 @@ const AdminStudentsIdRoute = AdminStudentsIdRouteImport.update({
   path: '/students/$id',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const ApiPublicAdminAttendanceDeleteRoute =
+  ApiPublicAdminAttendanceDeleteRouteImport.update({
+    id: '/api/public/admin/attendance-delete',
+    path: '/api/public/admin/attendance-delete',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicAgentFileRoute = ApiPublicAgentFileRouteImport.update({
   id: '/api/public/agent/$file',
   path: '/api/public/agent/$file',
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/admin/students/$id': typeof AdminStudentsIdRoute
   '/admin/staff/': typeof AdminStaffIndexRoute
   '/admin/students/': typeof AdminStudentsIndexRoute
+  '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
@@ -161,6 +169,7 @@ export interface FileRoutesByTo {
   '/admin/students/$id': typeof AdminStudentsIdRoute
   '/admin/staff': typeof AdminStaffIndexRoute
   '/admin/students': typeof AdminStudentsIndexRoute
+  '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
@@ -183,6 +192,7 @@ export interface FileRoutesById {
   '/admin/students/$id': typeof AdminStudentsIdRoute
   '/admin/staff/': typeof AdminStaffIndexRoute
   '/admin/students/': typeof AdminStudentsIndexRoute
+  '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/admin/students/$id'
     | '/admin/staff/'
     | '/admin/students/'
+    | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/admin/students/$id'
     | '/admin/staff'
     | '/admin/students'
+    | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
@@ -247,6 +259,7 @@ export interface FileRouteTypes {
     | '/admin/students/$id'
     | '/admin/staff/'
     | '/admin/students/'
+    | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/embeddings'
@@ -260,6 +273,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   KioskRoute: typeof KioskRoute
+  ApiPublicAdminAttendanceDeleteRoute: typeof ApiPublicAdminAttendanceDeleteRoute
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
@@ -361,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStudentsIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/api/public/admin/attendance-delete': {
+      id: '/api/public/admin/attendance-delete'
+      path: '/api/public/admin/attendance-delete'
+      fullPath: '/api/public/admin/attendance-delete'
+      preLoaderRoute: typeof ApiPublicAdminAttendanceDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/agent/$file': {
       id: '/api/public/agent/$file'
       path: '/api/public/agent/$file'
@@ -439,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   KioskRoute: KioskRoute,
+  ApiPublicAdminAttendanceDeleteRoute: ApiPublicAdminAttendanceDeleteRoute,
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
