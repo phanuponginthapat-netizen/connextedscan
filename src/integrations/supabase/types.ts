@@ -91,6 +91,33 @@ export type Database = {
         }
         Relationships: []
       }
+      door_commands: {
+        Row: {
+          command: string
+          consumed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          seconds: number
+        }
+        Insert: {
+          command: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          seconds?: number
+        }
+        Update: {
+          command?: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          seconds?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -112,12 +139,50 @@ export type Database = {
         }
         Relationships: []
       }
+      security_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          attempts: number
+          created_at: string
+          device_name: string | null
+          id: string
+          kind: string
+          message: string
+          snapshot_path: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          attempts?: number
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          kind?: string
+          message: string
+          snapshot_path?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          attempts?: number
+          created_at?: string
+          device_name?: string | null
+          id?: string
+          kind?: string
+          message?: string
+          snapshot_path?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
+          absent_check_time: string
           allow_web_scan: boolean
           auto_enroll: boolean
           auto_enroll_max_faces: number
           auto_enroll_min_confidence: number
+          auto_update_enabled: boolean
+          backup_enabled: boolean
+          backup_last_at: string | null
+          backup_weekday: number
           block_non_work_days: boolean
           checkin_end: string
           checkin_start: string
@@ -127,9 +192,13 @@ export type Database = {
           detector_min_score: number
           door_deny_alarm: boolean
           door_enabled: boolean
+          door_free_enabled: boolean
+          door_free_end: string
+          door_free_start: string
           door_open_seconds: number
           duplicate_cooldown_minutes: number
           early_leave_before: string
+          failed_alert_threshold: number
           geometry_min_score: number
           geometry_weight: number
           id: boolean
@@ -150,8 +219,11 @@ export type Database = {
           require_liveness: boolean
           save_snapshots: boolean
           school_name: string
+          second_camera_direction: string
+          second_camera_index: number
           snapshot_retention_days: number
           updated_at: string
+          visitor_mode: boolean
           voice_denied_text: string
           voice_duplicate_template: string
           voice_enabled: boolean
@@ -164,10 +236,15 @@ export type Database = {
           work_days: string
         }
         Insert: {
+          absent_check_time?: string
           allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
+          auto_update_enabled?: boolean
+          backup_enabled?: boolean
+          backup_last_at?: string | null
+          backup_weekday?: number
           block_non_work_days?: boolean
           checkin_end?: string
           checkin_start?: string
@@ -177,9 +254,13 @@ export type Database = {
           detector_min_score?: number
           door_deny_alarm?: boolean
           door_enabled?: boolean
+          door_free_enabled?: boolean
+          door_free_end?: string
+          door_free_start?: string
           door_open_seconds?: number
           duplicate_cooldown_minutes?: number
           early_leave_before?: string
+          failed_alert_threshold?: number
           geometry_min_score?: number
           geometry_weight?: number
           id?: boolean
@@ -200,8 +281,11 @@ export type Database = {
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
+          second_camera_direction?: string
+          second_camera_index?: number
           snapshot_retention_days?: number
           updated_at?: string
+          visitor_mode?: boolean
           voice_denied_text?: string
           voice_duplicate_template?: string
           voice_enabled?: boolean
@@ -214,10 +298,15 @@ export type Database = {
           work_days?: string
         }
         Update: {
+          absent_check_time?: string
           allow_web_scan?: boolean
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
+          auto_update_enabled?: boolean
+          backup_enabled?: boolean
+          backup_last_at?: string | null
+          backup_weekday?: number
           block_non_work_days?: boolean
           checkin_end?: string
           checkin_start?: string
@@ -227,9 +316,13 @@ export type Database = {
           detector_min_score?: number
           door_deny_alarm?: boolean
           door_enabled?: boolean
+          door_free_enabled?: boolean
+          door_free_end?: string
+          door_free_start?: string
           door_open_seconds?: number
           duplicate_cooldown_minutes?: number
           early_leave_before?: string
+          failed_alert_threshold?: number
           geometry_min_score?: number
           geometry_weight?: number
           id?: boolean
@@ -250,8 +343,11 @@ export type Database = {
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
+          second_camera_direction?: string
+          second_camera_index?: number
           snapshot_retention_days?: number
           updated_at?: string
+          visitor_mode?: boolean
           voice_denied_text?: string
           voice_duplicate_template?: string
           voice_enabled?: boolean
@@ -405,6 +501,36 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      visitor_logs: {
+        Row: {
+          device_name: string | null
+          direction: string
+          full_name: string | null
+          id: string
+          note: string | null
+          scanned_at: string
+          snapshot_path: string | null
+        }
+        Insert: {
+          device_name?: string | null
+          direction?: string
+          full_name?: string | null
+          id?: string
+          note?: string | null
+          scanned_at?: string
+          snapshot_path?: string | null
+        }
+        Update: {
+          device_name?: string | null
+          direction?: string
+          full_name?: string | null
+          id?: string
+          note?: string | null
+          scanned_at?: string
+          snapshot_path?: string | null
         }
         Relationships: []
       }

@@ -19,6 +19,8 @@ import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminDoorRouteImport } from './routes/admin/door'
 import { Route as AdminInstallRouteImport } from './routes/admin/install'
+import { Route as AdminLiveRouteImport } from './routes/admin/live'
+import { Route as AdminMonthlyRouteImport } from './routes/admin/monthly'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
@@ -26,11 +28,15 @@ import { Route as AdminStudentsIndexRouteImport } from './routes/admin/students/
 import { Route as AdminStudentsIdRouteImport } from './routes/admin/students/$id'
 import { Route as ApiPublicAdminAttendanceDeleteRouteImport } from './routes/api/public/admin/attendance-delete'
 import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agent/$file'
+import { Route as ApiPublicCronBackupRouteImport } from './routes/api/public/cron/backup'
+import { Route as ApiPublicKioskAlertRouteImport } from './routes/api/public/kiosk/alert'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
+import { Route as ApiPublicKioskDoorCommandRouteImport } from './routes/api/public/kiosk/door-command'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
 import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/kiosk/recent'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
+import { Route as ApiPublicKioskVisitorRouteImport } from './routes/api/public/kiosk/visitor'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +88,16 @@ const AdminInstallRoute = AdminInstallRouteImport.update({
   path: '/install',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminLiveRoute = AdminLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminMonthlyRoute = AdminMonthlyRouteImport.update({
+  id: '/monthly',
+  path: '/monthly',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -118,10 +134,26 @@ const ApiPublicAgentFileRoute = ApiPublicAgentFileRouteImport.update({
   path: '/api/public/agent/$file',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronBackupRoute = ApiPublicCronBackupRouteImport.update({
+  id: '/api/public/cron/backup',
+  path: '/api/public/cron/backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicKioskAlertRoute = ApiPublicKioskAlertRouteImport.update({
+  id: '/api/public/kiosk/alert',
+  path: '/api/public/kiosk/alert',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKioskAttendanceRoute =
   ApiPublicKioskAttendanceRouteImport.update({
     id: '/api/public/kiosk/attendance',
     path: '/api/public/kiosk/attendance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicKioskDoorCommandRoute =
+  ApiPublicKioskDoorCommandRouteImport.update({
+    id: '/api/public/kiosk/door-command',
+    path: '/api/public/kiosk/door-command',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicKioskEmbeddingsRoute =
@@ -145,6 +177,11 @@ const ApiPublicKioskTtsRoute = ApiPublicKioskTtsRouteImport.update({
   path: '/api/public/kiosk/tts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskVisitorRoute = ApiPublicKioskVisitorRouteImport.update({
+  id: '/api/public/kiosk/visitor',
+  path: '/api/public/kiosk/visitor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -156,6 +193,8 @@ export interface FileRoutesByFullPath {
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/install': typeof AdminInstallRoute
+  '/admin/live': typeof AdminLiveRoute
+  '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -164,11 +203,15 @@ export interface FileRoutesByFullPath {
   '/admin/students/': typeof AdminStudentsIndexRoute
   '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
+  '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
+  '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
+  '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
+  '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -179,6 +222,8 @@ export interface FileRoutesByTo {
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/install': typeof AdminInstallRoute
+  '/admin/live': typeof AdminLiveRoute
+  '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -187,11 +232,15 @@ export interface FileRoutesByTo {
   '/admin/students': typeof AdminStudentsIndexRoute
   '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
+  '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
+  '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
+  '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
+  '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -204,6 +253,8 @@ export interface FileRoutesById {
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/install': typeof AdminInstallRoute
+  '/admin/live': typeof AdminLiveRoute
+  '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -212,11 +263,15 @@ export interface FileRoutesById {
   '/admin/students/': typeof AdminStudentsIndexRoute
   '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
+  '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
+  '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
+  '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
+  '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,6 +285,8 @@ export interface FileRouteTypes {
     | '/admin/cms'
     | '/admin/door'
     | '/admin/install'
+    | '/admin/live'
+    | '/admin/monthly'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -238,11 +295,15 @@ export interface FileRouteTypes {
     | '/admin/students/'
     | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
+    | '/api/public/cron/backup'
+    | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
+    | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
+    | '/api/public/kiosk/visitor'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -253,6 +314,8 @@ export interface FileRouteTypes {
     | '/admin/cms'
     | '/admin/door'
     | '/admin/install'
+    | '/admin/live'
+    | '/admin/monthly'
     | '/admin/settings'
     | '/admin'
     | '/admin/staff/$id'
@@ -261,11 +324,15 @@ export interface FileRouteTypes {
     | '/admin/students'
     | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
+    | '/api/public/cron/backup'
+    | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
+    | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
+    | '/api/public/kiosk/visitor'
   id:
     | '__root__'
     | '/'
@@ -277,6 +344,8 @@ export interface FileRouteTypes {
     | '/admin/cms'
     | '/admin/door'
     | '/admin/install'
+    | '/admin/live'
+    | '/admin/monthly'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -285,11 +354,15 @@ export interface FileRouteTypes {
     | '/admin/students/'
     | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
+    | '/api/public/cron/backup'
+    | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
+    | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
+    | '/api/public/kiosk/visitor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -300,11 +373,15 @@ export interface RootRouteChildren {
   KioskRoute: typeof KioskRoute
   ApiPublicAdminAttendanceDeleteRoute: typeof ApiPublicAdminAttendanceDeleteRoute
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
+  ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
+  ApiPublicKioskAlertRoute: typeof ApiPublicKioskAlertRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
+  ApiPublicKioskDoorCommandRoute: typeof ApiPublicKioskDoorCommandRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
   ApiPublicKioskRecentRoute: typeof ApiPublicKioskRecentRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
+  ApiPublicKioskVisitorRoute: typeof ApiPublicKioskVisitorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -379,6 +456,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInstallRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/live': {
+      id: '/admin/live'
+      path: '/live'
+      fullPath: '/admin/live'
+      preLoaderRoute: typeof AdminLiveRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/monthly': {
+      id: '/admin/monthly'
+      path: '/monthly'
+      fullPath: '/admin/monthly'
+      preLoaderRoute: typeof AdminMonthlyRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -428,11 +519,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAgentFileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/backup': {
+      id: '/api/public/cron/backup'
+      path: '/api/public/cron/backup'
+      fullPath: '/api/public/cron/backup'
+      preLoaderRoute: typeof ApiPublicCronBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/kiosk/alert': {
+      id: '/api/public/kiosk/alert'
+      path: '/api/public/kiosk/alert'
+      fullPath: '/api/public/kiosk/alert'
+      preLoaderRoute: typeof ApiPublicKioskAlertRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/attendance': {
       id: '/api/public/kiosk/attendance'
       path: '/api/public/kiosk/attendance'
       fullPath: '/api/public/kiosk/attendance'
       preLoaderRoute: typeof ApiPublicKioskAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/kiosk/door-command': {
+      id: '/api/public/kiosk/door-command'
+      path: '/api/public/kiosk/door-command'
+      fullPath: '/api/public/kiosk/door-command'
+      preLoaderRoute: typeof ApiPublicKioskDoorCommandRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/kiosk/embeddings': {
@@ -463,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/visitor': {
+      id: '/api/public/kiosk/visitor'
+      path: '/api/public/kiosk/visitor'
+      fullPath: '/api/public/kiosk/visitor'
+      preLoaderRoute: typeof ApiPublicKioskVisitorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -471,6 +590,8 @@ interface AdminRouteRouteChildren {
   AdminCmsRoute: typeof AdminCmsRoute
   AdminDoorRoute: typeof AdminDoorRoute
   AdminInstallRoute: typeof AdminInstallRoute
+  AdminLiveRoute: typeof AdminLiveRoute
+  AdminMonthlyRoute: typeof AdminMonthlyRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
@@ -484,6 +605,8 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminCmsRoute: AdminCmsRoute,
   AdminDoorRoute: AdminDoorRoute,
   AdminInstallRoute: AdminInstallRoute,
+  AdminLiveRoute: AdminLiveRoute,
+  AdminMonthlyRoute: AdminMonthlyRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
@@ -504,11 +627,15 @@ const rootRouteChildren: RootRouteChildren = {
   KioskRoute: KioskRoute,
   ApiPublicAdminAttendanceDeleteRoute: ApiPublicAdminAttendanceDeleteRoute,
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
+  ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
+  ApiPublicKioskAlertRoute: ApiPublicKioskAlertRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
+  ApiPublicKioskDoorCommandRoute: ApiPublicKioskDoorCommandRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
   ApiPublicKioskRecentRoute: ApiPublicKioskRecentRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
+  ApiPublicKioskVisitorRoute: ApiPublicKioskVisitorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
