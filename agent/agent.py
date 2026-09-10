@@ -298,6 +298,22 @@ def geometry_similarity(a: dict | None, b: dict | None) -> float | None:
     return float(max(0.0, 1.0 - 2.0 * (sum(diffs) / len(diffs))))
 
 
+# Size of the on-screen oval guide, as a share of the camera picture.
+# Faces outside this oval belong to people walking past, not to the person
+# being scanned, so they are ignored.
+GUIDE_RX = 0.30
+GUIDE_RY = 0.36
+# Anyone whose face reaches within this much of the oval counts as crowding it.
+GUIDE_MARGIN = 1.25
+
+
+def inside_guide_margin(dets, i: int, cx: float, cy: float, rx: float, ry: float) -> bool:
+    fx = (float(dets[i, 0]) + float(dets[i, 2])) / 2.0
+    fy = (float(dets[i, 1]) + float(dets[i, 3])) / 2.0
+    return ((fx - cx) / (rx * GUIDE_MARGIN)) ** 2 + ((fy - cy) / (ry * GUIDE_MARGIN)) ** 2 <= 1.0
+
+
+
 def embed_image(bgr: np.ndarray):
     faces = face_app.get(bgr)
     if not faces:
