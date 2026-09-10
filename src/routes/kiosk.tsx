@@ -176,6 +176,7 @@ function Kiosk() {
           id: string;
           name: string;
           detail: string;
+          role?: string;
           direction: "in" | "out";
           scanned_at: string;
           avatar_url: string | null;
