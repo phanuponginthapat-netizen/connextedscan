@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, Settings2, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Settings2, User, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,13 +20,15 @@ export const Route = createFileRoute("/kiosk")({
 });
 
 type ScanResult = {
-  result: "ok" | "duplicate" | "denied" | "unknown";
+  result: "ok" | "duplicate" | "denied" | "multiple_faces" | "unknown";
   message: string;
   speak?: string;
   next_delay_seconds?: number;
   student?: { full_name: string; class_room: string | null; student_code: string } | null;
   direction?: "in" | "out";
 };
+
+type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
 
 const AGENT_KEY = "facegate_agent_url";
 
@@ -47,6 +49,7 @@ function Kiosk() {
   const [agentUrl, setAgentUrl] = useState("http://127.0.0.1:8899");
   const [showConfig, setShowConfig] = useState(false);
   const [status, setStatus] = useState<"idle" | "scanning" | "cooldown">("idle");
+  const [guide, setGuide] = useState<GuideState>("idle");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [camError, setCamError] = useState<string | null>(null);
@@ -74,6 +77,7 @@ function Kiosk() {
     if (!video || video.readyState < 2 || busyRef.current) return;
     busyRef.current = true;
     setStatus("scanning");
+    setGuide("scanning");
     try {
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
@@ -87,9 +91,13 @@ function Kiosk() {
       });
       const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       if (!data.result || data.result === "no_face") {
+        setGuide("no_face");
         setStatus("idle");
         busyRef.current = false;
         return;
+      }
+      if (data.result === "multiple_faces") {
+        setGuide("multiple_faces");
       }
       setResult(data as unknown as ScanResult);
       if (data.speak) speak(data.speak);
@@ -101,6 +109,7 @@ function Kiosk() {
           if (c <= 1) {
             clearInterval(timer);
             setResult(null);
+            setGuide("idle");
             setStatus("idle");
             busyRef.current = false;
             return 0;
@@ -109,6 +118,7 @@ function Kiosk() {
         });
       }, 1000);
     } catch {
+      setGuide("idle");
       setStatus("idle");
       busyRef.current = false;
     }
@@ -128,12 +138,19 @@ function Kiosk() {
         ? "border-accent bg-accent/10"
         : "border-destructive bg-destructive/10";
 
+  const guideColor =
+    guide === "multiple_faces"
+      ? "border-destructive text-destructive"
+      : guide === "no_face"
+        ? "border-muted-foreground text-muted-foreground"
+        : "border-primary text-primary";
+
   return (
     <main className="kiosk-bg flex min-h-screen flex-col items-center justify-center gap-6 p-6">
       <header className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">ระบบสแกนใบหน้าเข้า-ออกโรงเรียน</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          กรุณามองตรงกล้อง ระบบจะขานชื่อเมื่อสแกนสำเร็จ
+          ยืนให้ใบหน้าอยู่ในกรอบคนเดียว ระบบจะขานชื่อเมื่อสแกนสำเร็จ
         </p>
       </header>
 
@@ -145,12 +162,34 @@ function Kiosk() {
           playsInline
           className="aspect-video w-full scale-x-[-1] bg-muted object-cover"
         />
-        <div className="pointer-events-none absolute inset-8 rounded-2xl border-2 border-primary/50" />
-        {status === "scanning" && !result && (
-          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm">
-            <Loader2 className="size-4 animate-spin" /> กำลังตรวจใบหน้า…
+
+        {/* Single-person face guide overlay */}
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <div
+            className={`flex aspect-[3/4] w-1/2 max-w-[260px] items-center justify-center rounded-[50%] border-4 border-dashed ${guideColor} transition-colors duration-300`}
+          >
+            <User className={`size-16 opacity-40 ${guide === "scanning" ? "animate-pulse" : ""}`} />
           </div>
-        )}
+        </div>
+
+        {/* Guide status badge */}
+        <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/90 px-4 py-2 text-sm shadow">
+          {status === "scanning" && !result && (
+            <>
+              <Loader2 className="size-4 animate-spin text-primary" /> กำลังตรวจใบหน้า…
+            </>
+          )}
+          {guide === "no_face" && status !== "scanning" && !result && (
+            <span className="text-muted-foreground">ไม่พบใบหน้าในกรอบ</span>
+          )}
+          {guide === "multiple_faces" && !result && (
+            <span className="text-destructive">พบหลายใบหน้า กรุณาเข้ามาคนเดียว</span>
+          )}
+          {(guide === "idle" || (result && status === "cooldown")) && !result && (
+            <span className="text-primary">ยืนให้ใบหน้าอยู่ในกรอบคนเดียว</span>
+          )}
+        </div>
+
         {camError && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/90 p-6 text-center text-sm text-destructive">
             {camError}
