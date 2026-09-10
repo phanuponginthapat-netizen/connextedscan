@@ -86,7 +86,7 @@ function shiftDays(days: number) {
 
 function timeText(value?: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function dateText(value: string) {
@@ -383,7 +383,7 @@ function AttendancePage() {
         "เครื่อง",
       ],
       filtered.map((r) => [
-        new Date(r.scanned_at).toLocaleString("th-TH"),
+        new Date(r.scanned_at).toLocaleString("th-TH", { hour12: false }),
         r.students?.student_code ?? "",
         r.students?.full_name ?? "",
         r.students ? personTypeLabel(r.students.person_type) : "",
@@ -427,7 +427,7 @@ function AttendancePage() {
               : personType === "student"
                 ? "เฉพาะนักเรียน"
                 : "เฉพาะบุคลากร"}{" "}
-            • ออกรายงานเมื่อ {new Date().toLocaleString("th-TH")}
+            • ออกรายงานเมื่อ {new Date().toLocaleString("th-TH", { hour12: false })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">

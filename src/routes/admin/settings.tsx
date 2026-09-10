@@ -361,7 +361,7 @@ function SettingsPage() {
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 เชื่อมต่อล่าสุด:{" "}
-                {d.last_seen_at ? new Date(d.last_seen_at).toLocaleString("th-TH") : "ยังไม่เคย"}
+                {d.last_seen_at ? new Date(d.last_seen_at).toLocaleString("th-TH", { hour12: false }) : "ยังไม่เคย"}
               </p>
             </div>
           ))}

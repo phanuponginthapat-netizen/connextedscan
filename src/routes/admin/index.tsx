@@ -48,7 +48,7 @@ function startOfTodayISO() {
 }
 
 function timeText(value: string) {
-  return new Date(value).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  return new Date(value).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function Dashboard() {
