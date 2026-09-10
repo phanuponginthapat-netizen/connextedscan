@@ -8,11 +8,14 @@ type FaceApi = typeof import("@vladmandic/face-api");
 let apiPromise: Promise<FaceApi> | null = null;
 
 export type FaceBox = { x: number; y: number; width: number; height: number };
+export type FacePoint = { x: number; y: number };
 
 export type FaceMeasurement = {
   descriptor: number[];
   geometry: Record<string, number>;
   box: FaceBox;
+  /** 68 facial landmark points used by the live detection overlay. */
+  landmarks: FacePoint[];
   /** Detector confidence 0-1. */
   score: number;
   /** Fraction of the frame covered by the face box (0-1). */
@@ -139,6 +142,7 @@ export async function measureSingleFace(
       descriptor: Array.from(first.descriptor),
       geometry: buildGeometry(first.landmarks as never),
       box,
+      landmarks: first.landmarks.positions.map((point) => ({ x: point.x, y: point.y })),
       score: first.detection.score,
       coverage: (box.width * box.height) / area,
       frame,

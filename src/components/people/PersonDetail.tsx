@@ -549,6 +549,8 @@ function LiveCapture({ onCapture }: { onCapture: (p: CapturePayload) => Promise<
             boxes={boxes}
             frame={frame}
             mirrored
+            landmarks={detection?.status === "ok" ? detection.face.landmarks : []}
+            tech
             tone={detection?.status === "ok" ? "ok" : "bad"}
             label={
               detection?.status === "ok"
@@ -622,6 +624,7 @@ function PhotoUpload({
         url: string;
         boxes: { x: number; y: number; width: number; height: number }[];
         frame: { width: number; height: number };
+        landmarks: { x: number; y: number }[];
         ok: boolean;
         note: string;
         quality: FaceQuality | null;
@@ -652,6 +655,7 @@ function PhotoUpload({
             url,
             boxes: [outcome.face.box],
             frame,
+            landmarks: outcome.face.landmarks,
             ok: true,
             note: `จับใบหน้าได้ คุณภาพ ${quality.percent}%`,
             quality,
@@ -669,6 +673,7 @@ function PhotoUpload({
             url,
             boxes: outcome.status === "multiple_faces" ? outcome.boxes : [],
             frame: outcome.status === "multiple_faces" ? outcome.frame : frame,
+            landmarks: [],
             ok: false,
             note:
               outcome.status === "multiple_faces"
@@ -738,6 +743,8 @@ function PhotoUpload({
               <FaceBoxOverlay
                 boxes={preview.boxes}
                 frame={preview.frame}
+                landmarks={preview.landmarks}
+                tech
                 tone={preview.ok ? "ok" : "bad"}
                 label={preview.ok ? "จับใบหน้าได้" : "ไม่ผ่าน"}
               />
