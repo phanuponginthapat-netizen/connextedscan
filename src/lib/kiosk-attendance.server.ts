@@ -134,6 +134,16 @@ export async function recordScan(input: RecordScanInput) {
     avatarUrl = signed?.signedUrl ?? null;
   }
 
+  // Signed URL of the photo captured during this scan, shown next to the
+  // profile picture as proof the scan really happened.
+  let snapshotUrl: string | null = null;
+  if (snapshotPath) {
+    const { data: signedShot } = await supabaseAdmin.storage
+      .from("faces")
+      .createSignedUrl(snapshotPath, 60 * 60);
+    snapshotUrl = signedShot?.signedUrl ?? null;
+  }
+
   if (recent && recent.length > 0) {
     await supabaseAdmin.from("attendance_logs").insert({
       student_id: studentId,
