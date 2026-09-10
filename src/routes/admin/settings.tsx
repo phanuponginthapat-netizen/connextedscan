@@ -141,10 +141,9 @@ function SettingsPage() {
           {timeFields.map(([key, label]) => (
             <div key={key} className="space-y-1.5">
               <Label>{label}</Label>
-              <Input
-                type="time"
+              <TimeInput24
                 value={String(form[key]).slice(0, 5)}
-                onChange={(e) => set({ [key]: `${e.target.value}:00` } as Partial<SettingsRow>)}
+                onChange={(v) => set({ [key]: `${v}:00` } as Partial<SettingsRow>)}
               />
             </div>
           ))}
