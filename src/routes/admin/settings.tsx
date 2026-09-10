@@ -113,6 +113,7 @@ type SettingsRow = {
   min_face_coverage: number;
   detector_min_score: number;
   log_unknown_attempts: boolean;
+  allow_signup: boolean;
   snapshot_retention_days: number;
   log_retention_days: number;
   default_report_days: number;
@@ -730,6 +731,18 @@ function SettingsPage() {
                       value={Number(form.default_report_days)}
                       onChange={(e) => set({ default_report_days: Number(e.target.value) })}
                     />
+                  </div>
+                  <div className="rounded-lg border p-3 sm:col-span-3">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={form.allow_signup}
+                        onCheckedChange={(v) => set({ allow_signup: v })}
+                      />
+                      <span className="text-sm">เปิดให้สมัครสมาชิกเข้าใช้หลังบ้านได้เอง</span>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      ปิดไว้เพื่อกันคนนอกสมัครเอง เปิดเฉพาะตอนต้องการเพิ่มเจ้าหน้าที่ใหม่
+                    </p>
                   </div>
                   <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
                     <Switch
