@@ -17,6 +17,15 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
         const device = await authenticateDevice(request);
         if (!device) return jsonResponse({ error: "invalid device key" }, 401);
 
+        let known: Record<string, string> = {};
+        try {
+          const body = (await request.json()) as { known?: Record<string, string> } | null;
+          if (body?.known && typeof body.known === "object") known = body.known;
+        } catch {
+          known = {};
+        }
+        const incremental = Object.keys(known).length > 0;
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const [{ data: settings }, { data: students }, { data: faces }] = await Promise.all([
@@ -27,21 +36,31 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
             .eq("is_active", true),
           supabaseAdmin
             .from("student_faces")
-            .select("id, student_id, image_path, status, embedding, geometry")
+            .select("id, student_id, image_path, status, embedding, geometry, processed_at, created_at")
             .in("status", ["pending", "ready"]),
         ]);
+
+        const versionOf = (f: { processed_at: string | null; created_at: string }) =>
+          f.processed_at ?? f.created_at;
 
         // A photo still needs local ArcFace work whenever it has no ArcFace
         // embedding yet, even if the browser already measured it (status ready).
         const pending = (faces ?? []).filter((f) => !f.embedding);
-        const ready = (faces ?? [])
-          .filter((f) => f.embedding)
+        const readyAll = (faces ?? []).filter((f) => f.embedding);
+        const ready = readyAll
+          .filter((f) => !incremental || known[f.id] !== versionOf(f))
           .map((f) => ({
             id: f.id,
             student_id: f.student_id,
             embedding: f.embedding,
             geometry: f.geometry ?? null,
+            version: versionOf(f),
           }));
+
+        // Ids the kiosk still caches but that no longer exist (or lost their
+        // embedding) on the server.
+        const liveIds = new Set(readyAll.map((f) => f.id));
+        const removed = incremental ? Object.keys(known).filter((id) => !liveIds.has(id)) : [];
 
         const pendingWithUrls = await Promise.all(
           pending.map(async (f) => {
@@ -57,10 +76,14 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
           settings,
           students: students ?? [],
           embeddings: ready,
+          removed,
+          incremental,
+          total_embeddings: readyAll.length,
           pending: pendingWithUrls.filter((p) => p.url),
           server_time: new Date().toISOString(),
         });
       },
+
     },
   },
 });

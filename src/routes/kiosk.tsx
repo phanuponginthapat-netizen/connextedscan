@@ -59,6 +59,13 @@ function Kiosk() {
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
   const [knownFaces, setKnownFaces] = useState<number | null>(null);
+  const [agentStats, setAgentStats] = useState<{
+    known_faces?: number;
+    cached_images?: number;
+    pending_uploads?: number;
+    last_sync?: number | null;
+  } | null>(null);
+
   const [webReady, setWebReady] = useState(false);
   const [webError, setWebError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentScan[]>([]);
@@ -199,16 +206,25 @@ function Kiosk() {
     const check = async () => {
       try {
         const res = await fetch(`${agentUrl.replace(/\/$/, "")}/health`);
-        const data = (await res.json()) as { ok?: boolean; known_faces?: number };
+        const data = (await res.json()) as {
+          ok?: boolean;
+          known_faces?: number;
+          cached_images?: number;
+          pending_uploads?: number;
+          last_sync?: number | null;
+        };
         if (cancelled) return;
         setAgentOnline(!!data.ok);
         setKnownFaces(data.known_faces ?? null);
+        setAgentStats(data.ok ? data : null);
       } catch {
         if (!cancelled) {
           setAgentOnline(false);
           setKnownFaces(null);
+          setAgentStats(null);
         }
       }
+
     };
     check();
     const t = setInterval(check, 10000);
@@ -378,7 +394,15 @@ function Kiosk() {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs">
           {agentOnline === true ? (
-            <span className="text-primary">โหมดโปรแกรมบนเครื่อง (แม่นยำสูง)</span>
+            <span className="text-primary">
+              โหมดโปรแกรมบนเครื่อง (แม่นยำสูง)
+              {agentStats
+                ? ` • ใบหน้าในเครื่อง ${agentStats.known_faces ?? 0}${
+                    agentStats.pending_uploads ? ` • รอส่ง ${agentStats.pending_uploads}` : ""
+                  }`
+                : ""}
+            </span>
+
           ) : webError ? (
             <span className="text-destructive">{webError}</span>
           ) : webReady ? (
