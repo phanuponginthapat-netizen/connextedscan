@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { createStaffAccount, getSignupOpen } from "@/lib/signup.functions";
 import { toast } from "sonner";
 import { ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +35,14 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const createAccount = useServerFn(createStaffAccount);
+  const signupStatus = useServerFn(getSignupOpen);
+  const { data: signup } = useQuery({
+    queryKey: ["signup-open"],
+    queryFn: () => signupStatus(),
+    staleTime: 60_000,
+  });
+  const signupOpen = signup?.open ?? false;
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/admin" });
@@ -49,17 +60,23 @@ function AuthPage() {
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/admin`,
-        data: { full_name: fullName },
-      },
-    });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("สร้างบัญชีแล้ว ถ้าระบบขอยืนยันอีเมล กรุณาตรวจกล่องจดหมาย");
+    try {
+      const res = await createAccount({ data: { email, password, fullName } });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) toast.error(error.message);
+      else {
+        toast.success("สร้างบัญชีแล้ว");
+        navigate({ to: "/admin" });
+      }
+    } catch {
+      toast.error("สร้างบัญชีไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -76,9 +93,9 @@ function AuthPage() {
         </div>
 
         <Tabs defaultValue="signin" className="mt-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={signupOpen ? "grid w-full grid-cols-2" : "grid w-full grid-cols-1"}>
             <TabsTrigger value="signin">เข้าสู่ระบบ</TabsTrigger>
-            <TabsTrigger value="signup">สร้างบัญชี</TabsTrigger>
+            {signupOpen ? <TabsTrigger value="signup">สร้างบัญชี</TabsTrigger> : null}
           </TabsList>
 
           <TabsContent value="signin">
@@ -108,6 +125,12 @@ function AuthPage() {
               </Button>
             </form>
           </TabsContent>
+
+          {!signupOpen ? (
+            <p className="pt-4 text-center text-xs text-muted-foreground">
+              ระบบปิดรับสมัครสมาชิกใหม่ กรุณาติดต่อผู้ดูแลระบบเพื่อขอบัญชีใช้งาน
+            </p>
+          ) : null}
 
           <TabsContent value="signup">
             <form onSubmit={signUp} className="space-y-4 pt-4">

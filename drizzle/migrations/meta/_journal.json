@@ -92,6 +92,13 @@
       "when": 1789044596438,
       "tag": "0012_door_alerts_visitors_backup",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789047766561,
+      "tag": "0013_add_allow_signup_setting",
+      "breakpoints": true
     }
   ]
 }
