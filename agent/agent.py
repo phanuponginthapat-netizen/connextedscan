@@ -25,7 +25,7 @@ import numpy as np
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from insightface.app import FaceAnalysis
+from face_engine import FaceEngine
 from pydantic import BaseModel
 
 CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app")
@@ -44,8 +44,7 @@ app.add_middleware(
 )
 
 # ArcFace. det_size kept small so an Intel Atom can keep up.
-face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
-face_app.prepare(ctx_id=-1, det_size=(320, 320))
+face_app = FaceEngine(det_size=(320, 320))
 
 state: dict[str, Any] = {
     "matrix": np.zeros((0, 512), dtype=np.float32),  # normalised embeddings

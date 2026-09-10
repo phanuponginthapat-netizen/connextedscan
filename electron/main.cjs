@@ -52,18 +52,52 @@ function startAgent() {
     return false;
   }
 
-  const python = process.platform === "win32" ? "python" : "python3";
   // Files spawned by a child process must live outside the asar archive.
-  const script = path
-    .join(__dirname, "..", "agent", "agent.py")
+  const agentDir = path
+    .join(__dirname, "..", "agent")
     .replace("app.asar", "app.asar.unpacked");
+  const script = path.join(agentDir, "agent.py");
+
+  // The packaged build ships its own Python runtime + libraries next to the
+  // executable, so nothing has to be installed on the kiosk PC.
+  const runtimeDir = path.join(process.resourcesPath || path.join(__dirname, ".."), "runtime");
+  const bundledPython =
+    process.platform === "win32"
+      ? path.join(runtimeDir, "python", "python.exe")
+      : path.join(runtimeDir, "python", "bin", "python3");
+  const hasBundledPython = fs.existsSync(bundledPython);
+  const python = hasBundledPython
+    ? bundledPython
+    : process.platform === "win32"
+      ? "python"
+      : "python3";
+
+  const sitePath = path.join(runtimeDir, "site");
+  const modelDir = path.join(runtimeDir, "models");
   const env = {
     ...process.env,
     FACEGATE_DEVICE_KEY: deviceKey,
     FACEGATE_CLOUD_URL: cloudUrl,
   };
+  if (fs.existsSync(sitePath)) {
+    env.PYTHONPATH = [sitePath, agentDir, process.env.PYTHONPATH]
+      .filter(Boolean)
+      .join(path.delimiter);
+  }
+  if (fs.existsSync(modelDir)) {
+    env.FACEGATE_MODEL_DIR = modelDir;
+  }
 
-  agentProcess = spawn(python, [script], { env, detached: false });
+  try {
+    agentProcess = spawn(python, [script], { env, detached: false, cwd: agentDir });
+  } catch (err) {
+    console.error("[agent] failed to start", err);
+    agentProcess = null;
+    return false;
+  }
+  agentProcess.on("error", (err) => {
+    console.error("[agent] failed to start", err);
+  });
   agentProcess.stdout.on("data", (data) => {
     console.log("[agent]", data.toString().trim());
   });

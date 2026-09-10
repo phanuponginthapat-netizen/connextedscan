@@ -32,3 +32,6 @@ dist-ssr
 *.sw?
 electron-release/
 /electron-release
+
+# bundled model files (added at packaging time)
+agent/models/
