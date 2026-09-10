@@ -55,7 +55,7 @@ export const Route = createFileRoute("/api/public/kiosk/attendance")({
           supabaseAdmin.from("settings").select("*").eq("id", true).maybeSingle(),
           supabaseAdmin
             .from("students")
-            .select("id, full_name, nickname, student_code, class_room, is_active")
+            .select("id, full_name, nickname, student_code, class_room, is_active, avatar_path")
             .eq("id", student_id)
             .maybeSingle(),
         ]);
@@ -133,6 +133,16 @@ export const Route = createFileRoute("/api/public/kiosk/attendance")({
 
         const displayName = student.nickname?.trim() || student.full_name;
         const directionLabel = direction === "in" ? "เข้าโรงเรียน" : "ออกจากโรงเรียน";
+
+        // Signed URL of the profile photo, so the kiosk can show the face
+        // of the matched person right after a scan.
+        let avatarUrl: string | null = null;
+        if (student.avatar_path) {
+          const { data: signed } = await supabaseAdmin.storage
+            .from("faces")
+            .createSignedUrl(student.avatar_path, 60 * 60);
+          avatarUrl = signed?.signedUrl ?? null;
+        }
 
         if (recent && recent.length > 0) {
           await supabaseAdmin.from("attendance_logs").insert({
