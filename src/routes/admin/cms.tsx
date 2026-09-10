@@ -25,6 +25,23 @@ export const Route = createFileRoute("/admin/cms")({
   component: CmsPage,
 });
 
+/** Shrink an uploaded logo and keep it inline so every screen can show it. */
+async function uploadLogo(file: File, apply: (value: string) => void) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const max = 320;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    apply(canvas.toDataURL("image/png"));
+    toast.success("อัปโหลดโลโก้แล้ว กด “บันทึก” เพื่อยืนยัน");
+  } catch {
+    toast.error("อ่านไฟล์รูปไม่สำเร็จ");
+  }
+}
+
 function CmsPage() {
   const { map } = useCms();
   const queryClient = useQueryClient();
