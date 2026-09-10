@@ -1,52 +1,74 @@
 # FaceGate — โค้ดสำหรับ BBC micro:bit (MicroPython)
+# โหมด "ไม้กั้น" (Barrier Gate) ยกขึ้น–ลง ด้วย Servo
 # ---------------------------------------------------------------
-# หน้าที่: รับคำสั่งจากโปรแกรม FaceGate บนเครื่องตู้สแกนผ่านสาย USB
-# แล้วสั่งเปิด/ปิดล็อกประตู
-#
-# การต่อสาย
-#   P0  -> ขา IN ของรีเลย์ (Relay 5V 1 ช่อง) ที่ต่อกับกลอนไฟฟ้า/มอเตอร์ประตู
-#   P1  -> ขาสัญญาณของ Buzzer (ถ้ามี)
-#   P2  -> ขาสัญญาณ Servo (ถ้าใช้กลอนแบบ Servo แทนรีเลย์)
-#   3V  -> VCC ของรีเลย์      GND -> GND ของรีเลย์ และของแหล่งจ่ายกลอน
-#   ใช้ไฟเลี้ยงกลอนประตูแยกจาก micro:bit เสมอ (micro:bit จ่ายได้แค่สัญญาณ)
+# การต่อสาย (Servo SG90 / MG90S / MG996R)
+#   P2   -> สายสัญญาณ Servo (สีส้ม/เหลือง)
+#   3V   -> สายไฟ + ของ Servo (เฉพาะ SG90 ตัวเล็กเท่านั้น)
+#          *** แนะนำอย่างยิ่ง: ใช้ไฟเลี้ยงแยก 5V จ่ายให้ Servo
+#              แล้วต่อ GND ของไฟเลี้ยงร่วมกับ GND ของ micro:bit ***
+#   GND  -> สายไฟ - ของ Servo
+#   P1   -> Buzzer (ถ้ามี)
+#   P0   -> รีเลย์ (ถ้ายังอยากใช้กลอนไฟฟ้าร่วมด้วย ตั้ง USE_RELAY = True)
 #
 # คำสั่งที่รับ (บรรทัดละคำสั่ง)
-#   OPEN 5   -> เปิดประตู 5 วินาที
-#   DENY     -> ปฏิเสธ (ขึ้นกากบาท + เสียงเตือน) ประตูยังล็อก
-#   PING     -> ตอบ PONG เพื่อเช็คว่าเชื่อมต่ออยู่
+#   OPEN 5   -> ยกไม้กั้นขึ้น 5 วินาที แล้วลดลงเอง
+#   DENY     -> ไม่ยก (กากบาท + เสียงเตือน)
+#   PING     -> ตอบ PONG
 #
-# วิธีลงโค้ด: เปิด https://python.microbit.org แล้ววางไฟล์นี้ กด Send to micro:bit
-# (หรือใช้ MakeCode แล้วเลือกโหมด Python แล้ววางโค้ดนี้)
+# วิธีลงโค้ด: เปิด https://python.microbit.org วางไฟล์นี้ แล้วกด Send to micro:bit
 
 from microbit import *
 import music
 
-USE_SERVO = False       # True = ใช้ Servo ที่ P2 แทนรีเลย์ที่ P0
-SERVO_LOCK = 25         # องศาเมื่อล็อก
-SERVO_UNLOCK = 125      # องศาเมื่อปลดล็อก
-MANUAL_SECONDS = 5      # กดปุ่ม A เพื่อเปิดประตูเอง (กรณีฉุกเฉิน)
+ANGLE_DOWN = 10         # องศาเมื่อไม้กั้นลง (ปิด)
+ANGLE_UP = 100          # องศาเมื่อไม้กั้นยกขึ้น (เปิด)
+LIFT_STEP = 3           # ยก/ลดทีละกี่องศา (ยิ่งน้อยยิ่งนุ่มนวล)
+LIFT_DELAY = 12         # หน่วงระหว่างสเต็ป (มิลลิวินาที)
+HOLD_POWER = False      # True = จ่ายสัญญาณค้างตลอด (แรงกว่าแต่ร้อน/สั่น)
+MANUAL_SECONDS = 5      # กดปุ่ม A เปิดเอง (ฉุกเฉิน)
+USE_RELAY = False       # True = สั่งรีเลย์ที่ P0 พร้อมกันด้วย
 
 uart.init(baudrate=115200)
+pin2.set_analog_period(20)
+
+_angle = ANGLE_DOWN
 
 
 def servo_write(angle):
-    # micro:bit ใช้ analog 0-1023 : ค่า servo อยู่ราว 25-125
-    pin2.set_analog_period(20)
-    pin2.write_analog(int(25 + (angle / 180) * 100))
+    # ช่วงพัลส์ servo มาตรฐาน ~1-2ms ในคาบ 20ms => analog 26-128
+    pin2.write_analog(int(26 + (angle / 180) * 102))
 
 
-def lock():
-    if USE_SERVO:
-        servo_write(SERVO_LOCK)
-    else:
+def servo_off():
+    if not HOLD_POWER:
+        sleep(120)
+        pin2.write_digital(0)
+
+
+def move_to(target):
+    """ค่อย ๆ หมุนไปตำแหน่งเป้าหมาย เพื่อไม่ให้ไม้กั้นกระชากและกินไฟพุ่ง"""
+    global _angle
+    step = LIFT_STEP if target > _angle else -LIFT_STEP
+    while abs(target - _angle) > LIFT_STEP:
+        _angle += step
+        servo_write(_angle)
+        sleep(LIFT_DELAY)
+    _angle = target
+    servo_write(_angle)
+    sleep(150)
+    servo_off()
+
+
+def bar_down():
+    move_to(ANGLE_DOWN)
+    if USE_RELAY:
         pin0.write_digital(0)
 
 
-def unlock():
-    if USE_SERVO:
-        servo_write(SERVO_UNLOCK)
-    else:
+def bar_up():
+    if USE_RELAY:
         pin0.write_digital(1)
+    move_to(ANGLE_UP)
 
 
 def beep_ok():
@@ -64,18 +86,20 @@ def beep_deny():
 
 
 def open_for(seconds):
-    unlock()
     beep_ok()
+    display.show(Image.ARROW_N)
+    bar_up()
     display.show(Image.YES)
     end = running_time() + int(seconds * 1000)
     while running_time() < end:
         sleep(50)
-    lock()
+    display.show(Image.ARROW_S)
+    bar_down()
     display.show(Image.HAPPY)
     uart.write("CLOSED\n")
 
 
-lock()
+bar_down()
 display.show(Image.HAPPY)
 uart.write("READY\n")
 
@@ -97,7 +121,7 @@ while True:
                 uart.write("OK\n")
                 open_for(secs)
             elif cmd == "DENY":
-                lock()
+                bar_down()
                 display.show(Image.NO)
                 beep_deny()
                 sleep(800)
@@ -113,7 +137,7 @@ while True:
         open_for(MANUAL_SECONDS)
 
     if button_b.was_pressed():
-        lock()
+        bar_down()
         display.show(Image.HAPPY)
         uart.write("LOCKED\n")
 
