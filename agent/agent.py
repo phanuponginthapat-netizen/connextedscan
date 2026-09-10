@@ -15,6 +15,7 @@ Start with:  python agent.py
 
 import base64
 import io
+import json
 import os
 import threading
 import time
@@ -33,6 +34,23 @@ DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
 
+
+def default_cache_dir() -> str:
+    base = os.environ.get("LOCALAPPDATA") or os.path.join(
+        os.path.expanduser("~"), ".local", "share"
+    )
+    return os.path.join(base, "FaceGate", "cache")
+
+
+CACHE_DIR = os.environ.get("FACEGATE_CACHE_DIR", default_cache_dir())
+IMAGE_DIR = os.path.join(CACHE_DIR, "images")
+FACES_FILE = os.path.join(CACHE_DIR, "faces.json")
+STUDENTS_FILE = os.path.join(CACHE_DIR, "students.json")
+SETTINGS_FILE = os.path.join(CACHE_DIR, "settings.json")
+OUTBOX_FILE = os.path.join(CACHE_DIR, "outbox.jsonl")
+
+os.makedirs(IMAGE_DIR, exist_ok=True)
+
 HEADERS = {"x-device-key": DEVICE_KEY, "content-type": "application/json"}
 
 app = FastAPI(title="FaceGate Agent")
@@ -47,6 +65,7 @@ app.add_middleware(
 face_app = FaceEngine(det_size=(320, 320))
 
 state: dict[str, Any] = {
+    "faces": {},  # face_id -> {student_id, embedding, geometry, version}
     "matrix": np.zeros((0, 512), dtype=np.float32),  # normalised embeddings
     "owners": [],  # student_id per row
     "geoms": [],  # landmark geometry per row
@@ -55,6 +74,150 @@ state: dict[str, Any] = {
     "last_sync": None,
 }
 lock = threading.Lock()
+outbox_lock = threading.Lock()
+
+
+# --- Local cache -----------------------------------------------------------
+def write_json_atomic(path: str, payload: Any) -> None:
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh)
+    os.replace(tmp, path)
+
+
+def read_json(path: str, fallback: Any) -> Any:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:  # noqa: BLE001
+        return fallback
+
+
+def rebuild_matrix_locked() -> None:
+    """Rebuild the search matrix from state['faces']. Caller holds the lock."""
+    rows, owners, geoms = [], [], []
+    for face in state["faces"].values():
+        vec = np.array(face.get("embedding") or [], dtype=np.float32)
+        if vec.size:
+            rows.append(normalise(vec))
+            owners.append(face["student_id"])
+            geoms.append(face.get("geometry") or None)
+    state["matrix"] = np.vstack(rows) if rows else np.zeros((0, 512), dtype=np.float32)
+    state["owners"] = owners
+    state["geoms"] = geoms
+
+
+def save_cache() -> None:
+    with lock:
+        faces = dict(state["faces"])
+        students = list(state["students"].values())
+        settings = dict(state["settings"])
+    try:
+        write_json_atomic(FACES_FILE, faces)
+        write_json_atomic(STUDENTS_FILE, students)
+        write_json_atomic(SETTINGS_FILE, settings)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[agent] cache write failed: {exc}")
+
+
+def load_cache() -> None:
+    faces = read_json(FACES_FILE, {}) or {}
+    students = read_json(STUDENTS_FILE, []) or []
+    settings = read_json(SETTINGS_FILE, {}) or {}
+    with lock:
+        state["faces"] = {k: v for k, v in faces.items() if isinstance(v, dict)}
+        state["students"] = {s["id"]: s for s in students if isinstance(s, dict)}
+        state["settings"] = settings
+        rebuild_matrix_locked()
+    print(f"[agent] loaded {len(faces)} cached faces from {CACHE_DIR}")
+
+
+def prune_images(valid_ids: set[str]) -> None:
+    try:
+        for name in os.listdir(IMAGE_DIR):
+            if os.path.splitext(name)[0] not in valid_ids:
+                os.remove(os.path.join(IMAGE_DIR, name))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def cache_image(face_id: str, data: bytes) -> None:
+    try:
+        tmp = os.path.join(IMAGE_DIR, f"{face_id}.tmp")
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, os.path.join(IMAGE_DIR, f"{face_id}.jpg"))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def cached_image(face_id: str) -> bytes | None:
+    path = os.path.join(IMAGE_DIR, f"{face_id}.jpg")
+    try:
+        with open(path, "rb") as fh:
+            return fh.read()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+# --- Offline outbox --------------------------------------------------------
+def outbox_count() -> int:
+    with outbox_lock:
+        try:
+            with open(OUTBOX_FILE, encoding="utf-8") as fh:
+                return sum(1 for line in fh if line.strip())
+        except Exception:  # noqa: BLE001
+            return 0
+
+
+def outbox_append(payload: dict) -> None:
+    with outbox_lock:
+        try:
+            with open(OUTBOX_FILE, "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] outbox write failed: {exc}")
+
+
+def outbox_flush() -> None:
+    with outbox_lock:
+        try:
+            with open(OUTBOX_FILE, encoding="utf-8") as fh:
+                lines = [line for line in fh if line.strip()]
+        except Exception:  # noqa: BLE001
+            return
+        if not lines:
+            return
+        remaining: list[str] = []
+        for line in lines:
+            try:
+                requests.post(
+                    f"{CLOUD_URL}/api/public/kiosk/attendance",
+                    headers=HEADERS,
+                    data=line.encode("utf-8"),
+                    timeout=20,
+                ).raise_for_status()
+            except Exception:  # noqa: BLE001
+                remaining.append(line)
+        try:
+            if remaining:
+                with open(f"{OUTBOX_FILE}.tmp", "w", encoding="utf-8") as fh:
+                    fh.writelines(remaining)
+                os.replace(f"{OUTBOX_FILE}.tmp", OUTBOX_FILE)
+            else:
+                os.remove(OUTBOX_FILE)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def outbox_loop() -> None:
+    while True:
+        try:
+            outbox_flush()
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(30)
+
 
 
 def normalise(vec: np.ndarray) -> np.ndarray:
