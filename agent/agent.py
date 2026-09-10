@@ -256,6 +256,7 @@ def scan(req: ScanRequest):
     with lock:
         matrix = state["matrix"]
         owners = list(state["owners"])
+        geoms = list(state["geoms"])
         settings = dict(state["settings"])
 
     threshold = float(settings.get("match_threshold") or 0.45)
@@ -278,11 +279,37 @@ def scan(req: ScanRequest):
         }
 
     query = normalise(face.normed_embedding)
-    scores = matrix @ query
-    best = int(np.argmax(scores))
-    confidence = float(scores[best])
+    live_geometry = geometry_features(face)
+    geo_weight = float(settings.get("geometry_weight") or 0.0)
 
-    if confidence < threshold:
+    scores = matrix @ query
+    # Blend in the landmark-geometry similarity so that a look-alike with a
+    # different eye/nose/mouth layout scores lower than the real student.
+    combined = scores.copy()
+    geo_per_row = [None] * len(owners)
+    if live_geometry and geo_weight > 0:
+        for i, g in enumerate(geoms):
+            sim = geometry_similarity(live_geometry, g)
+            geo_per_row[i] = sim
+            if sim is not None:
+                combined[i] = (1.0 - geo_weight) * scores[i] + geo_weight * sim
+
+    best = int(np.argmax(combined))
+    confidence = float(scores[best])
+    geometry_score = geo_per_row[best]
+
+    # Best geometry match among all photos of the chosen student.
+    if live_geometry:
+        student_geo = [
+            geometry_similarity(live_geometry, geoms[i])
+            for i, owner in enumerate(owners)
+            if owner == owners[best]
+        ]
+        student_geo = [s for s in student_geo if s is not None]
+        if student_geo:
+            geometry_score = max(student_geo)
+
+    if float(combined[best]) < threshold:
         return {
             "result": "denied",
             "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
@@ -291,11 +318,24 @@ def scan(req: ScanRequest):
         }
 
     student_id = owners[best]
+    payload = {
+        "student_id": student_id,
+        "confidence": round(confidence, 4),
+        "embedding": query.tolist(),
+    }
+    if geometry_score is not None:
+        payload["geometry_score"] = round(float(geometry_score), 4)
+    if live_geometry:
+        payload["geometry"] = live_geometry
+    snapshot = crop_face_jpeg(arr, face)
+    if snapshot:
+        payload["snapshot"] = snapshot
+
     res = requests.post(
         f"{CLOUD_URL}/api/public/kiosk/attendance",
         headers=HEADERS,
-        json={"student_id": student_id, "confidence": round(confidence, 4)},
-        timeout=20,
+        json=payload,
+        timeout=30,
     )
     return res.json()
 
