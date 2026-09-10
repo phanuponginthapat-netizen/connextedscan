@@ -275,22 +275,7 @@ function Kiosk() {
       const scan = data as unknown as ScanResult;
       const shotUrl = scan.snapshot_url ?? lastShotRef.current;
       setResult({ ...scan, snapshot_url: shotUrl });
-      if (scan.result === "ok" && scan.student) {
-        setRecent((list) =>
-          [
-            {
-              id: `${Date.now()}`,
-              name: scan.student!.full_name,
-              detail: [scan.student!.student_code, scan.student!.class_room].filter(Boolean).join(" • "),
-              direction: scan.direction ?? "in",
-              time: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
-              avatarUrl: scan.avatar_url ?? null,
-              snapshotUrl: shotUrl ?? null,
-            },
-            ...list,
-          ].slice(0, 12),
-        );
-      }
+      if (scan.result === "ok" && scan.student) void loadRecent();
       if (scan.speak) speak(scan.speak);
       const delay = scan.next_delay_seconds ?? 5;
       setStatus("cooldown");
