@@ -139,6 +139,24 @@ function InstallPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
+            <Download className="size-4" /> ดาวน์โหลดโปรแกรม FaceGate (ZIP)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            ไฟล์ ZIP แบบติดตั้งได้ทันที — ไม่ต้องลง Python เอง แตกไฟล์แล้วเปิด FaceGate.exe ได้เลย
+            ใส่รหัสเครื่องครั้งแรกเพียงครั้งเดียว
+          </p>
+          <ZipDownloadButton />
+          <p className="text-xs text-muted-foreground">
+            ขนาดประมาณ 250 MB · สำหรับ Windows 64-bit
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
             <Download className="size-4" /> ดาวน์โหลดไฟล์แยก
           </CardTitle>
         </CardHeader>
