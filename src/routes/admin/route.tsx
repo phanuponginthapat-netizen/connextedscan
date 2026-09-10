@@ -32,7 +32,7 @@ function AdminLayout() {
 
   if (loading || !session) {
     return (
-      <div className="flex min-h-screen animate-pulse items-center justify-center text-muted-foreground">
+      <div className="dark admin-theme flex min-h-screen animate-pulse items-center justify-center bg-background text-muted-foreground">
         กำลังตรวจสอบสิทธิ์…
       </div>
     );
@@ -148,7 +148,7 @@ function AdminLayout() {
             </Link>
           ))}
         </div>
-        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-card/95 px-4 py-2 backdrop-blur">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border/70 bg-card/70 px-4 py-2.5 backdrop-blur-xl">
           <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
             <ChevronLeft className="size-4" /> {t("action.back")}
           </Button>
@@ -175,7 +175,7 @@ function AdminLayout() {
             </Button>
           </div>
         </div>
-        <main key={pathname} className="animate-rise mx-auto max-w-6xl p-6">
+        <main key={pathname} className="animate-rise mx-auto max-w-7xl p-6">
           <Outlet />
         </main>
       </div>
