@@ -1,0 +1,80 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/** Throws unless the signed-in user holds the admin role. */
+async function assertAdmin(supabase: any, userId: string) {
+  const { data, error } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (error || data !== true) {
+    throw new Error("เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่ลบประวัติการสแกนได้");
+  }
+}
+
+/** Deletes one scan record (and its snapshot file when present). */
+export const deleteAttendanceLog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: row, error: readError } = await supabaseAdmin
+      .from("attendance_logs")
+      .select("id, snapshot_path")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!row) throw new Error("ไม่พบรายการที่ต้องการลบ");
+
+    const { error } = await supabaseAdmin.from("attendance_logs").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+
+    if (row.snapshot_path) {
+      await supabaseAdmin.storage.from("snapshots").remove([row.snapshot_path]);
+    }
+    return { ok: true };
+  });
+
+/** Deletes every scan record inside a date range (inclusive, local dates). */
+export const deleteAttendanceRange = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { from: string; to: string }) =>
+    z
+      .object({
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const start = new Date(`${data.from}T00:00:00`).toISOString();
+    const end = new Date(`${data.to}T23:59:59.999`).toISOString();
+
+    const { data: rows, error: readError } = await supabaseAdmin
+      .from("attendance_logs")
+      .select("id, snapshot_path")
+      .gte("scanned_at", start)
+      .lte("scanned_at", end);
+    if (readError) throw new Error(readError.message);
+    if (!rows?.length) return { deleted: 0 };
+
+    const { error } = await supabaseAdmin
+      .from("attendance_logs")
+      .delete()
+      .gte("scanned_at", start)
+      .lte("scanned_at", end);
+    if (error) throw new Error(error.message);
+
+    const paths = rows.map((r) => r.snapshot_path).filter((p): p is string => Boolean(p));
+    if (paths.length) await supabaseAdmin.storage.from("snapshots").remove(paths);
+
+    return { deleted: rows.length };
+  });
