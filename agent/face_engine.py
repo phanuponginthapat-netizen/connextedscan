@@ -102,9 +102,16 @@ class FaceEngine:
                     f"Model file missing: {path}. Run the installer again to download it."
                 )
 
+        cpu_count = os.cpu_count() or 2
         opts = onnxruntime.SessionOptions()
         opts.log_severity_level = 3
-        opts.intra_op_num_threads = max(1, min(4, (os.cpu_count() or 2)))
+        # Use every core the kiosk PC has: low-power CPUs (Intel Atom) need all
+        # of them to keep recognition fast.
+        opts.intra_op_num_threads = max(1, int(os.environ.get("FACEGATE_THREADS", cpu_count)))
+        opts.inter_op_num_threads = max(1, cpu_count // 2)
+        opts.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
+        opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+        opts.enable_mem_pattern = True
         providers = ["CPUExecutionProvider"]
 
         self.det = onnxruntime.InferenceSession(DET_MODEL, opts, providers=providers)
