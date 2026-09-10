@@ -18,6 +18,37 @@ export const Route = createFileRoute("/admin/install")({
   }),
 });
 
+const ZIP_PATH = "FaceGate-Setup-windows-x64-v3.zip";
+
+function ZipDownloadButton() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="space-y-2">
+      <Button
+        disabled={loading}
+        onClick={async () => {
+          setLoading(true);
+          setError(null);
+          const { data, error: err } = await supabase.storage
+            .from("downloads")
+            .createSignedUrl(ZIP_PATH, 3600, { download: ZIP_PATH });
+          setLoading(false);
+          if (err || !data?.signedUrl) {
+            setError("สร้างลิงก์ดาวน์โหลดไม่สำเร็จ กรุณาลองใหม่");
+            return;
+          }
+          window.open(data.signedUrl, "_blank");
+        }}
+      >
+        <Download className="size-4" />
+        {loading ? "กำลังสร้างลิงก์ดาวน์โหลด..." : "ดาวน์โหลด FaceGate ZIP"}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 function CopyBox({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
