@@ -198,6 +198,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
                 <p className="text-xs text-muted-foreground">
                   {s.student_code} • {personGroupLabel(s)}
                 </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {!s.is_active && <Badge variant="outline">ระงับ</Badge>}
