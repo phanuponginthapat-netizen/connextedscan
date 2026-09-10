@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, Settings2, User, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -337,9 +337,29 @@ function Kiosk() {
         )}
       </div>
 
-      <Button variant="ghost" size="sm" onClick={() => setShowConfig((v) => !v)}>
-        <Settings2 className="size-4" /> ตั้งค่าเครื่อง
-      </Button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Button variant="secondary" size="sm" onClick={() => window.history.back()}>
+          ย้อนกลับ
+        </Button>
+        <Link to="/admin">
+          <Button variant="secondary" size="sm">
+            ไปหลังบ้าน
+          </Button>
+        </Link>
+        <Button variant="ghost" size="sm" onClick={() => setShowConfig((v) => !v)}>
+          <Settings2 className="size-4" /> ตั้งค่าเครื่อง
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            if (!confirm("ต้องการออกจากโปรแกรมใช่หรือไม่")) return;
+            window.close();
+          }}
+        >
+          ออกจากโปรแกรม
+        </Button>
+      </div>
       {showConfig && (
         <div className="w-full max-w-sm space-y-2 rounded-xl border p-4">
           <Label>ที่อยู่โปรแกรมบนเครื่องนี้</Label>
