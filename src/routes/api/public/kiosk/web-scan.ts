@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/kiosk/web-scan")({
             result: "denied",
             message: "ปิดการสแกนผ่านเว็บอยู่ กรุณาใช้โปรแกรมบนเครื่องตู้สแกน",
             speak: "ระบบปิดการสแกนผ่านเว็บ",
-            next_delay_seconds: settings.next_person_delay_seconds ?? 3,
+            next_delay_seconds: settings.next_person_delay_seconds ?? 5,
           });
         }
 
@@ -95,7 +95,7 @@ export const Route = createFileRoute("/api/public/kiosk/web-scan")({
             result: "denied",
             message: "ไม่พบข้อมูลใบหน้าในระบบ กรุณาติดต่อเจ้าหน้าที่",
             speak: "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
-            next_delay_seconds: settings?.next_person_delay_seconds ?? 3,
+            next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
           });
         }
 
