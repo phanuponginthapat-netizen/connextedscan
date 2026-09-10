@@ -182,6 +182,22 @@ function InstallPage() {
           <p className="text-xs text-muted-foreground">
             ขนาดประมาณ 250 MB · สำหรับ Windows 64-bit
           </p>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button variant="secondary" asChild>
+              <a href={`/api/public/agent/FaceGate-Setup-windows-x64.bat?key=${key}`} download>
+                <Download className="size-4" /> ไฟล์ติดตั้ง Windows (.bat)
+              </a>
+            </Button>
+            <Button variant="secondary" asChild>
+              <a href={`/api/public/agent/FaceGate-Setup-linux-x64.sh?key=${key}`} download>
+                <Download className="size-4" /> ไฟล์ติดตั้ง Linux (.sh)
+              </a>
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            ไฟล์ติดตั้งทั้งสองแบบใส่รหัสเครื่องให้อัตโนมัติแล้ว · Linux: รัน chmod +x
+            แล้วเปิดไฟล์ได้ทันที
+          </p>
         </CardContent>
       </Card>
 
@@ -199,6 +215,19 @@ function InstallPage() {
               </a>
             </Button>
           ))}
+        </CardContent>
+      </Card>
+    
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">สเปคเครื่องขั้นต่ำที่แนะนำ</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1 text-sm text-muted-foreground">
+          <p>ซีพียู: Intel Celeron J4125 / N4120 ขึ้นไป (แนะนำ N5105 หรือ N100)</p>
+          <p>แรม: 4 GB (แนะนำ 8 GB) · พื้นที่ว่าง: 64 GB SSD (ใช้จริงราว 3 GB)</p>
+          <p>กล้อง: USB Webcam 720p ขึ้นไป · ตั้งความละเอียดประมวลผล 640×480</p>
+          <p>ระบบปฏิบัติการ: Windows 10/11 64-bit หรือ Ubuntu 20.04+ 64-bit</p>
+          <p>อินเทอร์เน็ต: ต่อเน็ตได้ตลอด (ครั้งแรกดาวน์โหลดราว 300 MB)</p>
         </CardContent>
       </Card>
     </div>
