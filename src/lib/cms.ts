@@ -126,6 +126,35 @@ export const CMS_GROUPS: CmsGroup[] = [
   },
 ];
 
+CMS_GROUPS.push(
+  {
+    id: "contact",
+    title: "ข้อมูลติดต่อหน่วยงาน",
+    description: "ที่อยู่ เบอร์โทร และอีเมล ใช้แสดงบนหน้าแรกและหัวรายงาน",
+    fields: [
+      { key: "contact.address", label: "ที่อยู่", type: "textarea", default: "" },
+      { key: "contact.phone", label: "เบอร์โทร", default: "" },
+      { key: "contact.email", label: "อีเมล", default: "" },
+      { key: "contact.website", label: "เว็บไซต์", default: "", type: "url" },
+    ],
+  },
+  {
+    id: "report",
+    title: "รายงานการเข้า-ออก",
+    description: "หัวเรื่องและข้อความท้ายรายงานเวลาพิมพ์หรือดาวน์โหลด",
+    fields: [
+      { key: "report.title", label: "ชื่อรายงาน", default: "รายงานการเข้า-ออก" },
+      {
+        key: "report.footer",
+        label: "ข้อความท้ายรายงาน",
+        type: "textarea",
+        default: "รายงานนี้ออกโดยระบบบันทึกเวลาด้วยใบหน้า",
+      },
+      { key: "report.signer_line", label: "ช่องลงชื่อผู้รับรอง", default: "ลงชื่อผู้รับรองรายงาน" },
+    ],
+  },
+);
+
 export const CMS_FIELDS: CmsField[] = CMS_GROUPS.flatMap((g) => g.fields);
 
 export const CMS_DEFAULTS: Record<string, string> = Object.fromEntries(

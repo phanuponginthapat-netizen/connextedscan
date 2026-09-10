@@ -2,7 +2,21 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Copy, Plus } from "lucide-react";
+import {
+  Clock,
+  Copy,
+  FileText,
+  Gauge,
+  Globe,
+  Image as ImageIcon,
+  LayoutTemplate,
+  MonitorSmartphone,
+  Phone,
+  Plus,
+  ScanFace,
+  Settings2,
+  Volume2,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,14 +25,23 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { CMS_GROUPS } from "@/lib/cms";
+import { CmsSection } from "@/components/admin/CmsSection";
 
 export const Route = createFileRoute("/admin/settings")({
   head: () => ({
     meta: [
-      { title: "ตั้งค่าระบบ | FaceGate" },
-      { name: "description", content: "ตั้งค่าช่วงเวลาเข้า-ออก การกันสแกนซ้ำ และเครื่องตู้สแกน" },
-      { property: "og:title", content: "ตั้งค่าระบบ | FaceGate" },
-      { property: "og:description", content: "ตั้งค่าเวลาเข้า-ออก กันสแกนซ้ำ และเครื่องตู้สแกน" },
+      { title: "ศูนย์ตั้งค่าระบบ | FaceGate" },
+      {
+        name: "description",
+        content: "ตั้งค่าเวลาเข้า-ออก ความแม่นยำ เครื่องตู้สแกน แบรนด์ และข้อความทุกจุดในที่เดียว",
+      },
+      { property: "og:title", content: "ศูนย์ตั้งค่าระบบ | FaceGate" },
+      {
+        property: "og:description",
+        content: "ตั้งค่าระบบและจัดการเนื้อหาทั้งหมดจากหน้าเดียว",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -48,9 +71,27 @@ type SettingsRow = {
   allow_web_scan: boolean;
 };
 
+type SectionId =
+  | "time"
+  | "scan"
+  | "accuracy"
+  | "web"
+  | "devices"
+  | `cms:${string}`;
+
+const cmsIcons: Record<string, typeof ImageIcon> = {
+  brand: ImageIcon,
+  home: LayoutTemplate,
+  kiosk: ScanFace,
+  system: Settings2,
+  contact: Phone,
+  report: FileText,
+};
+
 function SettingsPage() {
   const qc = useQueryClient();
   const [form, setForm] = useState<SettingsRow | null>(null);
+  const [section, setSection] = useState<SectionId>("time");
 
   const { data } = useQuery({
     queryKey: ["settings"],
@@ -112,9 +153,19 @@ function SettingsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!form) return <p className="text-muted-foreground">กำลังโหลด…</p>;
+  const systemNav: Array<{ id: SectionId; title: string; hint: string; icon: typeof Clock }> = [
+    { id: "time", title: "ช่วงเวลาเข้า-ออก", hint: "กำหนดเวลารับสแกนและเวลาสาย", icon: Clock },
+    { id: "scan", title: "การสแกนและเสียง", hint: "กันสแกนซ้ำ หน่วงเวลา และเสียงพูด", icon: Volume2 },
+    { id: "accuracy", title: "ความแม่นยำและรูปถ่าย", hint: "ค่าความเหมือนและการเก็บรูป", icon: Gauge },
+    { id: "web", title: "โหมดสแกนผ่านเว็บ", hint: "ใช้งานได้โดยไม่ต้องติดตั้งโปรแกรม", icon: Globe },
+    { id: "devices", title: "เครื่องตู้สแกน", hint: "รหัสเครื่องและสถานะเชื่อมต่อ", icon: MonitorSmartphone },
+  ];
 
-  const set = (patch: Partial<SettingsRow>) => setForm({ ...form, ...patch });
+  const activeCms = section.startsWith("cms:")
+    ? CMS_GROUPS.find((g) => g.id === section.slice(4))
+    : undefined;
+
+  const set = (patch: Partial<SettingsRow>) => form && setForm({ ...form, ...patch });
 
   const timeFields: Array<[keyof SettingsRow, string]> = [
     ["checkin_start", "เริ่มรับสแกนเข้า"],
@@ -130,243 +181,347 @@ function SettingsPage() {
     ["match_threshold", "ค่าความเหมือนขั้นต่ำ", "0.1–1.0 ยิ่งสูงยิ่งเข้มงวด", 0.01],
   ];
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">ตั้งค่าระบบ</h1>
+  const activeTitle =
+    activeCms?.title ?? systemNav.find((s) => s.id === section)?.title ?? "ตั้งค่าระบบ";
+  const activeHint =
+    activeCms?.description ?? systemNav.find((s) => s.id === section)?.hint ?? "";
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">ช่วงเวลาเข้า-ออก</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          {timeFields.map(([key, label]) => (
-            <div key={key} className="space-y-1.5">
-              <Label>{label}</Label>
-              <TimeInput24
-                value={String(form[key]).slice(0, 5)}
-                onChange={(v) => set({ [key]: `${v}:00` } as Partial<SettingsRow>)}
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">การสแกนและเสียง</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          {numFields.map(([key, label, hint, step]) => (
-            <div key={key} className="space-y-1.5">
-              <Label>{label}</Label>
-              <Input
-                type="number"
-                step={step}
-                value={Number(form[key])}
-                onChange={(e) => set({ [key]: Number(e.target.value) } as Partial<SettingsRow>)}
-              />
-              <p className="text-xs text-muted-foreground">{hint}</p>
-            </div>
-          ))}
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>ข้อความเสียงพูด</Label>
-            <Input
-              value={form.voice_template}
-              onChange={(e) => set({ voice_template: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              ใช้ตัวแปร {"{name}"} แทนชื่อ และ {"{direction}"} แทนคำว่าเข้า/ออก
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>ชื่อโรงเรียน</Label>
-            <Input
-              value={form.school_name}
-              onChange={(e) => set({ school_name: e.target.value })}
-            />
-          </div>
-          <div className="flex items-center gap-3 sm:col-span-3">
-            <Switch
-              checked={form.require_liveness}
-              onCheckedChange={(v) => set({ require_liveness: v })}
-            />
-            <span className="text-sm">บังคับตรวจว่าเป็นคนจริง (กันการยกรูปมาส่อง)</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">ความแม่นยำและรูปถ่ายตอนสแกน</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label>น้ำหนักสัดส่วนใบหน้า</Label>
-            <Input
-              type="number"
-              step={0.05}
-              min={0}
-              max={1}
-              value={Number(form.geometry_weight)}
-              onChange={(e) => set({ geometry_weight: Number(e.target.value) })}
-            />
-            <p className="text-xs text-muted-foreground">
-              ให้ระบบดูระยะห่างตา-จมูก-ปาก ประกอบด้วย (0 = ไม่ใช้, แนะนำ 0.25)
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>สัดส่วนใบหน้าขั้นต่ำ</Label>
-            <Input
-              type="number"
-              step={0.05}
-              min={0}
-              max={1}
-              value={Number(form.geometry_min_score)}
-              onChange={(e) => set({ geometry_min_score: Number(e.target.value) })}
-            />
-            <p className="text-xs text-muted-foreground">
-              ต่ำกว่านี้จะไม่ผ่าน แม้หน้าจะคล้ายกัน
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>เพิ่มรูปอัตโนมัติสูงสุด (รูป/คน)</Label>
-            <Input
-              type="number"
-              step={1}
-              min={0}
-              value={Number(form.auto_enroll_max_faces)}
-              onChange={(e) => set({ auto_enroll_max_faces: Number(e.target.value) })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>ความมั่นใจขั้นต่ำก่อนเก็บเข้าชุดลงทะเบียน</Label>
-            <Input
-              type="number"
-              step={0.01}
-              min={0}
-              max={1}
-              value={Number(form.auto_enroll_min_confidence)}
-              onChange={(e) => set({ auto_enroll_min_confidence: Number(e.target.value) })}
-            />
-          </div>
-          <div className="flex items-center gap-3 sm:col-span-3">
-            <Switch
-              checked={form.save_snapshots}
-              onCheckedChange={(v) => set({ save_snapshots: v })}
-            />
-            <span className="text-sm">เก็บรูปถ่ายทุกครั้งที่สแกน (ดูย้อนหลังในหน้าประวัติ)</span>
-          </div>
-          <div className="flex items-center gap-3 sm:col-span-3">
-            <Switch checked={form.auto_enroll} onCheckedChange={(v) => set({ auto_enroll: v })} />
-            <span className="text-sm">
-              นำรูปที่สแกนผ่านแบบมั่นใจสูงไปเพิ่มเป็นข้อมูลลงทะเบียนอัตโนมัติ
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">สแกนผ่านหน้าเว็บ (ไม่ต้องติดตั้งโปรแกรม)</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          <div className="flex items-center gap-3 sm:col-span-3">
-            <Switch
-              checked={form.allow_web_scan}
-              onCheckedChange={(v) => set({ allow_web_scan: v })}
-            />
-            <span className="text-sm">
-              อนุญาตให้ตู้สแกนใช้หน้าเว็บตรวจใบหน้าได้ เมื่อไม่มีโปรแกรมบนเครื่อง
-            </span>
-          </div>
-          <div className="space-y-1.5">
-            <Label>ความคล้ายขั้นต่ำของโหมดเว็บ</Label>
-            <Input
-              type="number"
-              step={0.01}
-              min={0}
-              max={1}
-              value={Number(form.web_match_threshold)}
-              onChange={(e) => set({ web_match_threshold: Number(e.target.value) })}
-            />
-            <p className="text-xs text-muted-foreground">
-              ตัวเลขน้อย = เข้มงวดขึ้น (แนะนำ 0.42)
-            </p>
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>เตรียมรูปที่ลงทะเบียนไว้ให้โหมดเว็บ</Label>
-            <Button variant="secondary" onClick={() => prepare.mutate()} disabled={prepare.isPending}>
-              {prepare.isPending ? "กำลังเตรียมรูป…" : "เตรียมรูปทั้งหมด"}
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              ต้องกดหนึ่งครั้งหลังลงทะเบียนรูปใหม่ เพื่อให้โหมดเว็บรู้จักคนเหล่านั้น
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
+  const SaveBar = (
+    <div className="mt-7 flex flex-wrap items-center gap-2 border-t pt-5">
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
         บันทึกการตั้งค่า
       </Button>
+      <p className="text-xs text-muted-foreground">
+        การตั้งค่ามีผลกับทั้งหน้าเว็บและเครื่องตู้สแกนหลังบันทึก
+      </p>
+    </div>
+  );
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-base">เครื่องตู้สแกน</CardTitle>
-          <Button size="sm" variant="secondary" onClick={() => addDevice.mutate()}>
-            <Plus className="size-4" /> เพิ่มเครื่อง
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            นำรหัสเครื่องไปใส่ในไฟล์ตั้งค่าของโปรแกรมบนเครื่องตู้สแกน
-          </p>
-          {(devices ?? []).map((d) => (
-            <div key={d.id} className="rounded-xl border p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Input
-                  defaultValue={d.name}
-                  className="max-w-56"
-                  onBlur={async (e) => {
-                    await supabase.from("devices").update({ name: e.target.value }).eq("id", d.id);
-                    qc.invalidateQueries({ queryKey: ["devices"] });
-                  }}
-                />
-                <div className="flex items-center gap-2">
-                  <Badge variant={d.is_active ? "default" : "outline"}>
-                    {d.is_active ? "ใช้งาน" : "ปิด"}
-                  </Badge>
-                  <Switch
-                    checked={d.is_active}
-                    onCheckedChange={async (v) => {
-                      await supabase.from("devices").update({ is_active: v }).eq("id", d.id);
-                      qc.invalidateQueries({ queryKey: ["devices"] });
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <code className="flex-1 truncate rounded-lg bg-muted px-3 py-2 text-xs">
-                  {d.api_key}
-                </code>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    navigator.clipboard.writeText(d.api_key);
-                    toast.success("คัดลอกรหัสแล้ว");
-                  }}
+  return (
+    <div className="space-y-6">
+      <header className="border-b pb-5">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          ศูนย์ควบคุมระบบ
+        </p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
+          ตั้งค่าระบบและเนื้อหา
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          ปรับกติกาการสแกน เครื่องตู้สแกน แบรนด์ และข้อความทุกจุดได้จากหน้าเดียว
+        </p>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
+        <nav className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+          <div className="space-y-1">
+            <p className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              การทำงานของระบบ
+            </p>
+            {systemNav.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSection(item.id)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                  section === item.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+              >
+                <item.icon className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  <span className="block font-medium">{item.title}</span>
+                  <span
+                    className={cn(
+                      "block text-xs",
+                      section === item.id ? "text-primary-foreground/80" : "text-muted-foreground",
+                    )}
+                  >
+                    {item.hint}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-1">
+            <p className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              เนื้อหาและแบรนด์
+            </p>
+            {CMS_GROUPS.map((g) => {
+              const Icon = cmsIcons[g.id] ?? Settings2;
+              const id: SectionId = `cms:${g.id}`;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setSection(id)}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                    section === id
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
                 >
-                  <Copy className="size-4" />
-                </Button>
+                  <Icon className="mt-0.5 size-4 shrink-0" />
+                  <span className="font-medium">{g.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <Card className="min-w-0">
+          <CardHeader className="border-b">
+            <CardTitle className="text-lg">{activeTitle}</CardTitle>
+            <p className="text-sm text-muted-foreground">{activeHint}</p>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {!form && !activeCms ? (
+              <p className="text-muted-foreground">กำลังโหลด…</p>
+            ) : activeCms ? (
+              <CmsSection group={activeCms} />
+            ) : !form ? null : section === "time" ? (
+              <div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {timeFields.map(([key, label]) => (
+                    <div key={key} className="space-y-1.5">
+                      <Label>{label}</Label>
+                      <TimeInput24
+                        value={String(form[key]).slice(0, 5)}
+                        onChange={(v) => set({ [key]: `${v}:00` } as Partial<SettingsRow>)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                  การสแกนนอกช่วงเวลาที่กำหนดจะไม่ถูกบันทึก และตู้สแกนจะแจ้งว่ายังไม่ถึงเวลาสแกน
+                </p>
+                {SaveBar}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                เชื่อมต่อล่าสุด:{" "}
-                {d.last_seen_at ? new Date(d.last_seen_at).toLocaleString("th-TH", { hour12: false }) : "ยังไม่เคย"}
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+            ) : section === "scan" ? (
+              <div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {numFields.map(([key, label, hint, step]) => (
+                    <div key={key} className="space-y-1.5">
+                      <Label>{label}</Label>
+                      <Input
+                        type="number"
+                        step={step}
+                        value={Number(form[key])}
+                        onChange={(e) =>
+                          set({ [key]: Number(e.target.value) } as Partial<SettingsRow>)
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">{hint}</p>
+                    </div>
+                  ))}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label>ข้อความเสียงพูด</Label>
+                    <Input
+                      value={form.voice_template}
+                      onChange={(e) => set({ voice_template: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ใช้ตัวแปร {"{name}"} แทนชื่อ และ {"{direction}"} แทนคำว่าเข้า/ออก
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ชื่อโรงเรียน</Label>
+                    <Input
+                      value={form.school_name}
+                      onChange={(e) => set({ school_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Switch
+                      checked={form.require_liveness}
+                      onCheckedChange={(v) => set({ require_liveness: v })}
+                    />
+                    <span className="text-sm">บังคับตรวจว่าเป็นคนจริง (กันการยกรูปมาส่อง)</span>
+                  </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : section === "accuracy" ? (
+              <div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label>น้ำหนักสัดส่วนใบหน้า</Label>
+                    <Input
+                      type="number"
+                      step={0.05}
+                      min={0}
+                      max={1}
+                      value={Number(form.geometry_weight)}
+                      onChange={(e) => set({ geometry_weight: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ให้ระบบดูระยะห่างตา-จมูก-ปาก ประกอบด้วย (0 = ไม่ใช้, แนะนำ 0.25)
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>สัดส่วนใบหน้าขั้นต่ำ</Label>
+                    <Input
+                      type="number"
+                      step={0.05}
+                      min={0}
+                      max={1}
+                      value={Number(form.geometry_min_score)}
+                      onChange={(e) => set({ geometry_min_score: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ต่ำกว่านี้จะไม่ผ่าน แม้หน้าจะคล้ายกัน
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>เพิ่มรูปอัตโนมัติสูงสุด (รูป/คน)</Label>
+                    <Input
+                      type="number"
+                      step={1}
+                      min={0}
+                      value={Number(form.auto_enroll_max_faces)}
+                      onChange={(e) => set({ auto_enroll_max_faces: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ความมั่นใจขั้นต่ำก่อนเก็บเข้าชุดลงทะเบียน</Label>
+                    <Input
+                      type="number"
+                      step={0.01}
+                      min={0}
+                      max={1}
+                      value={Number(form.auto_enroll_min_confidence)}
+                      onChange={(e) => set({ auto_enroll_min_confidence: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Switch
+                      checked={form.save_snapshots}
+                      onCheckedChange={(v) => set({ save_snapshots: v })}
+                    />
+                    <span className="text-sm">เก็บรูปถ่ายทุกครั้งที่สแกน (ดูย้อนหลังในหน้าประวัติ)</span>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Switch
+                      checked={form.auto_enroll}
+                      onCheckedChange={(v) => set({ auto_enroll: v })}
+                    />
+                    <span className="text-sm">
+                      นำรูปที่สแกนผ่านแบบมั่นใจสูงไปเพิ่มเป็นข้อมูลลงทะเบียนอัตโนมัติ
+                    </span>
+                  </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : section === "web" ? (
+              <div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="flex items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Switch
+                      checked={form.allow_web_scan}
+                      onCheckedChange={(v) => set({ allow_web_scan: v })}
+                    />
+                    <span className="text-sm">
+                      อนุญาตให้ตู้สแกนใช้หน้าเว็บตรวจใบหน้าได้ เมื่อไม่มีโปรแกรมบนเครื่อง
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>ความคล้ายขั้นต่ำของโหมดเว็บ</Label>
+                    <Input
+                      type="number"
+                      step={0.01}
+                      min={0}
+                      max={1}
+                      value={Number(form.web_match_threshold)}
+                      onChange={(e) => set({ web_match_threshold: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ตัวเลขน้อย = เข้มงวดขึ้น (แนะนำ 0.42)
+                    </p>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label>เตรียมรูปที่ลงทะเบียนไว้ให้โหมดเว็บ</Label>
+                    <Button
+                      variant="secondary"
+                      onClick={() => prepare.mutate()}
+                      disabled={prepare.isPending}
+                    >
+                      {prepare.isPending ? "กำลังเตรียมรูป…" : "เตรียมรูปทั้งหมด"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      ต้องกดหนึ่งครั้งหลังลงทะเบียนรูปใหม่ เพื่อให้โหมดเว็บรู้จักคนเหล่านั้น
+                    </p>
+                  </div>
+                </div>
+                {SaveBar}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    นำรหัสเครื่องไปใส่ในไฟล์ตั้งค่าของโปรแกรมบนเครื่องตู้สแกน
+                  </p>
+                  <Button size="sm" variant="secondary" onClick={() => addDevice.mutate()}>
+                    <Plus className="size-4" /> เพิ่มเครื่อง
+                  </Button>
+                </div>
+                {(devices ?? []).map((d) => (
+                  <div key={d.id} className="rounded-xl border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Input
+                        defaultValue={d.name}
+                        className="max-w-56"
+                        onBlur={async (e) => {
+                          await supabase
+                            .from("devices")
+                            .update({ name: e.target.value })
+                            .eq("id", d.id);
+                          qc.invalidateQueries({ queryKey: ["devices"] });
+                        }}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Badge variant={d.is_active ? "default" : "outline"}>
+                          {d.is_active ? "ใช้งาน" : "ปิด"}
+                        </Badge>
+                        <Switch
+                          checked={d.is_active}
+                          onCheckedChange={async (v) => {
+                            await supabase.from("devices").update({ is_active: v }).eq("id", d.id);
+                            qc.invalidateQueries({ queryKey: ["devices"] });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <code className="flex-1 truncate rounded-lg bg-muted px-3 py-2 text-xs">
+                        {d.api_key}
+                      </code>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          navigator.clipboard.writeText(d.api_key);
+                          toast.success("คัดลอกรหัสแล้ว");
+                        }}
+                      >
+                        <Copy className="size-4" />
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      เชื่อมต่อล่าสุด:{" "}
+                      {d.last_seen_at
+                        ? new Date(d.last_seen_at).toLocaleString("th-TH", { hour12: false })
+                        : "ยังไม่เคย"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
