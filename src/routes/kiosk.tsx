@@ -67,6 +67,7 @@ function Kiosk() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const busyRef = useRef(false);
   const lastShotRef = useRef<string | null>(null);
+  const lastDurationRef = useRef(0);
   const [agentUrl, setAgentUrl] = useState("http://127.0.0.1:8899");
   const [showConfig, setShowConfig] = useState(false);
   const [status, setStatus] = useState<"idle" | "scanning" | "cooldown">("idle");
