@@ -525,22 +525,81 @@ def health():
 
 
 
-_motion: dict[str, Any] = {"prev": None, "visual": None}
+_motion: dict[str, Any] = {"prev": None, "visual": None, "skips": 0}
+
+_clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
 
 
 def scene_is_static(bgr: np.ndarray) -> bool:
     """True when the frame looks the same as the previous one (nobody there).
 
     Detection + recognition are by far the heaviest part on a low-power CPU,
-    so an unchanged frame is skipped before any model runs.
+    so an unchanged frame is skipped before any model runs. A full detection is
+    forced every few skipped frames so a person standing perfectly still (or a
+    slow/dim camera with little frame-to-frame noise) is never missed.
     """
     small = cv2.resize(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY), (64, 48))
     prev = _motion.get("prev")
     _motion["prev"] = small
     if prev is None:
+        _motion["skips"] = 0
         return False
     diff = float(np.mean(cv2.absdiff(prev, small)))
-    return diff < 2.0
+    if diff >= 1.0:
+        _motion["skips"] = 0
+        return False
+    skips = int(_motion.get("skips") or 0) + 1
+    if skips >= 6:  # roughly once a second: re-check even a frozen scene
+        _motion["skips"] = 0
+        return False
+    _motion["skips"] = skips
+    return True
+
+
+def normalize_lighting(bgr: np.ndarray) -> np.ndarray:
+    """Even out day/night, backlit and shadowed frames before detection.
+
+    Auto gamma pulls very dark or very bright frames back to a mid exposure and
+    CLAHE lifts local contrast (faces against a bright window, half-shadowed
+    faces, warm evening light), which is what the detector actually needs.
+    """
+    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
+    light, a_ch, b_ch = cv2.split(lab)
+    mean = float(np.mean(light))
+    if mean < 5.0:
+        mean = 5.0
+    # target a mid-grey exposure of ~128
+    gamma = float(np.clip(np.log(128.0 / 255.0) / np.log(mean / 255.0), 0.45, 2.2))
+    if abs(gamma - 1.0) > 0.08:
+        table = np.array(
+            [((i / 255.0) ** (1.0 / gamma)) * 255 for i in range(256)], dtype=np.uint8
+        )
+        light = cv2.LUT(light, table)
+    light = _clahe.apply(light)
+    return cv2.cvtColor(cv2.merge((light, a_ch, b_ch)), cv2.COLOR_LAB2BGR)
+
+
+def detect_adaptive(bgr: np.ndarray, det_min: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Detect faces, retrying with light correction and a larger input.
+
+    Pass 1 is the cheap everyday path. Only when nothing usable is found do the
+    heavier passes run, so an Intel Atom keeps its speed in good light and still
+    finds faces in poor light.
+    """
+    dets, kpss = face_app.detect(bgr)
+    if any(float(dets[i, 4]) >= det_min for i in range(dets.shape[0])):
+        return dets, kpss, bgr
+
+    fixed = normalize_lighting(bgr)
+    dets2, kpss2 = face_app.detect(fixed)
+    if any(float(dets2[i, 4]) >= det_min for i in range(dets2.shape[0])):
+        return dets2, kpss2, fixed
+
+    # Last resort: bigger detector input finds smaller / farther faces.
+    dets3, kpss3 = face_app.detect(fixed, det_size=(512, 512))
+    if dets3.shape[0]:
+        return dets3, kpss3, fixed
+    return dets2 if dets2.shape[0] else dets, kpss2 if dets2.shape[0] else kpss, fixed
 
 
 @app.post("/scan")
@@ -569,7 +628,7 @@ def scan(req: ScanRequest):
         }
 
     # Detect only (cheap); the expensive embedding runs for one face at most.
-    dets, kpss = face_app.detect(arr)
+    dets, kpss, arr = detect_adaptive(arr, det_min)
     strong = [i for i in range(dets.shape[0]) if float(dets[i, 4]) >= det_min]
     if not strong:
         _motion["visual"] = None

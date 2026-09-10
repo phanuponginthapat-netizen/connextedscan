@@ -95,7 +95,7 @@ def _norm_crop(img: np.ndarray, kps: np.ndarray) -> np.ndarray:
 class FaceEngine:
     """Minimal drop-in replacement for insightface's FaceAnalysis."""
 
-    def __init__(self, det_size: tuple[int, int] = (320, 320), det_thresh: float = 0.5) -> None:
+    def __init__(self, det_size: tuple[int, int] = (320, 320), det_thresh: float = 0.35) -> None:
         for path in (DET_MODEL, REC_MODEL):
             if not os.path.exists(path):
                 raise FileNotFoundError(
@@ -140,8 +140,14 @@ class FaceEngine:
         self._centers[key] = centers
         return centers
 
-    def detect(self, bgr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        model_w, model_h = self.det_size
+    def detect(
+        self,
+        bgr: np.ndarray,
+        det_size: tuple[int, int] | None = None,
+        det_thresh: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        model_w, model_h = det_size or self.det_size
+        thresh = self.det_thresh if det_thresh is None else float(det_thresh)
         img_h, img_w = bgr.shape[:2]
         scale = min(model_w / img_w, model_h / img_h)
         resized = cv2.resize(bgr, (int(round(img_w * scale)), int(round(img_h * scale))))
@@ -161,7 +167,7 @@ class FaceEngine:
             kps_preds = outputs[idx + fmc * 2].reshape(-1, 10) * stride
             centers = self._centers_for(model_h // stride, model_w // stride, stride)
 
-            keep = np.where(scores >= self.det_thresh)[0]
+            keep = np.where(scores >= thresh)[0]
             if keep.size == 0:
                 continue
             scores_list.append(scores[keep])
