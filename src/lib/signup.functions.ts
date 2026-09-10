@@ -3,9 +3,32 @@ import { z } from "zod";
 
 /** Whether the public "create account" form is currently open. */
 export const getSignupOpen = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.from("settings").select("allow_signup").single();
-  return { open: Boolean(data?.allow_signup) };
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const url = process.env["SUPABASE_URL"];
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!url || !key) return { open: false };
+
+    const client = createClient(url, key, {
+      auth: { persistSession: false },
+      global: {
+        fetch: (input, init) => {
+          const headers = new Headers(init?.headers);
+          if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) {
+            headers.delete("Authorization");
+          }
+          headers.set("apikey", key);
+          return fetch(input, { ...init, headers });
+        },
+      },
+    });
+
+    const { data } = await client.rpc("is_signup_open");
+    return { open: Boolean(data) };
+  } catch (error) {
+    console.error("[signup] failed to read signup status", error);
+    return { open: false };
+  }
 });
 
 const signupSchema = z.object({
