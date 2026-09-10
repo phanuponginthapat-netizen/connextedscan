@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
+import { Route as AdminInstallRouteImport } from './routes/admin/install'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
@@ -53,6 +54,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAttendanceRoute = AdminAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInstallRoute = AdminInstallRouteImport.update({
+  id: '/install',
+  path: '/install',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/kiosk': typeof KioskRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/install': typeof AdminInstallRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/kiosk': typeof KioskRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/install': typeof AdminInstallRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/kiosk': typeof KioskRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/install': typeof AdminInstallRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/kiosk'
     | '/admin/attendance'
+    | '/admin/install'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/kiosk'
     | '/admin/attendance'
+    | '/admin/install'
     | '/admin/settings'
     | '/admin'
     | '/admin/staff/$id'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/kiosk'
     | '/admin/attendance'
+    | '/admin/install'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -260,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/admin/attendance'
       preLoaderRoute: typeof AdminAttendanceRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/install': {
+      id: '/admin/install'
+      path: '/install'
+      fullPath: '/admin/install'
+      preLoaderRoute: typeof AdminInstallRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/settings': {
@@ -330,6 +349,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
+  AdminInstallRoute: typeof AdminInstallRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
@@ -340,6 +360,7 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
+  AdminInstallRoute: AdminInstallRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
