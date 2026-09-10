@@ -43,8 +43,19 @@ export function PeopleList({ personType }: { personType: PersonType }) {
         supabase.from("student_faces").select("student_id, status"),
       ]);
       if (error) throw error;
+      const avatarPaths = (rows ?? []).map((r) => r.avatar_path).filter(Boolean) as string[];
+      const urlMap: Record<string, string> = {};
+      if (avatarPaths.length > 0) {
+        const { data: signed } = await supabase.storage
+          .from("faces")
+          .createSignedUrls(avatarPaths, 3600);
+        (signed ?? []).forEach((item) => {
+          if (item.path && item.signedUrl) urlMap[item.path] = item.signedUrl;
+        });
+      }
       return (rows ?? []).map((s) => ({
         ...s,
+        avatarUrl: s.avatar_path ? (urlMap[s.avatar_path] ?? null) : null,
         readyFaces: (faces ?? []).filter((f) => f.student_id === s.id && f.status === "ready")
           .length,
       }));
@@ -168,7 +179,18 @@ export function PeopleList({ personType }: { personType: PersonType }) {
               params={{ id: s.id }}
               className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-muted/60"
             >
-              <div>
+              <div className="flex items-center gap-3">
+                {s.avatarUrl ? (
+                  <img
+                    src={s.avatarUrl}
+                    alt={`รูปโปรไฟล์ของ ${s.full_name}`}
+                    loading="lazy"
+                    className="size-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="size-10 rounded-full bg-muted" />
+                )}
+                <div>
                 <p className="font-medium">
                   {s.full_name}{" "}
                   {s.nickname && <span className="text-muted-foreground">({s.nickname})</span>}
