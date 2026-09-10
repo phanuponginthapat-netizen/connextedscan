@@ -60,3 +60,20 @@ export function timeToMinutes(value: string): number {
   const [h = 0, m = 0] = value.split(":").map(Number);
   return h * 60 + (m || 0);
 }
+
+/** Current weekday in Bangkok (0 = Sunday … 6 = Saturday). */
+export function bangkokWeekday(date = new Date()): number {
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    weekday: "short",
+  }).format(date);
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(name);
+}
+
+/** Parses a "1,2,3,4,5" work-day list into weekday numbers. */
+export function parseWorkDays(value: string | null | undefined): number[] {
+  return (value ?? "1,2,3,4,5")
+    .split(",")
+    .map((v) => Number(v.trim()))
+    .filter((v) => Number.isInteger(v) && v >= 0 && v <= 6);
+}
