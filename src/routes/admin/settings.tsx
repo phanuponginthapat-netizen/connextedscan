@@ -156,15 +156,6 @@ function SettingsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const prepare = useMutation({
-    mutationFn: async () => {
-      const { prepareWebFaces } = await import("@/lib/prepare-web-faces");
-      return prepareWebFaces();
-    },
-    onSuccess: (r) =>
-      toast.success(`เตรียมรูปแล้ว ${r.processed} รูป${r.failed ? ` (ใช้ไม่ได้ ${r.failed} รูป)` : ""}`),
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const { data: devices } = useQuery({
     queryKey: ["devices"],
