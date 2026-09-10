@@ -82,6 +82,7 @@ function Kiosk() {
     cached_images?: number;
     pending_uploads?: number;
     last_sync?: number | null;
+    stale?: boolean;
   } | null>(null);
 
   const [recent, setRecent] = useState<RecentScan[]>([]);
