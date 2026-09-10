@@ -488,7 +488,7 @@ def health():
 
 
 
-_motion: dict[str, Any] = {"prev": None}
+_motion: dict[str, Any] = {"prev": None, "visual": None}
 
 
 def scene_is_static(bgr: np.ndarray) -> bool:
@@ -525,12 +525,17 @@ def scan(req: ScanRequest):
     min_coverage = float(settings.get("min_face_coverage") or 0.0)
 
     if scene_is_static(arr):
-        return {"result": "no_face", "message": ""}
+        return {
+            "result": "no_face",
+            "message": "",
+            "face_detection": _motion.get("visual"),
+        }
 
     # Detect only (cheap); the expensive embedding runs for one face at most.
     dets, kpss = face_app.detect(arr)
     strong = [i for i in range(dets.shape[0]) if float(dets[i, 4]) >= det_min]
     if not strong:
+        _motion["visual"] = None
         return {"result": "no_face", "message": ""}
 
     frame_h, frame_w = float(arr.shape[0]), float(arr.shape[1])
@@ -587,6 +592,7 @@ def scan(req: ScanRequest):
 
     idx = present[0]
     visual = detection_payload(dets, kpss, idx, frame_w, frame_h)
+    _motion["visual"] = visual
     face = Face(
         bbox=dets[idx, :4],
         kps=kpss[idx],
