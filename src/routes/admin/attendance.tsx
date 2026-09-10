@@ -836,6 +836,18 @@ function AttendancePage() {
                         <TableCell className="text-muted-foreground">
                           {r.device_name ?? "-"}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-center print:hidden">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title="ลบรายการนี้"
+                              onClick={() => setDeleteTarget(r)}
+                            >
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
