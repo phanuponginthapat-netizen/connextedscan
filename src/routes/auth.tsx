@@ -93,9 +93,9 @@ function AuthPage() {
         </div>
 
         <Tabs defaultValue="signin" className="mt-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={signupOpen ? "grid w-full grid-cols-2" : "grid w-full grid-cols-1"}>
             <TabsTrigger value="signin">เข้าสู่ระบบ</TabsTrigger>
-            <TabsTrigger value="signup">สร้างบัญชี</TabsTrigger>
+            {signupOpen ? <TabsTrigger value="signup">สร้างบัญชี</TabsTrigger> : null}
           </TabsList>
 
           <TabsContent value="signin">
