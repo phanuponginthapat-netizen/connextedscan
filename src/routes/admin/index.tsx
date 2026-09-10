@@ -10,7 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowRight, Briefcase, LogIn, LogOut, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, Briefcase, LogIn, LogOut, ShieldCheck, UserCheck, UserX, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { personGroupLabel } from "@/components/people/people";
 import { supabase } from "@/integrations/supabase/client";
 import { useCms } from "@/lib/cms-client";
@@ -126,6 +127,55 @@ function Dashboard() {
 
   const recent = rows.slice(0, 12);
 
+  // Who has not arrived yet today, and any warning raised at the gate.
+  const { data: watch, refetch: refetchWatch } = useQuery({
+    queryKey: ["dashboard-watch"],
+    queryFn: async () => {
+      const today = startOfTodayISO();
+      const [people, arrivals, alerts, settings] = await Promise.all([
+        supabase
+          .from("students")
+          .select("id, full_name, student_code, class_room, department, person_type")
+          .eq("is_active", true)
+          .limit(3000),
+        supabase
+          .from("attendance_logs")
+          .select("student_id")
+          .eq("direction", "in")
+          .eq("status", "ok")
+          .gte("scanned_at", today)
+          .limit(5000),
+        supabase
+          .from("security_alerts")
+          .select("id, kind, message, device_name, attempts, created_at")
+          .is("acknowledged_at", null)
+          .order("created_at", { ascending: false })
+          .limit(6),
+        supabase.from("settings").select("absent_check_time").eq("id", true).maybeSingle(),
+      ]);
+      const arrived = new Set((arrivals.data ?? []).map((a) => a.student_id));
+      return {
+        absent: (people.data ?? []).filter((p) => !arrived.has(p.id)),
+        alerts: alerts.data ?? [],
+        absentCheckTime: settings.data?.absent_check_time ?? "09:00:00",
+      };
+    },
+    refetchInterval: 60000,
+    staleTime: 30000,
+    placeholderData: (prev) => prev,
+  });
+
+  const absent = watch?.absent ?? [];
+  const alerts = watch?.alerts ?? [];
+
+  const resolveAlert = async (id: string) => {
+    await supabase
+      .from("security_alerts")
+      .update({ acknowledged_at: new Date().toISOString() })
+      .eq("id", id);
+    void refetchWatch();
+  };
+
   return (
     <div className="space-y-6">
       <div className="border-b pb-4">
@@ -160,6 +210,81 @@ function Dashboard() {
           hint={`อยู่ในพื้นที่ ${presentNow} คน`}
           icon={LogOut}
         />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle className="size-4 text-amber-500" /> แจ้งเตือนความปลอดภัย
+              </CardTitle>
+              <CardDescription>
+                เกิดเมื่อมีคนสแกนไม่ผ่านติดต่อกันหลายครั้งที่จุดประตู
+              </CardDescription>
+            </div>
+            <Badge variant={alerts.length ? "destructive" : "secondary"}>{alerts.length}</Badge>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {alerts.length === 0 ? (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ShieldCheck className="size-4 text-emerald-500" /> ยังไม่มีเหตุการณ์ผิดปกติวันนี้
+              </p>
+            ) : (
+              alerts.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm">{a.message}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {a.device_name ?? "ไม่ทราบจุดสแกน"} • {timeText(a.created_at)}
+                    </p>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => void resolveAlert(a.id)}>
+                    รับทราบ
+                  </Button>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UserX className="size-4 text-primary" /> ยังไม่มาวันนี้
+              </CardTitle>
+              <CardDescription>
+                รายชื่อคนที่ยังไม่มีการสแกนเข้า (ตรวจรอบ {(watch?.absentCheckTime ?? "09:00:00").slice(0, 5)} น.)
+              </CardDescription>
+            </div>
+            <Badge variant="secondary">{absent.length} คน</Badge>
+          </CardHeader>
+          <CardContent>
+            {absent.length === 0 ? (
+              <p className="text-sm text-muted-foreground">มาครบทุกคนแล้ว</p>
+            ) : (
+              <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
+                {absent.slice(0, 60).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
+                  >
+                    <span className="truncate">{p.full_name}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {p.person_type === "staff"
+                        ? (p.department ?? "บุคลากร")
+                        : (p.class_room ?? "-")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

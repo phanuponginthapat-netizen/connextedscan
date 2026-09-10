@@ -440,6 +440,167 @@ def process_pending(pending: list[dict]) -> None:
     print(f"[agent] processed {len(results)} registration photos")
 
 
+
+# --- Remote control, stranger alerts, visitors and self-update ----------------
+
+_fails = {"count": 0, "last": 0.0}
+
+
+def note_failed_scan(snapshot: str | None) -> None:
+    """Warn the school when the same unknown person keeps trying to get in."""
+    now = time.time()
+    if now - _fails["last"] > 120:
+        _fails["count"] = 0
+    _fails["last"] = now
+    _fails["count"] += 1
+    with lock:
+        threshold = int(state["settings"].get("failed_alert_threshold") or 3)
+    if _fails["count"] < max(1, threshold):
+        return
+    _fails["count"] = 0
+    try:
+        requests.post(
+            f"{CLOUD_URL}/api/public/kiosk/alert",
+            headers=HEADERS,
+            json={"attempts": threshold, "snapshot": snapshot},
+            timeout=10,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"[agent] alert failed: {exc}")
+
+
+def log_visitor(snapshot: str | None, direction: str | None) -> dict | None:
+    """Event mode: record guests instead of turning them away silently."""
+    try:
+        res = requests.post(
+            f"{CLOUD_URL}/api/public/kiosk/visitor",
+            headers=HEADERS,
+            json={"snapshot": snapshot, "direction": direction or "in"},
+            timeout=15,
+        )
+        data = res.json()
+        return data if data.get("result") == "visitor" else None
+    except Exception as exc:  # noqa: BLE001
+        print(f"[agent] visitor log failed: {exc}")
+        return None
+
+
+def command_once() -> None:
+    res = requests.post(
+        f"{CLOUD_URL}/api/public/kiosk/door-command", headers=HEADERS, json={}, timeout=15
+    )
+    res.raise_for_status()
+    data = res.json()
+
+    free_open = bool(data.get("free_open"))
+    state["free_open"] = free_open
+    if free_open and data.get("door_enabled", True):
+        # Keep the barrier up during assembly time; refreshed every loop.
+        door.open_door(90)
+
+    command = data.get("command")
+    if command == "open":
+        door.open_door(float(data.get("seconds") or 5))
+        print("[agent] remote open")
+    elif command == "free":
+        state["free_open"] = True
+        door.open_door(float(data.get("seconds") or 300))
+        print("[agent] remote free-open")
+    elif command == "lock":
+        state["free_open"] = False
+        door.deny()
+        print("[agent] remote lock")
+
+
+def command_loop() -> None:
+    while True:
+        try:
+            command_once()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] door command poll failed: {exc}")
+        time.sleep(6)
+
+
+def self_update_once() -> bool:
+    """Download newer program files from the school server when they change."""
+    with lock:
+        if not state["settings"].get("auto_update_enabled", True):
+            return False
+    res = requests.get(f"{CLOUD_URL}/api/public/agent/manifest.json", timeout=20)
+    res.raise_for_status()
+    manifest = res.json()
+    here = os.path.dirname(os.path.abspath(__file__))
+    changed = False
+    for name, remote_hash in (manifest.get("files") or {}).items():
+        if not name or not remote_hash:
+            continue
+        target = os.path.join(here, name)
+        local_hash = None
+        if os.path.exists(target):
+            import hashlib
+
+            with open(target, "rb") as fh:
+                local_hash = hashlib.sha256(fh.read()).hexdigest()
+        if local_hash == remote_hash:
+            continue
+        body = requests.get(f"{CLOUD_URL}/api/public/agent/{name}", timeout=60).content
+        import hashlib as _h
+
+        if _h.sha256(body).hexdigest() != remote_hash:
+            continue
+        with open(target, "wb") as fh:
+            fh.write(body)
+        changed = True
+        print(f"[agent] updated {name}")
+    return changed
+
+
+def update_loop() -> None:
+    while True:
+        time.sleep(3600)
+        try:
+            if self_update_once():
+                print("[agent] มีเวอร์ชันใหม่ กรุณาปิดและเปิดโปรแกรมอีกครั้ง")
+                state["update_ready"] = True
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] update check failed: {exc}")
+
+
+def second_camera_loop() -> None:
+    """Optional exit camera: scans on its own and records the set direction."""
+    cap = None
+    index = -1
+    while True:
+        with lock:
+            wanted = int(state["settings"].get("second_camera_index", -1) or -1)
+            direction = str(state["settings"].get("second_camera_direction") or "out")
+        if wanted < 0:
+            if cap is not None:
+                cap.release()
+                cap, index = None, -1
+            time.sleep(5)
+            continue
+        if cap is None or index != wanted:
+            if cap is not None:
+                cap.release()
+            cap = cv2.VideoCapture(wanted)
+            index = wanted
+            print(f"[agent] second camera #{wanted} -> {direction}")
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            time.sleep(2)
+            continue
+        try:
+            ok_jpg, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            if ok_jpg:
+                result = run_scan(base64.b64encode(buf).decode(), None if direction == "auto" else direction)
+                if result.get("result") == "ok":
+                    time.sleep(float(result.get("next_delay_seconds") or 5))
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] second camera scan failed: {exc}")
+        time.sleep(0.8)
+
+
 def sync_loop() -> None:
     while True:
         try:
@@ -469,6 +630,9 @@ def door_react(body: dict) -> dict:
     with lock:
         settings = dict(state["settings"])
     if not settings.get("door_enabled", True):
+        return body
+    if state.get("free_open"):
+        body["door"] = "free"
         return body
     seconds = float(settings.get("door_open_seconds") or 0) or None
     result = body.get("result")
@@ -604,7 +768,11 @@ def detect_adaptive(bgr: np.ndarray, det_min: float) -> tuple[np.ndarray, np.nda
 
 @app.post("/scan")
 def scan(req: ScanRequest):
-    raw = req.image.split(",", 1)[-1]
+    return run_scan(req.image)
+
+
+def run_scan(image: str, direction: str | None = None):
+    raw = image.split(",", 1)[-1]
     arr = cv2.imdecode(np.frombuffer(base64.b64decode(raw), np.uint8), cv2.IMREAD_COLOR)
     if arr is None:
         return {"result": "no_face", "message": ""}
@@ -745,6 +913,12 @@ def scan(req: ScanRequest):
     runner_up = ranked[1][1] if len(ranked) > 1 else -1.0
 
     if best_score < threshold:
+        snapshot = crop_face_jpeg(arr, face)
+        note_failed_scan(snapshot)
+        if settings.get("visitor_mode"):
+            visitor = log_visitor(snapshot, direction)
+            if visitor:
+                return {**visitor, "face_detection": visual}
         return door_react({
             "result": "denied",
             "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
@@ -780,6 +954,8 @@ def scan(req: ScanRequest):
         "confidence": round(confidence, 4),
         "embedding": query.tolist(),
     }
+    if direction in ("in", "out"):
+        payload["direction"] = direction
     if geometry_score is not None:
         payload["geometry_score"] = round(float(geometry_score), 4)
     if live_geometry:
@@ -798,6 +974,7 @@ def scan(req: ScanRequest):
                 timeout=15,
             )
             res.raise_for_status()
+            _fails["count"] = 0
             return door_react({**res.json(), "face_detection": visual})
         except Exception as exc:  # noqa: BLE001
             last_error = exc
@@ -831,5 +1008,8 @@ if __name__ == "__main__":
     door.start()
     threading.Thread(target=sync_loop, daemon=True).start()
     threading.Thread(target=outbox_loop, daemon=True).start()
+    threading.Thread(target=command_loop, daemon=True).start()
+    threading.Thread(target=update_loop, daemon=True).start()
+    threading.Thread(target=second_camera_loop, daemon=True).start()
 
     uvicorn.run(app, host="127.0.0.1", port=PORT)

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { backupNow as backupNowFn } from "@/lib/backup.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -96,6 +98,18 @@ type SettingsRow = {
   door_enabled: boolean;
   door_open_seconds: number;
   door_deny_alarm: boolean;
+  door_free_enabled: boolean;
+  door_free_start: string;
+  door_free_end: string;
+  failed_alert_threshold: number;
+  absent_check_time: string;
+  visitor_mode: boolean;
+  second_camera_index: number;
+  second_camera_direction: string;
+  auto_update_enabled: boolean;
+  backup_enabled: boolean;
+  backup_weekday: number;
+  backup_last_at: string | null;
   min_face_coverage: number;
   detector_min_score: number;
   log_unknown_attempts: boolean;
@@ -126,6 +140,8 @@ const cmsIcons: Record<string, typeof ImageIcon> = {
 
 function SettingsPage() {
   const qc = useQueryClient();
+  const [backingUp, setBackingUp] = useState(false);
+  const backupNow = useServerFn(backupNowFn);
   const [form, setForm] = useState<SettingsRow | null>(null);
   const [section, setSection] = useState<SectionId>("time");
   const { t } = useCms();
@@ -547,6 +563,39 @@ function SettingsPage() {
                       <span className="text-sm">{label}</span>
                     </div>
                   ))}
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={form.visitor_mode}
+                      onCheckedChange={(v) => set({ visitor_mode: v })}
+                    />
+                    <span className="text-sm">
+                      โหมดงานกิจกรรม/ผู้มาเยือน — บันทึกคนนอกที่มาติดต่อไว้ดูย้อนหลังได้
+                    </span>
+                  </div>
+                  <div className="grid max-w-md gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>กล้องตัวที่สอง (หมายเลข)</Label>
+                      <Input
+                        type="number"
+                        min={-1}
+                        value={Number(form.second_camera_index)}
+                        onChange={(e) => set({ second_camera_index: Number(e.target.value) })}
+                      />
+                      <p className="text-xs text-muted-foreground">ใส่ -1 หากใช้กล้องตัวเดียว</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>กล้องตัวที่สองใช้บันทึก</Label>
+                      <select
+                        className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                        value={String(form.second_camera_direction)}
+                        onChange={(e) => set({ second_camera_direction: e.target.value })}
+                      >
+                        <option value="out">ขาออก</option>
+                        <option value="in">ขาเข้า</option>
+                        <option value="auto">ตามเวลาที่ตั้งไว้</option>
+                      </select>
+                    </div>
+                  </div>
                   <div className="max-w-xs space-y-1.5">
                     <Label>จำนวนรายการล่าสุดที่แสดง</Label>
                     <Input
@@ -615,6 +664,36 @@ function SettingsPage() {
                       ครบเวลาแล้วประตูจะล็อกกลับเองอัตโนมัติ
                     </p>
                   </div>
+                  <div className="space-y-3 rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={form.door_free_enabled}
+                        onCheckedChange={(v) => set({ door_free_enabled: v })}
+                      />
+                      <span className="text-sm">
+                        เปิดประตูค้างในช่วงเวลาเข้าแถว (คนเข้าออกได้โดยไม่ต้องรอสแกนทีละคน)
+                      </span>
+                    </div>
+                    <div className="grid max-w-md gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label>เริ่มเปิดค้าง</Label>
+                        <TimeInput24
+                          value={String(form.door_free_start).slice(0, 5)}
+                          onChange={(v) => set({ door_free_start: `${v}:00` })}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>หยุดเปิดค้าง</Label>
+                        <TimeInput24
+                          value={String(form.door_free_end).slice(0, 5)}
+                          onChange={(v) => set({ door_free_end: `${v}:00` })}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      ระบบยังบันทึกเวลาให้ตามปกติ เพียงแต่ไม่ล็อกประตูระหว่างช่วงนี้
+                    </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     วิธีต่อสายและโค้ดสำหรับ micro:bit ดูได้ที่เมนู “ประตูอัจฉริยะ”
                   </p>
@@ -658,6 +737,84 @@ function SettingsPage() {
                       onCheckedChange={(v) => set({ log_unknown_attempts: v })}
                     />
                     <span className="text-sm">บันทึกความพยายามสแกนของคนที่ไม่ได้ลงทะเบียน</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>แจ้งเตือนเมื่อสแกนไม่ผ่านติดกัน (ครั้ง)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={Number(form.failed_alert_threshold)}
+                      onChange={(e) => set({ failed_alert_threshold: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ครบจำนวนนี้จะขึ้นเตือนในหน้าภาพรวมทันที
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>เวลาตรวจรายชื่อคนยังไม่มา</Label>
+                    <TimeInput24
+                      value={String(form.absent_check_time).slice(0, 5)}
+                      onChange={(v) => set({ absent_check_time: `${v}:00` })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>วันสำรองข้อมูลประจำสัปดาห์</Label>
+                    <select
+                      className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                      value={Number(form.backup_weekday)}
+                      onChange={(e) => set({ backup_weekday: Number(e.target.value) })}
+                    >
+                      {["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"].map(
+                        (d, i) => (
+                          <option key={d} value={i}>
+                            {d}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={form.backup_enabled}
+                      onCheckedChange={(v) => set({ backup_enabled: v })}
+                    />
+                    <span className="text-sm">สำรองข้อมูลอัตโนมัติทุกสัปดาห์</span>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={form.auto_update_enabled}
+                      onCheckedChange={(v) => set({ auto_update_enabled: v })}
+                    />
+                    <span className="text-sm">ให้โปรแกรมตู้สแกนอัปเดตตัวเองอัตโนมัติ</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3 sm:col-span-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={backingUp}
+                      onClick={async () => {
+                        setBackingUp(true);
+                        try {
+                          const res = await backupNow();
+                          toast.success(
+                            `สำรองข้อมูลแล้ว (${res.counts.students} คน, ${res.counts.attendance_logs} รายการ)`,
+                          );
+                          if (res.url) window.open(res.url, "_blank");
+                        } catch {
+                          toast.error("สำรองข้อมูลไม่สำเร็จ");
+                        }
+                        setBackingUp(false);
+                      }}
+                    >
+                      สำรองข้อมูลเดี๋ยวนี้
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      สำรองครั้งล่าสุด:{" "}
+                      {form.backup_last_at
+                        ? new Date(form.backup_last_at).toLocaleString("th-TH")
+                        : "ยังไม่เคยสำรอง"}
+                    </span>
                   </div>
                 </div>
                 {SaveBar}

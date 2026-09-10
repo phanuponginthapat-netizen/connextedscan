@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Copy, DoorOpen, Download, Plug, ShieldCheck, Zap } from "lucide-react";
+import { Check, Copy, DoorOpen, Download, Lock, Plug, Radio, ShieldCheck, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/door")({
   component: DoorPage,
@@ -60,6 +62,17 @@ function DoorPage() {
   const [status, setStatus] = useState<DoorStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [testMsg, setTestMsg] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  const sendCommand = async (command: "open" | "lock" | "free", seconds: number) => {
+    setSending(true);
+    const { error } = await supabase
+      .from("door_commands")
+      .insert({ command, seconds: command === "free" ? 300 : seconds });
+    setSending(false);
+    if (error) toast.error("ส่งคำสั่งไม่สำเร็จ: " + error.message);
+    else toast.success("ส่งคำสั่งไปที่ตู้สแกนแล้ว");
+  };
 
   const refresh = async () => {
     setChecking(true);
@@ -95,6 +108,28 @@ function DoorPage() {
           คนที่ไม่ได้ลงทะเบียนจะเปิดประตูไม่ได้และมีเสียงเตือนที่จุดประตู
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Radio className="size-4 text-primary" /> สั่งงานประตูจากระยะไกล
+          </CardTitle>
+          <CardDescription>
+            ใช้ได้จากที่ไหนก็ได้ ตู้สแกนจะรับคำสั่งภายในไม่กี่วินาที เหมาะกับกรณีฉุกเฉินหรือมีแขกมาติดต่อ
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button disabled={sending} onClick={() => void sendCommand("open", 8)}>
+            <DoorOpen className="size-4" /> เปิดประตูเดี๋ยวนี้ 8 วินาที
+          </Button>
+          <Button variant="secondary" disabled={sending} onClick={() => void sendCommand("free", 0)}>
+            <Zap className="size-4" /> เปิดค้างไว้ 5 นาที
+          </Button>
+          <Button variant="destructive" disabled={sending} onClick={() => void sendCommand("lock", 0)}>
+            <Lock className="size-4" /> ล็อกประตูทันที
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

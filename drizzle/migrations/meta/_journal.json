@@ -85,6 +85,13 @@
       "when": 1789034630277,
       "tag": "0011_add_door_control_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789044596438,
+      "tag": "0012_door_alerts_visitors_backup",
+      "breakpoints": true
     }
   ]
 }
