@@ -610,6 +610,76 @@ function Kiosk() {
         )}
       </div>
 
+      {/* Scrolling announcement bar, configured in Settings > หน้าจอตู้สแกน */}
+      {display.news_enabled && display.news_text.trim() !== "" && (
+        <footer className="mt-3 shrink-0 overflow-hidden rounded-full border bg-card/80 px-5 py-2 shadow-panel backdrop-blur">
+          <div className="animate-marquee flex w-max gap-16 whitespace-nowrap text-sm font-medium">
+            <span>{display.news_text}</span>
+            <span aria-hidden="true">{display.news_text}</span>
+          </div>
+        </footer>
+      )}
+
+      {/* Boot screen: wait until camera, FaceGate and voice are all ready */}
+      {!booted && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-background p-6">
+          <div className="animate-soft-in w-full max-w-md space-y-6 rounded-3xl border bg-card p-8 text-center shadow-panel">
+            {logo ? (
+              <img
+                src={logo}
+                alt={t("brand.name")}
+                className="animate-float-soft mx-auto size-16 rounded-2xl object-contain"
+              />
+            ) : null}
+            <div>
+              <h2 className="font-display text-xl font-bold">{t("kiosk.title")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">กำลังเตรียมระบบให้พร้อมก่อนเริ่มสแกน</p>
+            </div>
+            <ul className="space-y-2 text-left text-sm">
+              <li className="flex items-center gap-3 rounded-xl border p-3">
+                {camReady ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                ) : (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                <span>{camReady ? "กล้องพร้อมใช้งาน" : "กำลังเปิดกล้อง…"}</span>
+              </li>
+              <li className="flex items-center gap-3 rounded-xl border p-3">
+                {agentOnline === true ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                ) : (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                <span>
+                  {agentOnline === true
+                    ? `โปรแกรม FaceGate พร้อม (ใบหน้า ${knownFaces ?? 0} คน)`
+                    : "กำลังรอโปรแกรม FaceGate… กรุณาเปิดโปรแกรมบนเครื่องนี้"}
+                </span>
+              </li>
+              <li className="flex items-center gap-3 rounded-xl border p-3">
+                {voiceOn || !display.voice_enabled ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-primary" />
+                ) : (
+                  <Loader2 className="size-5 shrink-0 animate-spin text-muted-foreground" />
+                )}
+                <span>
+                  {!display.voice_enabled
+                    ? "ปิดเสียงประกาศไว้ในการตั้งค่า"
+                    : voiceOn
+                      ? "เสียงประกาศพร้อมใช้งาน"
+                      : "กำลังเตรียมเสียงประกาศ…"}
+                </span>
+              </li>
+            </ul>
+            {display.voice_enabled && !voiceOn && (
+              <Button className="w-full" onClick={enableVoice}>
+                <Volume2 className="size-4" /> แตะเพื่อเปิดเสียงและเริ่มใช้งาน
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Scan result popup */}
       {result && (
         <div
