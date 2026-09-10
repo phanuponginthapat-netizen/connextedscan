@@ -22,7 +22,6 @@ import { personGroupLabel, personLabels, type PersonType } from "./people";
 export function PeopleList({ personType }: { personType: PersonType }) {
   const L = personLabels[personType];
   const isStaff = personType === "staff";
-  const basePath = isStaff ? "/admin/staff" : "/admin/students";
   const qc = useQueryClient();
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
@@ -190,8 +189,4 @@ export function PeopleList({ personType }: { personType: PersonType }) {
       </Card>
     </div>
   );
-}
-
-export function peopleBasePath(personType: PersonType) {
-  return personType === "staff" ? "/admin/staff" : "/admin/students";
 }
