@@ -63,33 +63,78 @@ function Kiosk() {
   const [webError, setWebError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentScan[]>([]);
   const [voiceOn, setVoiceOn] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const thaiVoice = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+    return window.speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("th")) ?? null;
+  };
+
+  // Play a sentence through the cloud voice service. Needed on machines with
+  // no Thai system voice, such as the FaceGate desktop app on Windows.
+  const speakViaServer = useCallback(async (text: string) => {
+    const res = await fetch("/api/public/kiosk/tts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("tts failed");
+    const blob = await res.blob();
+    const audio = audioRef.current ?? new Audio();
+    audioRef.current = audio;
+    const url = URL.createObjectURL(blob);
+    audio.src = url;
+    audio.onended = () => URL.revokeObjectURL(url);
+    await audio.play();
+  }, []);
 
   // Browsers block spoken audio until the person interacts with the page.
   const enableVoice = useCallback(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const warm = new SpeechSynthesisUtterance("เปิดเสียงเรียบร้อย");
-    warm.lang = "th-TH";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
-    window.speechSynthesis.speak(warm);
+    if (typeof window === "undefined") return;
+    // Unlock the shared audio element with the user gesture.
+    const audio = audioRef.current ?? new Audio();
+    audioRef.current = audio;
+    audio.muted = true;
+    audio.src =
+      "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//WreyTRUoAWgBgkOAGbZHBgG1OF6zM82DWbZaUmMBptgQhGjsyYqc9ae9XFz280948NMBWInljyzsNRFLPWdnZGWrddDsjK1unuSrVN9jJsK8KuQtQCtMBjCEtImISdNKJOopIpBFpNSMbIHCSRpRR5iakjTiyzLhchUUBwCgyKiweBv/7UsQbg8isVMRMYMSAAAA0gAAABEVEQU1FMy45OS41VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
+    void audio.play().catch(() => {});
+    audio.muted = false;
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+      const warm = new SpeechSynthesisUtterance("เปิดเสียงเรียบร้อย");
+      warm.lang = "th-TH";
+      const v = thaiVoice();
+      if (v) {
+        warm.voice = v;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(warm);
+      }
+    }
+    if (!thaiVoice()) void speakViaServer("เปิดเสียงเรียบร้อย").catch(() => {});
     setVoiceOn(true);
-  }, []);
+  }, [speakViaServer]);
 
   const speak = useCallback(
     (text: string) => {
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-      if (!voiceOn) return;
-      const synth = window.speechSynthesis;
-      synth.cancel();
-      synth.resume();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "th-TH";
-      utter.rate = 1;
-      const thai = synth.getVoices().find((v) => v.lang?.toLowerCase().startsWith("th"));
-      if (thai) utter.voice = thai;
-      synth.speak(utter);
+      if (typeof window === "undefined" || !voiceOn) return;
+      const voice = thaiVoice();
+      if (voice && "speechSynthesis" in window) {
+        const synth = window.speechSynthesis;
+        synth.cancel();
+        synth.resume();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "th-TH";
+        utter.rate = 1;
+        utter.voice = voice;
+        utter.onerror = () => void speakViaServer(text).catch(() => {});
+        synth.speak(utter);
+        return;
+      }
+      // No Thai system voice (FaceGate on Windows): use the cloud voice.
+      void speakViaServer(text).catch(() => {});
     },
-    [voiceOn],
+    [voiceOn, speakViaServer],
   );
 
   useEffect(() => {
