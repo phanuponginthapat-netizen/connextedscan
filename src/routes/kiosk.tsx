@@ -25,7 +25,14 @@ type ScanResult = {
   message: string;
   speak?: string;
   next_delay_seconds?: number;
-  student?: { full_name: string; class_room: string | null; student_code: string } | null;
+  student?: {
+    full_name: string;
+    class_room: string | null;
+    student_code: string;
+    person_type?: string | null;
+    department?: string | null;
+    position?: string | null;
+  } | null;
   direction?: "in" | "out";
   avatar_url?: string | null;
   snapshot_url?: string | null;
@@ -35,11 +42,21 @@ type RecentScan = {
   id: string;
   name: string;
   detail: string;
+  role: string;
   direction: "in" | "out";
   time: string;
   avatarUrl: string | null;
   snapshotUrl: string | null;
 };
+
+/** ตำแหน่ง/ชั้นเรียนของผู้สแกน สำหรับแสดงบนหน้าจอ */
+function personRole(s: NonNullable<ScanResult["student"]>) {
+  if (s.person_type === "staff") {
+    const parts = [s.department, s.position].filter(Boolean).join(" / ");
+    return `บุคลากร${parts ? ` • ${parts}` : ""}`;
+  }
+  return `นักเรียน${s.class_room ? ` • ชั้น ${s.class_room}` : ""}`;
+}
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
 
