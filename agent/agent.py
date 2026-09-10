@@ -560,13 +560,30 @@ def scan(req: ScanRequest):
     if snapshot:
         payload["snapshot"] = snapshot
 
-    res = requests.post(
-        f"{CLOUD_URL}/api/public/kiosk/attendance",
-        headers=HEADERS,
-        json=payload,
-        timeout=30,
-    )
-    return res.json()
+    try:
+        res = requests.post(
+            f"{CLOUD_URL}/api/public/kiosk/attendance",
+            headers=HEADERS,
+            json=payload,
+            timeout=30,
+        )
+        res.raise_for_status()
+        return res.json()
+    except Exception:  # noqa: BLE001
+        # Offline: keep the scan on disk and retry in the background so the
+        # kiosk can still greet the person straight away.
+        outbox_append(payload)
+        with lock:
+            person = state["students"].get(student_id) or {}
+        name = person.get("full_name") or "ผู้ใช้งาน"
+        return {
+            "result": "ok",
+            "offline": True,
+            "message": f"บันทึกเวลาแบบออฟไลน์ให้ {name} แล้ว",
+            "speak": f"สแกนสำเร็จ {name}",
+            "next_delay_seconds": delay,
+        }
+
 
 
 if __name__ == "__main__":
