@@ -339,25 +339,46 @@ def crop_face_jpeg(bgr: np.ndarray, face, margin: float = 0.35) -> str | None:
 
 
 def sync_once() -> None:
-    res = requests.post(f"{CLOUD_URL}/api/public/kiosk/sync", headers=HEADERS, json={}, timeout=30)
+    with lock:
+        known = {fid: f.get("version") or "" for fid, f in state["faces"].items()}
+
+    res = requests.post(
+        f"{CLOUD_URL}/api/public/kiosk/sync",
+        headers=HEADERS,
+        json={"known": known},
+        timeout=30,
+    )
     res.raise_for_status()
     data = res.json()
 
-    rows, owners, geoms = [], [], []
-    for item in data.get("embeddings", []):
-        vec = np.array(item["embedding"], dtype=np.float32)
-        if vec.size:
-            rows.append(normalise(vec))
-            owners.append(item["student_id"])
-            geoms.append(item.get("geometry") or None)
+    incremental = bool(data.get("incremental"))
+    changed = data.get("embeddings", []) or []
+    removed = data.get("removed", []) or []
 
     with lock:
-        state["matrix"] = np.vstack(rows) if rows else np.zeros((0, 512), dtype=np.float32)
-        state["owners"] = owners
-        state["geoms"] = geoms
+        faces = dict(state["faces"]) if incremental else {}
+        for item in changed:
+            if not item.get("embedding"):
+                continue
+            faces[item["id"]] = {
+                "student_id": item["student_id"],
+                "embedding": item["embedding"],
+                "geometry": item.get("geometry") or None,
+                "version": item.get("version") or "",
+            }
+        for face_id in removed:
+            faces.pop(face_id, None)
+        state["faces"] = faces
         state["students"] = {s["id"]: s for s in data.get("students", [])}
         state["settings"] = data.get("settings") or {}
         state["last_sync"] = time.time()
+        rebuild_matrix_locked()
+        valid_ids = set(faces.keys())
+
+    save_cache()
+    prune_images(valid_ids)
+    if changed or removed:
+        print(f"[agent] sync: +{len(changed)} / -{len(removed)} faces (total {len(valid_ids)})")
 
     pending = data.get("pending", [])
     if pending:
@@ -365,11 +386,18 @@ def sync_once() -> None:
 
 
 def process_pending(pending: list[dict]) -> None:
-    """Compute embeddings for newly registered photos and send them back."""
+    """Compute embeddings for newly registered photos and send them back.
+
+    Photos are kept on disk so the embeddings can be recomputed later without
+    downloading them again.
+    """
     results = []
     for item in pending:
         try:
-            img_bytes = requests.get(item["url"], timeout=30).content
+            img_bytes = cached_image(item["id"])
+            if img_bytes is None:
+                img_bytes = requests.get(item["url"], timeout=30).content
+                cache_image(item["id"], img_bytes)
             arr = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
             face = embed_image(arr) if arr is not None else None
             if face is None:
@@ -411,12 +439,24 @@ class ScanRequest(BaseModel):
 @app.get("/health")
 def health():
     with lock:
-        return {
-            "ok": True,
-            "known_faces": int(state["matrix"].shape[0]),
-            "students": len(state["students"]),
-            "last_sync": state["last_sync"],
-        }
+        known_faces = int(state["matrix"].shape[0])
+        students = len(state["students"])
+        last_sync = state["last_sync"]
+    try:
+        cached_images = len(os.listdir(IMAGE_DIR))
+    except Exception:  # noqa: BLE001
+        cached_images = 0
+    return {
+        "ok": True,
+        "known_faces": known_faces,
+        "students": students,
+        "last_sync": last_sync,
+        "cached_images": cached_images,
+        "pending_uploads": outbox_count(),
+        "cache_dir": CACHE_DIR,
+    }
+
+
 
 
 @app.post("/scan")
