@@ -26,6 +26,7 @@ type ScanResult = {
   next_delay_seconds?: number;
   student?: { full_name: string; class_room: string | null; student_code: string } | null;
   direction?: "in" | "out";
+  avatar_url?: string | null;
 };
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
@@ -201,6 +202,13 @@ function Kiosk() {
         {!result && <p className="text-muted-foreground">รอสแกนคนถัดไป…</p>}
         {result && (
           <div className="space-y-2">
+            {result.avatar_url && (
+              <img
+                src={result.avatar_url}
+                alt={result.student ? `รูปของ ${result.student.full_name}` : "รูปโปรไฟล์"}
+                className="mx-auto size-24 rounded-full border-4 border-primary/40 object-cover shadow"
+              />
+            )}
             <div className="flex items-center justify-center gap-2">
               {result.result === "ok" ? (
                 <CheckCircle2 className="size-7 text-primary" />

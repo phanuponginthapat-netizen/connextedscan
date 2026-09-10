@@ -76,11 +76,33 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
 
   const removeFace = useMutation({
     mutationFn: async (face: { id: string; image_path: string }) => {
-      await supabase.storage.from("faces").remove([face.image_path]);
+      // Don't delete the file if it's also used as the profile photo.
+      if (face.image_path !== person?.avatar_path) {
+        await supabase.storage.from("faces").remove([face.image_path]);
+      }
       const { error } = await supabase.from("student_faces").delete().eq("id", face.id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["faces", id] }),
+  });
+
+  const enrollAvatar = useMutation({
+    mutationFn: async () => {
+      if (!person?.avatar_path) throw new Error("ยังไม่มีรูปโปรไฟล์");
+      const already = (faces ?? []).some(
+        (f) => f.image_path === person.avatar_path && f.status !== "failed",
+      );
+      if (already) throw new Error("รูปโปรไฟล์นี้ถูกใช้ลงทะเบียนใบหน้าแล้ว");
+      const { error } = await supabase
+        .from("student_faces")
+        .insert({ student_id: id, image_path: person.avatar_path, source: "profile", status: "pending" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("ส่งรูปโปรไฟล์ไปลงทะเบียนใบหน้าแล้ว รอตู้สแกนประมวลผล");
+      qc.invalidateQueries({ queryKey: ["faces", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const savePerson = useMutation({
@@ -276,6 +298,21 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
                 e.target.value = "";
               }}
             />
+            {person.avatar_path && (
+              <Button
+                variant="secondary"
+                className="w-full"
+                disabled={enrollAvatar.isPending}
+                onClick={() => enrollAvatar.mutate()}
+              >
+                {enrollAvatar.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Camera className="size-4" />
+                )}
+                ใช้รูปโปรไฟล์ลงทะเบียนใบหน้า
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
