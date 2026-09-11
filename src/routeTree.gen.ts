@@ -14,6 +14,7 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as KioskRouteImport } from './routes/kiosk'
+import { Route as TabletRouteImport } from './routes/tablet'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
@@ -62,6 +63,11 @@ const DownloadRoute = DownloadRouteImport.update({
 const KioskRoute = KioskRouteImport.update({
   id: '/kiosk',
   path: '/kiosk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TabletRoute = TabletRouteImport.update({
+  id: '/tablet',
+  path: '/tablet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
+  '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
+  '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
+  '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/download'
     | '/kiosk'
+    | '/tablet'
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/download'
     | '/kiosk'
+    | '/tablet'
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
@@ -351,6 +362,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/download'
     | '/kiosk'
+    | '/tablet'
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
@@ -383,6 +395,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DownloadRoute: typeof DownloadRoute
   KioskRoute: typeof KioskRoute
+  TabletRoute: typeof TabletRoute
   ApiPublicAdminAttendanceDeleteRoute: typeof ApiPublicAdminAttendanceDeleteRoute
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
   ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/kiosk'
       fullPath: '/kiosk'
       preLoaderRoute: typeof KioskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tablet': {
+      id: '/tablet'
+      path: '/tablet'
+      fullPath: '/tablet'
+      preLoaderRoute: typeof TabletRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -645,6 +665,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DownloadRoute: DownloadRoute,
   KioskRoute: KioskRoute,
+  TabletRoute: TabletRoute,
   ApiPublicAdminAttendanceDeleteRoute: ApiPublicAdminAttendanceDeleteRoute,
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
   ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
