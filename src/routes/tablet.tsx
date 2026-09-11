@@ -299,7 +299,7 @@ function TabletScanner() {
     <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-slate-950 text-white">
       <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{t("brand.school_name", "ระบบสแกนใบหน้า")}</p>
+          <p className="truncate text-sm font-semibold">{t("brand.school_name") || "ระบบสแกนใบหน้า"}</p>
           <p className="text-xs text-white/60">
             โหมดแท็บเล็ต • {direction === "auto" ? "อัตโนมัติตามเวลา" : direction === "in" ? "สแกนเข้า" : "สแกนออก"}
           </p>
