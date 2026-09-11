@@ -14,6 +14,7 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as KioskRouteImport } from './routes/kiosk'
+import { Route as TabletRouteImport } from './routes/tablet'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
@@ -37,6 +38,7 @@ import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/ki
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskVisitorRouteImport } from './routes/api/public/kiosk/visitor'
+import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -61,6 +63,11 @@ const DownloadRoute = DownloadRouteImport.update({
 const KioskRoute = KioskRouteImport.update({
   id: '/kiosk',
   path: '/kiosk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TabletRoute = TabletRouteImport.update({
+  id: '/tablet',
+  path: '/tablet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -182,6 +189,11 @@ const ApiPublicKioskVisitorRoute = ApiPublicKioskVisitorRouteImport.update({
   path: '/api/public/kiosk/visitor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskWebScanRoute = ApiPublicKioskWebScanRouteImport.update({
+  id: '/api/public/kiosk/web-scan',
+  path: '/api/public/kiosk/web-scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -189,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
+  '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
@@ -212,12 +225,14 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
+  '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
@@ -241,6 +256,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -249,6 +265,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
+  '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
@@ -272,6 +289,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -281,6 +299,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/download'
     | '/kiosk'
+    | '/tablet'
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
@@ -304,12 +323,14 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
+    | '/api/public/kiosk/web-scan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/download'
     | '/kiosk'
+    | '/tablet'
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
@@ -333,6 +354,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
+    | '/api/public/kiosk/web-scan'
   id:
     | '__root__'
     | '/'
@@ -340,6 +362,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/download'
     | '/kiosk'
+    | '/tablet'
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
@@ -363,6 +386,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
+    | '/api/public/kiosk/web-scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -371,6 +395,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DownloadRoute: typeof DownloadRoute
   KioskRoute: typeof KioskRoute
+  TabletRoute: typeof TabletRoute
   ApiPublicAdminAttendanceDeleteRoute: typeof ApiPublicAdminAttendanceDeleteRoute
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
   ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
@@ -382,6 +407,7 @@ export interface RootRouteChildren {
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskVisitorRoute: typeof ApiPublicKioskVisitorRoute
+  ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -419,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/kiosk'
       fullPath: '/kiosk'
       preLoaderRoute: typeof KioskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tablet': {
+      id: '/tablet'
+      path: '/tablet'
+      fullPath: '/tablet'
+      preLoaderRoute: typeof TabletRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -582,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskVisitorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/web-scan': {
+      id: '/api/public/kiosk/web-scan'
+      path: '/api/public/kiosk/web-scan'
+      fullPath: '/api/public/kiosk/web-scan'
+      preLoaderRoute: typeof ApiPublicKioskWebScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -625,6 +665,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DownloadRoute: DownloadRoute,
   KioskRoute: KioskRoute,
+  TabletRoute: TabletRoute,
   ApiPublicAdminAttendanceDeleteRoute: ApiPublicAdminAttendanceDeleteRoute,
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
   ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
@@ -636,6 +677,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskVisitorRoute: ApiPublicKioskVisitorRoute,
+  ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
