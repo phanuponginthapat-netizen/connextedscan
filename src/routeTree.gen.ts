@@ -37,6 +37,7 @@ import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/ki
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskVisitorRouteImport } from './routes/api/public/kiosk/visitor'
+import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -182,6 +183,11 @@ const ApiPublicKioskVisitorRoute = ApiPublicKioskVisitorRouteImport.update({
   path: '/api/public/kiosk/visitor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskWebScanRoute = ApiPublicKioskWebScanRouteImport.update({
+  id: '/api/public/kiosk/web-scan',
+  path: '/api/public/kiosk/web-scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
+  '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
+    | '/api/public/kiosk/web-scan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
+    | '/api/public/kiosk/web-scan'
   id:
     | '__root__'
     | '/'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
+    | '/api/public/kiosk/web-scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -382,6 +394,7 @@ export interface RootRouteChildren {
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskVisitorRoute: typeof ApiPublicKioskVisitorRoute
+  ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -582,6 +595,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskVisitorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/web-scan': {
+      id: '/api/public/kiosk/web-scan'
+      path: '/api/public/kiosk/web-scan'
+      fullPath: '/api/public/kiosk/web-scan'
+      preLoaderRoute: typeof ApiPublicKioskWebScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -636,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskVisitorRoute: ApiPublicKioskVisitorRoute,
+  ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
