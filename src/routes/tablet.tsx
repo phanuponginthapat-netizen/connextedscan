@@ -326,15 +326,14 @@ function TabletScanner() {
             className="h-full w-full -scale-x-100 object-cover"
           />
           {live && (
-            <div className="pointer-events-none absolute inset-0 -scale-x-100">
-              <FaceBoxOverlay
-                box={live.box}
-                landmarks={live.landmarks}
-                frame={live.frame}
-                score={live.score}
-                tech
-              />
-            </div>
+            <FaceBoxOverlay
+              boxes={[live.box]}
+              landmarks={live.landmarks}
+              frame={live.frame}
+              mirrored
+              tech
+              label={`ตรวจพบใบหน้า ${(live.score * 100).toFixed(0)}%`}
+            />
           )}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className={`h-[62%] w-[46%] rounded-[50%] border-4 border-dashed ${frameColor} transition-colors`} />
