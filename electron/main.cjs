@@ -168,6 +168,8 @@ function stopAgent({ restart = false } = {}) {
  * its own runtime, but on machines where it is missing we try the usual
  * commands instead of failing silently.
  */
+let lastPythonTried = [];
+
 function resolvePython(runtimeDir, agentDir) {
   const win = process.platform === "win32";
   const candidates = [];
@@ -177,28 +179,41 @@ function resolvePython(runtimeDir, agentDir) {
     ? path.join(runtimeDir, "python", "python.exe")
     : path.join(runtimeDir, "python", "bin", "python3"));
   push(win
+    ? path.join(runtimeDir, "python", "bin", "python3.11")
+    : path.join(runtimeDir, "python", "bin", "python3.11"));
+  push(win
     ? path.join(agentDir, ".venv", "Scripts", "python.exe")
     : path.join(agentDir, ".venv", "bin", "python"));
   if (win) {
+    push(path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python311", "python.exe"));
     push("py", ["-3"]);
     push("python");
     push("python3");
   } else {
     push("python3");
     push("python");
+    push("/usr/bin/python3");
   }
 
+  lastPythonTried = [];
   for (const candidate of candidates) {
+    if (!candidate.command) continue;
     const absolute = path.isAbsolute(candidate.command);
-    if (absolute && !fs.existsSync(candidate.command)) continue;
+    if (absolute && !fs.existsSync(candidate.command)) {
+      lastPythonTried.push(`${candidate.command} (ไม่พบไฟล์)`);
+      continue;
+    }
     try {
       const probe = spawnSync(candidate.command, [...candidate.args, "--version"], {
         timeout: 8000,
         windowsHide: true,
       });
       if (!probe.error && probe.status === 0) return candidate;
-    } catch {
-      // try the next candidate
+      lastPythonTried.push(
+        `${candidate.command} (${probe.error ? probe.error.code || probe.error.message : `exit ${probe.status}`})`,
+      );
+    } catch (err) {
+      lastPythonTried.push(`${candidate.command} (${err?.message || "error"})`);
     }
   }
   return null;
