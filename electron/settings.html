@@ -258,14 +258,26 @@
 
       $("saveBtn").addEventListener("click", async () => {
         const deviceKey = $("deviceKey").value.trim();
-        const cloudUrl = $("cloudUrl").value.trim();
+        const cloudUrl = $("cloudUrl").value.trim().replace(/\/+$/, "");
         if (!deviceKey) {
           $("error").textContent = "กรุณาใส่รหัสเครื่องก่อน";
           return;
         }
+        try {
+          const parsed = new URL(cloudUrl);
+          if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error();
+        } catch {
+          $("error").textContent = "ที่อยู่ระบบไม่ถูกต้อง กรุณาใส่ URL ที่ขึ้นต้นด้วย https://";
+          return;
+        }
         $("error").textContent = "";
         $("saveBtn").textContent = "กำลังเริ่ม…";
-        await window.electronAPI.saveConfig({ deviceKey, cloudUrl });
+        try {
+          await window.electronAPI.saveConfig({ deviceKey, cloudUrl });
+        } catch (error) {
+          $("error").textContent = error?.message || "บันทึกไม่สำเร็จ กรุณาตรวจสอบข้อมูล";
+          $("saveBtn").textContent = "บันทึกและเริ่มสแกน";
+        }
       });
 
       $("quitBtn").addEventListener("click", () => window.electronAPI.quit());
