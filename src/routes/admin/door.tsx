@@ -131,6 +131,8 @@ function DoorPage() {
         </CardContent>
       </Card>
 
+      <DoorServoCard />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
