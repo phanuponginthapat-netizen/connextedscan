@@ -109,7 +109,7 @@ function DownloadPage() {
   const apkVersion = t("download.apk_version") || "1.0.0";
   const bundleWin = t("download.bundle_windows_url");
   const bundleLinux = t("download.bundle_linux_url");
-  const bundleVersion = t("download.bundle_version") || "1.3.0";
+  const bundleVersion = t("download.bundle_version") || "1.4.0";
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
 
