@@ -834,7 +834,18 @@ def scan(req: ScanRequest):
     return run_scan(req.image)
 
 
-def run_scan(image: str, direction: str | None = None):
+@app.post("/test/scan")
+def test_scan(req: ScanRequest):
+    """Recognise a face and drive the door, but never record attendance.
+
+    Used by the backend "test scan + door" screen so staff can verify the
+    micro:bit reacts to a successful match without polluting the history.
+    """
+    return run_scan(req.image, dry_run=True)
+
+
+def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
+
     raw = image.split(",", 1)[-1]
     arr = cv2.imdecode(np.frombuffer(base64.b64decode(raw), np.uint8), cv2.IMREAD_COLOR)
     if arr is None:
