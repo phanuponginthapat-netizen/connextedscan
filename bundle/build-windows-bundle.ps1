@@ -35,9 +35,12 @@ Write-Host "[1/5] embedded Python $PYTHON_VERSION" -ForegroundColor Yellow
 $pyZip = Join-Path $work "python-embed.zip"
 Invoke-WebRequest -Uri $PYTHON_URL -OutFile $pyZip
 Expand-Archive $pyZip -DestinationPath $pythonDir -Force
-# The embedded build ignores site-packages until the ._pth file allows it.
+# The embedded build runs isolated and ignores PYTHONPATH until the ._pth
+# file says otherwise; also register the bundled runtime\site folder.
 Get-ChildItem $pythonDir -Filter "python*._pth" | ForEach-Object {
     Add-Content $_.FullName "import site"
+    Add-Content $_.FullName "..\site"
+    Add-Content $_.FullName "Lib\site-packages"
 }
 Invoke-WebRequest -Uri $GETPIP_URL -OutFile (Join-Path $work "get-pip.py")
 & (Join-Path $pythonDir "python.exe") (Join-Path $work "get-pip.py") --no-warn-script-location
