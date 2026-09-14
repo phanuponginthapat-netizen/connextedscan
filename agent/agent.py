@@ -1023,7 +1023,25 @@ def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
         if sims:
             geometry_score = max(sims)
 
+    # Test mode: prove the match and the door reaction, record nothing.
+    if dry_run:
+        with lock:
+            person = state["students"].get(student_id) or {}
+        name = person.get("full_name") or "ผู้ใช้งาน"
+        return door_react({
+            "result": "ok",
+            "test": True,
+            "student_id": student_id,
+            "name": name,
+            "confidence": round(confidence, 4),
+            "geometry_score": None if geometry_score is None else round(float(geometry_score), 4),
+            "message": f"จำใบหน้าได้: {name} (ไม่บันทึกประวัติ)",
+            "next_delay_seconds": 0,
+            "face_detection": visual,
+        })
+
     payload = {
+
         "student_id": student_id,
         "confidence": round(confidence, 4),
         "embedding": query.tolist(),
