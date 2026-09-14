@@ -9,11 +9,12 @@
 const { app, BrowserWindow, ipcMain, globalShortcut } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { syncAgent } = require("./updater.cjs");
 
 const CONFIG_PATH = path.join(app.getPath("userData"), "facegate-config.json");
 const UPDATE_DIR = path.join(app.getPath("userData"), "agent");
+const AGENT_LOG_PATH = path.join(app.getPath("userData"), "facegate-agent.log");
 const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
   "https://connextedscan.lovable.app";
@@ -100,6 +101,47 @@ function stopAgent({ restart = false } = {}) {
   }
 }
 
+/**
+ * Finds a Python that can actually run on this PC. The packaged build ships
+ * its own runtime, but on machines where it is missing we try the usual
+ * commands instead of failing silently.
+ */
+function resolvePython(runtimeDir, agentDir) {
+  const win = process.platform === "win32";
+  const candidates = [];
+  const push = (command, args = []) => candidates.push({ command, args });
+
+  push(win
+    ? path.join(runtimeDir, "python", "python.exe")
+    : path.join(runtimeDir, "python", "bin", "python3"));
+  push(win
+    ? path.join(agentDir, ".venv", "Scripts", "python.exe")
+    : path.join(agentDir, ".venv", "bin", "python"));
+  if (win) {
+    push("py", ["-3"]);
+    push("python");
+    push("python3");
+  } else {
+    push("python3");
+    push("python");
+  }
+
+  for (const candidate of candidates) {
+    const absolute = path.isAbsolute(candidate.command);
+    if (absolute && !fs.existsSync(candidate.command)) continue;
+    try {
+      const probe = spawnSync(candidate.command, [...candidate.args, "--version"], {
+        timeout: 8000,
+        windowsHide: true,
+      });
+      if (!probe.error && probe.status === 0) return candidate;
+    } catch {
+      // try the next candidate
+    }
+  }
+  return null;
+}
+
 function startAgent() {
   stopAgent({ restart: true });
   const cfg = loadConfig();
@@ -127,19 +169,27 @@ function startAgent() {
   const agentDir = hasUpdate ? UPDATE_DIR : bundledAgentDir;
   const script = path.join(agentDir, "agent.py");
 
-  // The packaged build ships its own Python runtime + libraries next to the
-  // executable, so nothing has to be installed on the kiosk PC.
+  if (!fs.existsSync(script)) {
+    agentStatus = {
+      state: "error",
+      message: "ไม่พบไฟล์ตัวประมวลผลใบหน้าในเครื่อง",
+      lastError: `missing ${script}`,
+      startedAt: null,
+    };
+    return false;
+  }
+
   const runtimeDir = path.join(process.resourcesPath || path.join(__dirname, ".."), "runtime");
-  const bundledPython =
-    process.platform === "win32"
-      ? path.join(runtimeDir, "python", "python.exe")
-      : path.join(runtimeDir, "python", "bin", "python3");
-  const hasBundledPython = fs.existsSync(bundledPython);
-  const python = hasBundledPython
-    ? bundledPython
-    : process.platform === "win32"
-      ? "python"
-      : "python3";
+  const resolved = resolvePython(runtimeDir, agentDir);
+  if (!resolved) {
+    agentStatus = {
+      state: "python_missing",
+      message: "ไม่พบโปรแกรม Python ในเครื่องนี้ กรุณาติดตั้ง Python 3.9 ขึ้นไป แล้วกดเปิดใหม่",
+      lastError: "python interpreter not found",
+      startedAt: null,
+    };
+    return false;
+  }
 
   const sitePath = path.join(runtimeDir, "site");
   const modelDir = path.join(runtimeDir, "models");
@@ -147,6 +197,7 @@ function startAgent() {
     ...process.env,
     FACEGATE_DEVICE_KEY: deviceKey,
     FACEGATE_CLOUD_URL: cloudUrl,
+    PYTHONUNBUFFERED: "1",
   };
   env.PYTHONPATH = [
     fs.existsSync(sitePath) ? sitePath : null,
@@ -159,8 +210,22 @@ function startAgent() {
     env.FACEGATE_MODEL_DIR = modelDir;
   }
 
+  const appendLog = (line) => {
+    try {
+      fs.appendFileSync(AGENT_LOG_PATH, `${new Date().toISOString()} ${line}\n`);
+    } catch {
+      // logging must never break the kiosk
+    }
+  };
+
   try {
-    agentProcess = spawn(python, [script], { env, detached: false, cwd: agentDir });
+    appendLog(`start ${resolved.command} ${[...resolved.args, script].join(" ")}`);
+    agentProcess = spawn(resolved.command, [...resolved.args, script], {
+      env,
+      detached: false,
+      cwd: agentDir,
+      windowsHide: true,
+    });
     agentStatus = {
       state: "starting",
       message: "กำลังเปิดตัวประมวลผลใบหน้า",
@@ -169,6 +234,7 @@ function startAgent() {
     };
   } catch (err) {
     console.error("[agent] failed to start", err);
+    appendLog(`spawn failed: ${err?.message || err}`);
     agentProcess = null;
     agentStatus = {
       state: "error",
@@ -180,16 +246,21 @@ function startAgent() {
   }
   agentProcess.on("error", (err) => {
     console.error("[agent] failed to start", err);
+    appendLog(`process error: ${err?.message || err}`);
     agentStatus = {
       ...agentStatus,
       state: "error",
-      message: "เปิดตัวประมวลผลใบหน้าไม่สำเร็จ",
+      message:
+        err && err.code === "ENOENT"
+          ? "เรียกโปรแกรม Python ไม่ได้ กรุณาติดตั้ง Python 3.9 ขึ้นไป"
+          : "เปิดตัวประมวลผลใบหน้าไม่สำเร็จ",
       lastError: String(err?.message || err),
     };
   });
   agentProcess.stdout.on("data", (data) => {
     const line = data.toString().trim();
     console.log("[agent]", line);
+    appendLog(`out: ${line}`);
     if (line.includes("Uvicorn running") || line.includes("face models ready")) {
       agentStatus = { ...agentStatus, state: "running", message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน" };
     }
@@ -197,12 +268,24 @@ function startAgent() {
   agentProcess.stderr.on("data", (data) => {
     const line = data.toString().trim();
     console.error("[agent]", line);
-    if (/error|exception|traceback|missing|no module/i.test(line)) {
+    appendLog(`err: ${line}`);
+    if (line.includes("Uvicorn running")) {
+      agentStatus = { ...agentStatus, state: "running", message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน" };
+    }
+    if (/no module named/i.test(line)) {
+      agentStatus = {
+        ...agentStatus,
+        state: "error",
+        message: "ยังไม่ได้ติดตั้งไลบรารีที่ตัวประมวลผลต้องใช้ (pip install -r requirements.txt)",
+        lastError: line.slice(-500),
+      };
+    } else if (/error|exception|traceback|missing/i.test(line)) {
       agentStatus = { ...agentStatus, lastError: line.slice(-500) };
     }
   });
   agentProcess.on("close", (code) => {
     console.log(`[agent] process exited with code ${code}`);
+    appendLog(`exit code ${code}`);
     const shouldRestart = !appIsQuitting && !agentProcess?._faceGateRestart;
     agentProcess = null;
     agentStatus = {
