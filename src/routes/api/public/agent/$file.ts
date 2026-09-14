@@ -129,7 +129,7 @@ export const Route = createFileRoute("/api/public/agent/$file")({
 
         if (params.file === "FaceGate-Update.zip") {
           const zip = buildUpdateZip();
-          return new Response(zip, {
+          return new Response(new Blob([zip]), {
             headers: {
               "content-type": "application/zip",
               "content-disposition": 'attachment; filename="FaceGate-Update.zip"',
