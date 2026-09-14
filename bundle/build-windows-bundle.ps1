@@ -1,4 +1,4 @@
-# FaceGate — all-in-one offline bundle builder (Windows x64)
+﻿# FaceGate -- all-in-one offline bundle builder (Windows x64)
 # ---------------------------------------------------------
 # Produces FaceGate-AllInOne-windows-x64.zip containing:
 #   FaceGate.exe + Electron shell
@@ -6,7 +6,7 @@
 #   resources/runtime/site     every Python library the scanner needs
 #   resources/runtime/models   ArcFace + SCRFD face models
 #   resources/app.asar.unpacked/agent  the scanner code
-# The kiosk PC only has to unzip and run — nothing is downloaded at install
+# The kiosk PC only has to unzip and run -- nothing is downloaded at install
 # time or at first launch.
 #
 # Run on Windows with PowerShell 5+ and Node.js 20+:
@@ -77,7 +77,7 @@ Pop-Location
 $appDir = Join-Path $work "packaged\FaceGate-win32-x64"
 Copy-Item $runtime (Join-Path $appDir "resources\runtime") -Recurse -Force
 Copy-Item (Join-Path $root "electron\install.ps1") $appDir -Force
-Copy-Item (Join-Path $root "electron\ติดตั้ง-FaceGate.bat") $appDir -Force
+Get-ChildItem (Join-Path $root "electron") -Filter "*FaceGate.bat" | Copy-Item -Destination $appDir -Force
 
 # ---------- 5. zip ----------
 Write-Host "[5/5] compressing" -ForegroundColor Yellow
