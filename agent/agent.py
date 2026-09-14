@@ -1040,4 +1040,13 @@ if __name__ == "__main__":
     threading.Thread(target=update_loop, daemon=True).start()
     threading.Thread(target=second_camera_loop, daemon=True).start()
 
+    def warm_engine() -> None:
+        try:
+            get_engine()
+            print("[agent] face models ready")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] loading face models failed: {exc}")
+
+    threading.Thread(target=warm_engine, daemon=True).start()
+
     uvicorn.run(app, host="127.0.0.1", port=PORT)
