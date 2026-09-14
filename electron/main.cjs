@@ -306,9 +306,23 @@ function startAgent() {
     }
   };
 
+  // The Windows embedded Python (python*._pth) runs isolated and IGNORES the
+  // PYTHONPATH environment variable, so runtime/site is never found and cv2
+  // fails to import. Bootstrap via -c and insert the paths into sys.path
+  // directly — that always works, on every interpreter.
+  const bootstrap = [
+    "import sys, runpy",
+    `sys.path.insert(0, ${JSON.stringify(agentDir)})`,
+    fs.existsSync(sitePath) ? `sys.path.insert(0, ${JSON.stringify(sitePath)})` : "",
+    `sys.argv = [${JSON.stringify(script)}]`,
+    `runpy.run_path(${JSON.stringify(script)}, run_name="__main__")`,
+  ]
+    .filter(Boolean)
+    .join("; ");
+
   try {
     appendLog(`start ${resolved.command} ${[...resolved.args, script].join(" ")}`);
-    agentProcess = spawn(resolved.command, [...resolved.args, script], {
+    agentProcess = spawn(resolved.command, [...resolved.args, "-c", bootstrap], {
       env,
       detached: false,
       cwd: agentDir,
