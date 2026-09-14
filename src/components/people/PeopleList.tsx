@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { personGroupLabel, personLabels, type PersonType } from "./people";
+import { ImportPeopleDialog } from "./ImportPeopleDialog";
 
 export function PeopleList({ personType }: { personType: PersonType }) {
   const L = personLabels[personType];
@@ -123,6 +124,8 @@ export function PeopleList({ personType }: { personType: PersonType }) {
           <h1 className="text-2xl font-semibold">{L.title}</h1>
           <p className="text-sm text-muted-foreground">{L.subtitle}</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <ImportPeopleDialog personType={personType} label={L.title} />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -155,6 +158,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative max-w-sm">

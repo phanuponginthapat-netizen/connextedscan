@@ -112,6 +112,8 @@ export const CMS_GROUPS: CmsGroup[] = [
       { key: "nav.door", label: "เมนู – ประตูอัจฉริยะ", default: "ประตูอัจฉริยะ" },
       { key: "nav.monthly", label: "เมนู – รายงานรายเดือน", default: "รายงานรายเดือน" },
       { key: "nav.live", label: "เมนู – จอแสดงผลจอใหญ่", default: "จอแสดงผลจอใหญ่" },
+      { key: "nav.health", label: "เมนู – สุขภาพระบบ", default: "สุขภาพระบบ" },
+      { key: "nav.notifications", label: "เมนู – แจ้งเตือนอัตโนมัติ", default: "แจ้งเตือนอัตโนมัติ" },
       { key: "nav.cms", label: "เมนู – จัดการเนื้อหา", default: "จัดการเนื้อหา" },
       { key: "nav.settings", label: "เมนู – ตั้งค่า", default: "ตั้งค่า" },
       { key: "action.back", label: "ปุ่ม – ย้อนกลับ", default: "ย้อนกลับ" },

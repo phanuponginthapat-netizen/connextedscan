@@ -60,6 +60,7 @@ export type Database = {
       }
       devices: {
         Row: {
+          agent_version: string | null
           api_key: string
           created_at: string
           default_direction: string
@@ -68,8 +69,10 @@ export type Database = {
           last_seen_at: string | null
           location: string | null
           name: string
+          platform: string | null
         }
         Insert: {
+          agent_version?: string | null
           api_key: string
           created_at?: string
           default_direction?: string
@@ -78,8 +81,10 @@ export type Database = {
           last_seen_at?: string | null
           location?: string | null
           name: string
+          platform?: string | null
         }
         Update: {
+          agent_version?: string | null
           api_key?: string
           created_at?: string
           default_direction?: string
@@ -88,6 +93,7 @@ export type Database = {
           last_seen_at?: string | null
           location?: string | null
           name?: string
+          platform?: string | null
         }
         Relationships: []
       }
@@ -115,6 +121,72 @@ export type Database = {
           created_by?: string | null
           id?: string
           seconds?: number
+        }
+        Relationships: []
+      }
+      notification_logs: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          event: string
+          id: string
+          message: string
+          status: string
+          subject: string | null
+          target: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error?: string | null
+          event: string
+          id?: string
+          message: string
+          status?: string
+          subject?: string | null
+          target?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          event?: string
+          id?: string
+          message?: string
+          status?: string
+          subject?: string | null
+          target?: string | null
+        }
+        Relationships: []
+      }
+      notification_recipients: {
+        Row: {
+          created_at: string
+          email: string | null
+          events: string
+          id: string
+          is_active: boolean
+          line_user_id: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          events?: string
+          id?: string
+          is_active?: boolean
+          line_user_id?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          events?: string
+          id?: string
+          is_active?: boolean
+          line_user_id?: string | null
+          name?: string
         }
         Relationships: []
       }
@@ -189,8 +261,11 @@ export type Database = {
           checkin_start: string
           checkout_end: string
           checkout_start: string
+          cleanup_enabled: boolean
+          cleanup_last_at: string | null
           default_report_days: number
           detector_min_score: number
+          device_offline_minutes: number
           door_deny_alarm: boolean
           door_enabled: boolean
           door_free_enabled: boolean
@@ -217,6 +292,14 @@ export type Database = {
           match_threshold: number
           min_face_coverage: number
           next_person_delay_seconds: number
+          notify_absent: boolean
+          notify_device_offline: boolean
+          notify_early_leave: boolean
+          notify_email_enabled: boolean
+          notify_failed_streak: boolean
+          notify_last_at: string | null
+          notify_late: boolean
+          notify_line_enabled: boolean
           require_liveness: boolean
           save_snapshots: boolean
           school_name: string
@@ -252,8 +335,11 @@ export type Database = {
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
+          cleanup_enabled?: boolean
+          cleanup_last_at?: string | null
           default_report_days?: number
           detector_min_score?: number
+          device_offline_minutes?: number
           door_deny_alarm?: boolean
           door_enabled?: boolean
           door_free_enabled?: boolean
@@ -280,6 +366,14 @@ export type Database = {
           match_threshold?: number
           min_face_coverage?: number
           next_person_delay_seconds?: number
+          notify_absent?: boolean
+          notify_device_offline?: boolean
+          notify_early_leave?: boolean
+          notify_email_enabled?: boolean
+          notify_failed_streak?: boolean
+          notify_last_at?: string | null
+          notify_late?: boolean
+          notify_line_enabled?: boolean
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
@@ -315,8 +409,11 @@ export type Database = {
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
+          cleanup_enabled?: boolean
+          cleanup_last_at?: string | null
           default_report_days?: number
           detector_min_score?: number
+          device_offline_minutes?: number
           door_deny_alarm?: boolean
           door_enabled?: boolean
           door_free_enabled?: boolean
@@ -343,6 +440,14 @@ export type Database = {
           match_threshold?: number
           min_face_coverage?: number
           next_person_delay_seconds?: number
+          notify_absent?: boolean
+          notify_device_offline?: boolean
+          notify_early_leave?: boolean
+          notify_email_enabled?: boolean
+          notify_failed_streak?: boolean
+          notify_last_at?: string | null
+          notify_late?: boolean
+          notify_line_enabled?: boolean
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string

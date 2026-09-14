@@ -19,9 +19,11 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminDoorRouteImport } from './routes/admin/door'
+import { Route as AdminHealthRouteImport } from './routes/admin/health'
 import { Route as AdminInstallRouteImport } from './routes/admin/install'
 import { Route as AdminLiveRouteImport } from './routes/admin/live'
 import { Route as AdminMonthlyRouteImport } from './routes/admin/monthly'
+import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
@@ -30,6 +32,8 @@ import { Route as AdminStudentsIdRouteImport } from './routes/admin/students/$id
 import { Route as ApiPublicAdminAttendanceDeleteRouteImport } from './routes/api/public/admin/attendance-delete'
 import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agent/$file'
 import { Route as ApiPublicCronBackupRouteImport } from './routes/api/public/cron/backup'
+import { Route as ApiPublicCronCleanupRouteImport } from './routes/api/public/cron/cleanup'
+import { Route as ApiPublicCronNotifyRouteImport } from './routes/api/public/cron/notify'
 import { Route as ApiPublicKioskAlertRouteImport } from './routes/api/public/kiosk/alert'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskDoorCommandRouteImport } from './routes/api/public/kiosk/door-command'
@@ -90,6 +94,11 @@ const AdminDoorRoute = AdminDoorRouteImport.update({
   path: '/door',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminHealthRoute = AdminHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminInstallRoute = AdminInstallRouteImport.update({
   id: '/install',
   path: '/install',
@@ -103,6 +112,11 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
 const AdminMonthlyRoute = AdminMonthlyRouteImport.update({
   id: '/monthly',
   path: '/monthly',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -144,6 +158,16 @@ const ApiPublicAgentFileRoute = ApiPublicAgentFileRouteImport.update({
 const ApiPublicCronBackupRoute = ApiPublicCronBackupRouteImport.update({
   id: '/api/public/cron/backup',
   path: '/api/public/cron/backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCronCleanupRoute = ApiPublicCronCleanupRouteImport.update({
+  id: '/api/public/cron/cleanup',
+  path: '/api/public/cron/cleanup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCronNotifyRoute = ApiPublicCronNotifyRouteImport.update({
+  id: '/api/public/cron/notify',
+  path: '/api/public/cron/notify',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicKioskAlertRoute = ApiPublicKioskAlertRouteImport.update({
@@ -205,9 +229,11 @@ export interface FileRoutesByFullPath {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
+  '/admin/health': typeof AdminHealthRoute
   '/admin/install': typeof AdminInstallRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -217,6 +243,8 @@ export interface FileRoutesByFullPath {
   '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
+  '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
+  '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -236,9 +264,11 @@ export interface FileRoutesByTo {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
+  '/admin/health': typeof AdminHealthRoute
   '/admin/install': typeof AdminInstallRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -248,6 +278,8 @@ export interface FileRoutesByTo {
   '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
+  '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
+  '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -269,9 +301,11 @@ export interface FileRoutesById {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
+  '/admin/health': typeof AdminHealthRoute
   '/admin/install': typeof AdminInstallRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -281,6 +315,8 @@ export interface FileRoutesById {
   '/api/public/admin/attendance-delete': typeof ApiPublicAdminAttendanceDeleteRoute
   '/api/public/agent/$file': typeof ApiPublicAgentFileRoute
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
+  '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
+  '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -303,9 +339,11 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
+    | '/admin/health'
     | '/admin/install'
     | '/admin/live'
     | '/admin/monthly'
+    | '/admin/notifications'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -315,6 +353,8 @@ export interface FileRouteTypes {
     | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
     | '/api/public/cron/backup'
+    | '/api/public/cron/cleanup'
+    | '/api/public/cron/notify'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -334,9 +374,11 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
+    | '/admin/health'
     | '/admin/install'
     | '/admin/live'
     | '/admin/monthly'
+    | '/admin/notifications'
     | '/admin/settings'
     | '/admin'
     | '/admin/staff/$id'
@@ -346,6 +388,8 @@ export interface FileRouteTypes {
     | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
     | '/api/public/cron/backup'
+    | '/api/public/cron/cleanup'
+    | '/api/public/cron/notify'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -366,9 +410,11 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/cms'
     | '/admin/door'
+    | '/admin/health'
     | '/admin/install'
     | '/admin/live'
     | '/admin/monthly'
+    | '/admin/notifications'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -378,6 +424,8 @@ export interface FileRouteTypes {
     | '/api/public/admin/attendance-delete'
     | '/api/public/agent/$file'
     | '/api/public/cron/backup'
+    | '/api/public/cron/cleanup'
+    | '/api/public/cron/notify'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -399,6 +447,8 @@ export interface RootRouteChildren {
   ApiPublicAdminAttendanceDeleteRoute: typeof ApiPublicAdminAttendanceDeleteRoute
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
   ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
+  ApiPublicCronCleanupRoute: typeof ApiPublicCronCleanupRoute
+  ApiPublicCronNotifyRoute: typeof ApiPublicCronNotifyRoute
   ApiPublicKioskAlertRoute: typeof ApiPublicKioskAlertRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskDoorCommandRoute: typeof ApiPublicKioskDoorCommandRoute
@@ -482,6 +532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDoorRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/health': {
+      id: '/admin/health'
+      path: '/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AdminHealthRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/install': {
       id: '/admin/install'
       path: '/install'
@@ -501,6 +558,13 @@ declare module '@tanstack/react-router' {
       path: '/monthly'
       fullPath: '/admin/monthly'
       preLoaderRoute: typeof AdminMonthlyRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/settings': {
@@ -557,6 +621,20 @@ declare module '@tanstack/react-router' {
       path: '/api/public/cron/backup'
       fullPath: '/api/public/cron/backup'
       preLoaderRoute: typeof ApiPublicCronBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/cleanup': {
+      id: '/api/public/cron/cleanup'
+      path: '/api/public/cron/cleanup'
+      fullPath: '/api/public/cron/cleanup'
+      preLoaderRoute: typeof ApiPublicCronCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/notify': {
+      id: '/api/public/cron/notify'
+      path: '/api/public/cron/notify'
+      fullPath: '/api/public/cron/notify'
+      preLoaderRoute: typeof ApiPublicCronNotifyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/kiosk/alert': {
@@ -629,9 +707,11 @@ interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminDoorRoute: typeof AdminDoorRoute
+  AdminHealthRoute: typeof AdminHealthRoute
   AdminInstallRoute: typeof AdminInstallRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminMonthlyRoute: typeof AdminMonthlyRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
@@ -644,9 +724,11 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminDoorRoute: AdminDoorRoute,
+  AdminHealthRoute: AdminHealthRoute,
   AdminInstallRoute: AdminInstallRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminMonthlyRoute: AdminMonthlyRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
@@ -669,6 +751,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAdminAttendanceDeleteRoute: ApiPublicAdminAttendanceDeleteRoute,
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
   ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
+  ApiPublicCronCleanupRoute: ApiPublicCronCleanupRoute,
+  ApiPublicCronNotifyRoute: ApiPublicCronNotifyRoute,
   ApiPublicKioskAlertRoute: ApiPublicKioskAlertRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskDoorCommandRoute: ApiPublicKioskDoorCommandRoute,

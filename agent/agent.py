@@ -17,6 +17,7 @@ import base64
 import io
 import json
 import os
+import platform
 import threading
 import time
 from typing import Any
@@ -34,6 +35,7 @@ CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://project--8a2237fd-d733
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
+AGENT_VERSION = "1.3.0"
 
 
 def default_cache_dir() -> str:
@@ -362,7 +364,11 @@ def sync_once() -> None:
     res = requests.post(
         f"{CLOUD_URL}/api/public/kiosk/sync",
         headers=HEADERS,
-        json={"known": known},
+        json={
+            "known": known,
+            "agent_version": AGENT_VERSION,
+            "platform": f"{platform.system()} {platform.release()}".strip(),
+        },
         timeout=30,
     )
     res.raise_for_status()
