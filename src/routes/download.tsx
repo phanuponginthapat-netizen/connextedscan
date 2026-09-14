@@ -97,7 +97,7 @@ const specs = [
   {
     icon: ShieldCheck,
     label: "อินเทอร์เน็ต",
-    min: "ต่อเน็ตได้ตลอด (ครั้งแรกโหลดราว 300 MB)",
+    min: "ต่อเน็ตได้ตลอด (ไฟล์ครบชุดไม่ต้องโหลดอะไรเพิ่มตอนติดตั้ง)",
     good: "สาย LAN",
   },
 ];
@@ -107,6 +107,9 @@ function DownloadPage() {
   const logo = t("brand.logo_url");
   const apkUrl = t("download.apk_url") || "/downloads/FaceGate-Scanner.apk";
   const apkVersion = t("download.apk_version") || "1.0.0";
+  const bundleWin = t("download.bundle_windows_url");
+  const bundleLinux = t("download.bundle_linux_url");
+  const bundleVersion = t("download.bundle_version") || "1.3.0";
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
 
@@ -159,49 +162,105 @@ function DownloadPage() {
             </TabsList>
 
             <TabsContent value="windows" className="space-y-5 pt-6">
-              <Button
-                asChild
-                size="lg"
-                className="rounded-full bg-[#1d6fe0] px-7 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5"
-              >
-                <a href="/api/public/agent/FaceGate-Setup-windows-x64.bat" download>
-                  <Download className="size-5" /> ดาวน์โหลดไฟล์ติดตั้ง Windows
-                </a>
-              </Button>
-              <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
-                <li>ดาวน์โหลดไฟล์ แล้วคลิกขวา → Run as administrator (หรือดับเบิลคลิก)</li>
-                <li>ใส่รหัสเครื่องที่ได้จากหน้าหลังบ้าน แล้วรอจนติดตั้งเสร็จ</li>
-                <li>ระบบสร้างไอคอน FaceGate บนเดสก์ท็อป และเปิดเองทุกครั้งที่เปิดเครื่อง</li>
-              </ol>
-              <div className="space-y-2">
+              <div className="rounded-2xl border-2 border-[#1d6fe0]/30 bg-sky-50/60 p-5">
+                <p className="text-xs font-semibold tracking-widest text-[#1d6fe0] uppercase">
+                  แนะนำ · ไฟล์ครบชุด ใช้ได้ทันที
+                </p>
+                <h3 className="mt-2 font-display text-lg font-bold">
+                  ไฟล์ติดตั้งแบบครบชุด (ออฟไลน์ 100%)
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  รวมโปรแกรมสแกน ตัวประมวลผลใบหน้า และข้อมูลใบหน้าที่ระบบต้องใช้ไว้ในไฟล์เดียว
+                  ติดตั้งเสร็จเปิดใช้งานได้ทันที ไม่ต้องติดตั้งอะไรเพิ่ม และไม่ต้องรอโหลดจากอินเทอร์เน็ตอีก
+                  (ไฟล์ใหญ่ประมาณ 400–600 MB)
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {bundleWin ? (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="rounded-full bg-[#1d6fe0] px-7 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5"
+                    >
+                      <a href={bundleWin} download>
+                        <Download className="size-5" /> ดาวน์โหลดไฟล์ครบชุด Windows ({bundleVersion})
+                      </a>
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      ยังไม่ได้ใส่ลิงก์ไฟล์ครบชุด — ใส่ได้ที่หลังบ้าน → ตั้งค่า → เนื้อหา →
+                      “ลิงก์ไฟล์ติดตั้งแบบครบชุด (Windows)”
+                    </p>
+                  )}
+                </div>
+                <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+                  <li>แตกไฟล์ ZIP ให้ครบทุกไฟล์</li>
+                  <li>ดับเบิลคลิก “ติดตั้ง-FaceGate.bat”</li>
+                  <li>ใส่รหัสเครื่องที่ได้จากหน้าหลังบ้าน แล้วเริ่มสแกนได้เลย</li>
+                </ol>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-sky-100 p-5">
+                <h3 className="text-sm font-semibold">ไฟล์ติดตั้งแบบเล็ก (โหลดส่วนที่เหลือระหว่างติดตั้ง)</h3>
+                <Button asChild variant="outline" className="rounded-full px-6">
+                  <a href="/api/public/agent/FaceGate-Setup-windows-x64.bat" download>
+                    <Download className="size-4" /> ไฟล์ติดตั้งแบบเล็ก Windows
+                  </a>
+                </Button>
                 <p className="text-sm font-semibold">ติดตั้งผ่าน Command Prompt (คำสั่งเดียว)</p>
                 <CopyBox value={winCmd} />
               </div>
             </TabsContent>
 
             <TabsContent value="linux" className="space-y-5 pt-6">
-              <Button
-                asChild
-                size="lg"
-                className="rounded-full bg-[#1d6fe0] px-7 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5"
-              >
-                <a href="/api/public/agent/FaceGate-Setup-linux-x64.sh" download>
-                  <Download className="size-5" /> ดาวน์โหลดไฟล์ติดตั้ง Linux
-                </a>
-              </Button>
-              <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-600">
-                <li>เปิด Terminal ในโฟลเดอร์ที่ดาวน์โหลดไฟล์</li>
-                <li>
-                  รัน <code className="rounded bg-sky-50 px-1">chmod +x FaceGate-Setup-linux-x64.sh</code>{" "}
-                  แล้ว <code className="rounded bg-sky-50 px-1">./FaceGate-Setup-linux-x64.sh</code>
-                </li>
-                <li>ใส่รหัสเครื่อง แล้วรอจนติดตั้งเสร็จ</li>
-                <li>
-                  เปิดโปรแกรมด้วยคำสั่ง <code className="rounded bg-sky-50 px-1">facegate</code>{" "}
-                  หรือไอคอน FaceGate ในเมนูโปรแกรม (เปิดเองทุกครั้งที่เปิดเครื่อง)
-                </li>
-              </ol>
-              <div className="space-y-2">
+              <div className="rounded-2xl border-2 border-[#1d6fe0]/30 bg-sky-50/60 p-5">
+                <p className="text-xs font-semibold tracking-widest text-[#1d6fe0] uppercase">
+                  แนะนำ · ไฟล์ครบชุด ใช้ได้ทันที
+                </p>
+                <h3 className="mt-2 font-display text-lg font-bold">
+                  ไฟล์ติดตั้งแบบครบชุด (ออฟไลน์ 100%)
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  รวมทุกอย่างไว้ในไฟล์เดียว แตกไฟล์แล้วติดตั้งใช้งานได้ทันที ไม่ต้องโหลดอะไรเพิ่ม
+                </p>
+                <div className="mt-4">
+                  {bundleLinux ? (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="rounded-full bg-[#1d6fe0] px-7 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5"
+                    >
+                      <a href={bundleLinux} download>
+                        <Download className="size-5" /> ดาวน์โหลดไฟล์ครบชุด Linux ({bundleVersion})
+                      </a>
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      ยังไม่ได้ใส่ลิงก์ไฟล์ครบชุด — ใส่ได้ที่หลังบ้าน → ตั้งค่า → เนื้อหา →
+                      “ลิงก์ไฟล์ติดตั้งแบบครบชุด (Linux)”
+                    </p>
+                  )}
+                </div>
+                <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+                  <li>
+                    แตกไฟล์:{" "}
+                    <code className="rounded bg-white px-1">tar xzf FaceGate-AllInOne-linux-x64.tar.gz</code>
+                  </li>
+                  <li>
+                    ติดตั้ง: <code className="rounded bg-white px-1">bash FaceGate-linux-x64/install.sh</code>
+                  </li>
+                  <li>
+                    เปิดโปรแกรม: <code className="rounded bg-white px-1">facegate</code> แล้วใส่รหัสเครื่อง
+                  </li>
+                </ol>
+              </div>
+
+              <div className="space-y-3 rounded-2xl border border-sky-100 p-5">
+                <h3 className="text-sm font-semibold">ไฟล์ติดตั้งแบบเล็ก (โหลดส่วนที่เหลือระหว่างติดตั้ง)</h3>
+                <Button asChild variant="outline" className="rounded-full px-6">
+                  <a href="/api/public/agent/FaceGate-Setup-linux-x64.sh" download>
+                    <Download className="size-4" /> ไฟล์ติดตั้งแบบเล็ก Linux
+                  </a>
+                </Button>
                 <p className="text-sm font-semibold">ติดตั้งผ่าน Terminal (คำสั่งเดียว)</p>
                 <CopyBox value={linuxCmd} />
               </div>
