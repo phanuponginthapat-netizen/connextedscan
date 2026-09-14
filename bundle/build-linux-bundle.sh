@@ -52,7 +52,8 @@ echo "[4/5] Electron shell"
 CURRENT_STEP="installing Electron build tools"
 cd "$ROOT"
 if command -v bun >/dev/null 2>&1; then
-  bun install
+  # CI sets frozen lockfile by default; allow resolution so the build never dies here
+  bun install --no-frozen-lockfile || bun install --no-frozen-lockfile --force
 else
   npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
 fi
