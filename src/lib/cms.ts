@@ -160,9 +160,28 @@ CMS_GROUPS.push(
   },
   {
     id: "download",
-    title: "ไฟล์ดาวน์โหลดสำหรับแท็บเล็ต",
-    description: "ลิงก์ไฟล์แอปแท็บเล็ต (APK) ที่แสดงบนหน้าดาวน์โหลด",
+    title: "ไฟล์ดาวน์โหลดโปรแกรมสแกน",
+    description: "ลิงก์ไฟล์ติดตั้งแบบครบชุด (ออฟไลน์) และแอปแท็บเล็ต ที่แสดงบนหน้าดาวน์โหลด",
     fields: [
+      {
+        key: "download.bundle_windows_url",
+        label: "ลิงก์ไฟล์ติดตั้งแบบครบชุด (Windows)",
+        type: "url",
+        default: "",
+        help: "ไฟล์ FaceGate-AllInOne-windows-x64.zip รวม Python ไลบรารี และโมเดลใบหน้าไว้ครบ ติดตั้งแล้วใช้ได้ทันที",
+      },
+      {
+        key: "download.bundle_linux_url",
+        label: "ลิงก์ไฟล์ติดตั้งแบบครบชุด (Linux)",
+        type: "url",
+        default: "",
+        help: "ไฟล์ FaceGate-AllInOne-linux-x64.tar.gz รวมทุกอย่างไว้ในไฟล์เดียว",
+      },
+      {
+        key: "download.bundle_version",
+        label: "เวอร์ชันไฟล์ติดตั้งแบบครบชุด",
+        default: "1.3.0",
+      },
       {
         key: "download.apk_url",
         label: "ลิงก์ไฟล์ APK สำหรับแท็บเล็ต",
