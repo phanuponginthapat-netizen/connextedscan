@@ -6,7 +6,7 @@
  * the cloud kiosk page in full-screen mode.
  */
 
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, globalShortcut } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { spawn } = require("child_process");
@@ -59,7 +59,21 @@ function loadConfig() {
 }
 
 function saveConfig(cfg) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
+  const rawUrl = String(cfg.cloudUrl || "").trim();
+  let cloudUrl;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("unsupported protocol");
+    }
+    cloudUrl = parsed.origin + parsed.pathname.replace(/\/+$/, "");
+  } catch {
+    throw new Error("ที่อยู่ระบบไม่ถูกต้อง กรุณาใส่ URL ที่ขึ้นต้นด้วย https://");
+  }
+  fs.writeFileSync(
+    CONFIG_PATH,
+    JSON.stringify({ ...cfg, cloudUrl }, null, 2),
+  );
 }
 
 function stopAgent() {
@@ -295,6 +309,11 @@ ipcMain.handle("quit", () => {
 });
 
 app.whenReady().then(async () => {
+  // The kiosk is full-screen, so keep a reliable escape hatch for correcting
+  // a mistyped cloud address. Both shortcuts open the local settings window.
+  globalShortcut.register("CommandOrControl+Shift+S", openSettings);
+  globalShortcut.register("F10", openSettings);
+
   const cfg = loadConfig();
   if (!cfg.deviceKey || !cfg.deviceKey.trim()) {
     openSettings();
@@ -311,4 +330,8 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", () => {
   stopAgent();
   app.quit();
+});
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
