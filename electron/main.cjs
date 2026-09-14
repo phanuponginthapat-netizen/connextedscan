@@ -6,9 +6,10 @@
  * the cloud kiosk page in full-screen mode.
  */
 
-const { app, BrowserWindow, ipcMain, globalShortcut } = require("electron");
+const { app, BrowserWindow, ipcMain, globalShortcut, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const http = require("http");
 const { spawn, spawnSync } = require("child_process");
 const { syncAgent } = require("./updater.cjs");
 
