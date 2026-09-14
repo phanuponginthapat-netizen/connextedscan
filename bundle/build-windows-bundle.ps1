@@ -69,15 +69,19 @@ if (Get-Command bun -ErrorAction SilentlyContinue) {
 } else {
     npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
 }
-npx --yes @electron/packager . "FaceGate" `
+& (Join-Path $root "node_modules\.bin\electron-packager.cmd") . "FaceGate" `
     --platform=win32 --arch=x64 `
     --out="$work\packaged" --overwrite `
     --asar.unpackDir=agent `
-    --ignore="^/src" --ignore="^/public" --ignore="^/bundle" `
-    --ignore="^/mobile" --ignore="^/supabase" --ignore="^/.github"
+    --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" `
+    --ignore="^/bundle" --ignore="^/mobile" --ignore="^/supabase" `
+    --ignore="^/.github" --ignore="^/.git" --ignore="^/electron-release" `
+    --ignore="^/dist"
+if ($LASTEXITCODE -ne 0) { throw "Electron packaging failed with exit code $LASTEXITCODE" }
 Pop-Location
 
 $appDir = Join-Path $work "packaged\FaceGate-win32-x64"
+if (-not (Test-Path (Join-Path $appDir "FaceGate.exe"))) { throw "Electron executable was not created" }
 Copy-Item $runtime (Join-Path $appDir "resources\runtime") -Recurse -Force
 Copy-Item (Join-Path $root "electron\install.ps1") $appDir -Force
 Get-ChildItem (Join-Path $root "electron") -Filter "*FaceGate.bat" | Copy-Item -Destination $appDir -Force
