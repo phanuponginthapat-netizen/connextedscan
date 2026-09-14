@@ -403,6 +403,11 @@ function Kiosk() {
     else setShowConfig(true);
   }, []);
 
+  const openAgentLog = useCallback(async () => {
+    const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
+    await desktop?.openAgentLog?.();
+  }, []);
+
 
   useEffect(() => {
     let stream: MediaStream | null = null;
