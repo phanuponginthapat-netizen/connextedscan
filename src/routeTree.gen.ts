@@ -23,6 +23,7 @@ import { Route as AdminHealthRouteImport } from './routes/admin/health'
 import { Route as AdminInstallRouteImport } from './routes/admin/install'
 import { Route as AdminLiveRouteImport } from './routes/admin/live'
 import { Route as AdminMonthlyRouteImport } from './routes/admin/monthly'
+import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
@@ -111,6 +112,11 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
 const AdminMonthlyRoute = AdminMonthlyRouteImport.update({
   id: '/monthly',
   path: '/monthly',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/admin/install': typeof AdminInstallRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/admin/install': typeof AdminInstallRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/admin/install': typeof AdminInstallRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/admin/install'
     | '/admin/live'
     | '/admin/monthly'
+    | '/admin/notifications'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/admin/install'
     | '/admin/live'
     | '/admin/monthly'
+    | '/admin/notifications'
     | '/admin/settings'
     | '/admin'
     | '/admin/staff/$id'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/admin/install'
     | '/admin/live'
     | '/admin/monthly'
+    | '/admin/notifications'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -546,6 +558,13 @@ declare module '@tanstack/react-router' {
       path: '/monthly'
       fullPath: '/admin/monthly'
       preLoaderRoute: typeof AdminMonthlyRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/settings': {
@@ -692,6 +711,7 @@ interface AdminRouteRouteChildren {
   AdminInstallRoute: typeof AdminInstallRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminMonthlyRoute: typeof AdminMonthlyRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
@@ -708,6 +728,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminInstallRoute: AdminInstallRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminMonthlyRoute: AdminMonthlyRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
