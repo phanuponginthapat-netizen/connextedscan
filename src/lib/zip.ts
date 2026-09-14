@@ -27,7 +27,7 @@ function crc32(bytes: Uint8Array) {
 export type ZipEntry = { name: string; content: string };
 
 /** Builds a ZIP archive containing the given text files. */
-export function createZip(entries: ZipEntry[]): Uint8Array {
+export function createZip(entries: ZipEntry[]): Uint8Array<ArrayBuffer> {
   const encoder = new TextEncoder();
   const chunks: Uint8Array[] = [];
   const central: Uint8Array[] = [];
@@ -96,7 +96,7 @@ export function createZip(entries: ZipEntry[]): Uint8Array {
 
   const total =
     chunks.reduce((sum, c) => sum + c.length, 0) + centralSize + end.length;
-  const out = new Uint8Array(total);
+  const out = new Uint8Array(new ArrayBuffer(total));
   let cursor = 0;
   for (const part of [...chunks, ...central, end]) {
     out.set(part, cursor);
