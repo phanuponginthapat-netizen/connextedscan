@@ -71,7 +71,7 @@ if (Get-Command bun -ErrorAction SilentlyContinue) {
 }
 npx --yes @electron/packager . "FaceGate" `
     --platform=win32 --arch=x64 `
-    --out=bundle\.work-win\packaged --overwrite `
+    --out="$work\packaged" --overwrite `
     --asar.unpackDir=agent `
     --ignore="^/src" --ignore="^/public" --ignore="^/bundle" `
     --ignore="^/mobile" --ignore="^/supabase" --ignore="^/.github"
