@@ -35,7 +35,7 @@ CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
-AGENT_VERSION = "1.3.0"
+AGENT_VERSION = "1.4.0"
 
 
 def default_cache_dir() -> str:
@@ -416,11 +416,16 @@ def sync_once() -> None:
         state["students"] = {s["id"]: s for s in data.get("students", [])}
         state["settings"] = data.get("settings") or {}
         state["last_sync"] = time.time()
+        door_cfg = door_config_from_settings(state["settings"])
         rebuild_matrix_locked()
         valid_ids = set(faces.keys())
 
     save_cache()
     prune_images(valid_ids)
+    try:
+        door.configure(door_cfg)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[door] config push failed: {exc}")
     if changed or removed:
         print(f"[agent] sync: +{len(changed)} / -{len(removed)} faces (total {len(valid_ids)})")
 
@@ -675,6 +680,21 @@ def door_react(body: dict) -> dict:
     return body
 
 
+def door_config_from_settings(settings: dict) -> dict:
+    """Turn the cloud door settings into the micro:bit servo config."""
+    return {
+        "down": settings.get("door_angle_down", 10),
+        "up": settings.get("door_angle_up", 100),
+        "step": settings.get("door_move_step", 3),
+        "delay": settings.get("door_move_delay_ms", 12),
+        "hold": 1 if settings.get("door_hold_power", True) else 0,
+        "buzzer": 1 if settings.get("door_buzzer_enabled", False) else 0,
+        "relay": 1 if settings.get("door_use_relay", False) else 0,
+        "manual": settings.get("door_open_seconds", 5),
+        "invert": 1 if settings.get("door_invert_servo", False) else 0,
+    }
+
+
 class DoorRequest(BaseModel):
     seconds: float | None = None
 
@@ -687,6 +707,21 @@ def door_status():
 @app.post("/door/test")
 def door_test(req: DoorRequest):
     ok = door.open_door(req.seconds)
+    return {"ok": ok, **door.status()}
+
+
+@app.post("/door/close")
+def door_close():
+    ok = door.close_door()
+    return {"ok": ok, **door.status()}
+
+
+@app.post("/door/config")
+def door_config():
+    """Re-send the servo settings from the cloud to the micro:bit."""
+    with lock:
+        settings = dict(state["settings"])
+    ok = door.configure(door_config_from_settings(settings))
     return {"ok": ok, **door.status()}
 
 

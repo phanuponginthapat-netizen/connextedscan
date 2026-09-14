@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { DoorServoCard } from "@/components/admin/DoorServoCard";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/door")({
@@ -130,6 +131,8 @@ function DoorPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <DoorServoCard />
 
       <Card>
         <CardHeader>

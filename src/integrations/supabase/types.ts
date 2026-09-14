@@ -266,12 +266,20 @@ export type Database = {
           default_report_days: number
           detector_min_score: number
           device_offline_minutes: number
+          door_angle_down: number
+          door_angle_up: number
+          door_buzzer_enabled: boolean
           door_deny_alarm: boolean
           door_enabled: boolean
           door_free_enabled: boolean
           door_free_end: string
           door_free_start: string
+          door_hold_power: boolean
+          door_invert_servo: boolean
+          door_move_delay_ms: number
+          door_move_step: number
           door_open_seconds: number
+          door_use_relay: boolean
           duplicate_cooldown_minutes: number
           early_leave_before: string
           failed_alert_threshold: number
@@ -340,12 +348,20 @@ export type Database = {
           default_report_days?: number
           detector_min_score?: number
           device_offline_minutes?: number
+          door_angle_down?: number
+          door_angle_up?: number
+          door_buzzer_enabled?: boolean
           door_deny_alarm?: boolean
           door_enabled?: boolean
           door_free_enabled?: boolean
           door_free_end?: string
           door_free_start?: string
+          door_hold_power?: boolean
+          door_invert_servo?: boolean
+          door_move_delay_ms?: number
+          door_move_step?: number
           door_open_seconds?: number
+          door_use_relay?: boolean
           duplicate_cooldown_minutes?: number
           early_leave_before?: string
           failed_alert_threshold?: number
@@ -414,12 +430,20 @@ export type Database = {
           default_report_days?: number
           detector_min_score?: number
           device_offline_minutes?: number
+          door_angle_down?: number
+          door_angle_up?: number
+          door_buzzer_enabled?: boolean
           door_deny_alarm?: boolean
           door_enabled?: boolean
           door_free_enabled?: boolean
           door_free_end?: string
           door_free_start?: string
+          door_hold_power?: boolean
+          door_invert_servo?: boolean
+          door_move_delay_ms?: number
+          door_move_step?: number
           door_open_seconds?: number
+          door_use_relay?: boolean
           duplicate_cooldown_minutes?: number
           early_leave_before?: string
           failed_alert_threshold?: number

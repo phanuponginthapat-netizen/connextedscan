@@ -80,6 +80,7 @@ def _connect() -> bool:
         time.sleep(0.4)  # let the micro:bit reset after the port opens
         _serial.reset_input_buffer()
         _state.update({"port": port, "connected": True, "last_error": None})
+        _push_config()
         print(f"[door] connected to micro:bit on {port}")
         return True
     except Exception as exc:  # noqa: BLE001
@@ -124,9 +125,52 @@ def open_door(seconds: float | None = None) -> bool:
     return True
 
 
+def close_door() -> bool:
+    """Lower the barrier right away."""
+    return _send("CLOSE") is not None
+
+
 def deny() -> bool:
     """Tell the micro:bit the person was refused (red X + short buzz)."""
     return _send("DENY") is not None
+
+
+_SERVO_KEYS = ("down", "up", "step", "delay", "hold", "buzzer", "relay", "manual", "invert")
+
+
+def configure(cfg: dict) -> bool:
+    """Push servo settings (angles, speed, hold power) to the micro:bit.
+
+    Settings come from the cloud, so the barrier can be tuned from the admin
+    site without re-flashing the micro:bit.
+    """
+    clean: dict[str, int] = {}
+    for key in _SERVO_KEYS:
+        if cfg.get(key) is None:
+            continue
+        try:
+            clean[key] = int(float(cfg[key]))
+        except Exception:  # noqa: BLE001
+            continue
+    if not clean:
+        return False
+    with _lock:
+        _state["config"] = clean
+    line = "CFG " + " ".join(f"{k}={v}" for k, v in clean.items())
+    return _send(line) is not None
+
+
+def _push_config() -> None:
+    cfg = _state.get("config") or {}
+    if not cfg or _serial is None:
+        return
+    line = "CFG " + " ".join(f"{k}={v}" for k, v in cfg.items())  # type: ignore[union-attr]
+    try:
+        _serial.write((line + "\n").encode("ascii"))
+        _serial.flush()
+        _serial.readline()
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def ping() -> bool:
@@ -149,6 +193,7 @@ def status() -> dict:
         "port": _state.get("port"),
         "opens": _state.get("opens"),
         "last_open": _state.get("last_open"),
+        "config": _state.get("config"),
         "error": _state.get("last_error"),
     }
 
