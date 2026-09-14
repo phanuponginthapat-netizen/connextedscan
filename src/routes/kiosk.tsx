@@ -294,9 +294,14 @@ function Kiosk() {
   // Is the face-recognition program on this PC reachable?
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const check = async () => {
+      let online = false;
       try {
-        const res = await fetch(`${agentUrl.replace(/\/$/, "")}/health`);
+        const res = await fetch(`${agentUrl.replace(/\/$/, "")}/health`, {
+          signal: AbortSignal.timeout(3000),
+          cache: "no-store",
+        });
         const data = (await res.json()) as {
           ok?: boolean;
           known_faces?: number;
@@ -306,9 +311,10 @@ function Kiosk() {
           stale?: boolean;
         };
         if (cancelled) return;
-        setAgentOnline(!!data.ok);
+        online = !!data.ok;
+        setAgentOnline(online);
         setKnownFaces(data.known_faces ?? null);
-        setAgentStats(data.ok ? data : null);
+        setAgentStats(online ? data : null);
       } catch {
         if (!cancelled) {
           setAgentOnline(false);
@@ -316,15 +322,16 @@ function Kiosk() {
           setAgentStats(null);
         }
       }
-
+      // Look again quickly while the program is still starting up, then relax.
+      if (!cancelled) timer = setTimeout(check, online ? 10000 : 1000);
     };
     check();
-    const t = setInterval(check, 10000);
     return () => {
       cancelled = true;
-      clearInterval(t);
+      if (timer) clearTimeout(timer);
     };
   }, [agentUrl]);
+
 
   useEffect(() => {
     let stream: MediaStream | null = null;

@@ -65,7 +65,28 @@ app.add_middleware(
 )
 
 # ArcFace. det_size kept small so an Intel Atom can keep up.
-face_app = FaceEngine(det_size=(320, 320))
+# The models are loaded in the background so the kiosk page can connect to the
+# program straight away instead of waiting for onnxruntime to warm up.
+_engine: FaceEngine | None = None
+_engine_lock = threading.Lock()
+
+
+def get_engine() -> FaceEngine:
+    global _engine
+    with _engine_lock:
+        if _engine is None:
+            _engine = FaceEngine(det_size=(320, 320))
+        return _engine
+
+
+class _LazyEngine:
+    """Loads the real engine on first use."""
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(get_engine(), name)
+
+
+face_app = _LazyEngine()
 
 state: dict[str, Any] = {
     "faces": {},  # face_id -> {student_id, embedding, geometry, version}
@@ -689,6 +710,7 @@ def health():
         "cached_images": cached_images,
         "pending_uploads": outbox_count(),
         "cache_dir": CACHE_DIR,
+        "engine_ready": _engine is not None,
         "door": door.status(),
     }
 
@@ -1017,5 +1039,14 @@ if __name__ == "__main__":
     threading.Thread(target=command_loop, daemon=True).start()
     threading.Thread(target=update_loop, daemon=True).start()
     threading.Thread(target=second_camera_loop, daemon=True).start()
+
+    def warm_engine() -> None:
+        try:
+            get_engine()
+            print("[agent] face models ready")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] loading face models failed: {exc}")
+
+    threading.Thread(target=warm_engine, daemon=True).start()
 
     uvicorn.run(app, host="127.0.0.1", port=PORT)
