@@ -315,11 +315,17 @@ function startAgent() {
       windowsHide: true,
     });
     agentStatus = {
+      ...agentStatus,
       state: "starting",
-      message: "กำลังเปิดตัวประมวลผลใบหน้า",
+      message: "กำลังเปิดตัวประมวลผลใบหน้า (ครั้งแรกอาจใช้เวลาสักครู่)",
       lastError: "",
+      python: `${resolved.command} ${resolved.args.join(" ")}`.trim(),
+      script,
+      logPath: AGENT_LOG_PATH,
+      attempts: (agentStatus.attempts || 0) + 1,
       startedAt: Date.now(),
     };
+    startHealthWatch();
   } catch (err) {
     console.error("[agent] failed to start", err);
     appendLog(`spawn failed: ${err?.message || err}`);
