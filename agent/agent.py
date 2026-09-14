@@ -35,7 +35,7 @@ CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
-AGENT_VERSION = "1.3.0"
+AGENT_VERSION = "1.4.0"
 
 
 def default_cache_dir() -> str:
