@@ -40,12 +40,73 @@ let agentProcess = null;
 let currentAppVersion = null;
 let agentRestartTimer = null;
 let appIsQuitting = false;
+let healthTimer = null;
 let agentStatus = {
   state: "stopped",
   message: "ยังไม่ได้เริ่มตัวประมวลผลใบหน้า",
   lastError: "",
   startedAt: null,
+  python: "",
+  script: "",
+  logPath: AGENT_LOG_PATH,
+  attempts: 0,
 };
+
+/**
+ * The kiosk page can only scan once the local engine answers on 127.0.0.1.
+ * Asking it directly from the main process is far more reliable than guessing
+ * from the log lines Python happens to print.
+ */
+function probeAgentHealth() {
+  return new Promise((resolve) => {
+    const req = http.get(
+      { host: "127.0.0.1", port: 8899, path: "/health", timeout: 2500 },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.on("error", () => resolve(false));
+  });
+}
+
+function startHealthWatch() {
+  if (healthTimer) return;
+  healthTimer = setInterval(async () => {
+    const ok = await probeAgentHealth();
+    if (ok) {
+      if (agentStatus.state !== "running") {
+        agentStatus = {
+          ...agentStatus,
+          state: "running",
+          message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน",
+        };
+      }
+      return;
+    }
+    if (agentStatus.state === "running") {
+      agentStatus = {
+        ...agentStatus,
+        state: "error",
+        message: "ตัวประมวลผลใบหน้าหยุดตอบสนอง กำลังเปิดใหม่",
+      };
+    }
+    // Nothing is running at all: bring it back instead of waiting forever.
+    if (
+      !agentProcess &&
+      !agentRestartTimer &&
+      !appIsQuitting &&
+      agentStatus.state !== "configuration_required" &&
+      agentStatus.state !== "python_missing"
+    ) {
+      startAgent();
+    }
+  }, 2000);
+}
 
 function loadConfig() {
   let cfg;
