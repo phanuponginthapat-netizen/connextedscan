@@ -16,7 +16,7 @@ const CONFIG_PATH = path.join(app.getPath("userData"), "facegate-config.json");
 const UPDATE_DIR = path.join(app.getPath("userData"), "agent");
 const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
-  "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app";
+  "https://connextedscan.lovable.app";
 
 // Let the kiosk page speak the moment it loads — no "enable sound" tap needed.
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
@@ -38,11 +38,24 @@ let agentProcess = null;
 let currentAppVersion = null;
 
 function loadConfig() {
+  let cfg;
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
   } catch {
     return { cloudUrl: DEFAULT_CLOUD_URL, deviceKey: "" };
   }
+  // Older installs saved an internal preview address that now refuses
+  // connections and left the window black. Move them to the live site.
+  const saved = (cfg.cloudUrl || "").trim();
+  if (!saved || /project--[0-9a-f-]+(-dev)?\.lovable\.app/.test(saved) || /id-preview/.test(saved)) {
+    cfg.cloudUrl = DEFAULT_CLOUD_URL;
+    try {
+      saveConfig(cfg);
+    } catch {
+      // read-only profile: keep the corrected value in memory
+    }
+  }
+  return cfg;
 }
 
 function saveConfig(cfg) {
@@ -181,12 +194,26 @@ function openKiosk() {
 
   // Retry when the kiosk PC boots before the network is ready — keep the
   // branded screen visible between attempts instead of an error page.
-  kioskWindow.webContents.on("did-fail-load", () => {
+  const retryLater = (reason) => {
     if (!kioskWindow) return;
+    console.warn(`[kiosk] load problem (${reason}) — retrying`);
     kioskWindow.loadFile(path.join(__dirname, "loading.html"));
     setTimeout(() => {
       if (kioskWindow) kioskWindow.loadURL(url);
     }, 5000);
+  };
+
+  kioskWindow.webContents.on("did-fail-load", (_e, code, description) =>
+    retryLater(`${code} ${description}`),
+  );
+
+  // A server error page (403/404/500) still "loads", so it used to leave a
+  // blank window. Treat it as a failure and keep the branded screen instead.
+  kioskWindow.webContents.on("did-navigate", (_e, navigatedUrl, httpResponseCode) => {
+    if (navigatedUrl.startsWith("file://")) return;
+    if (typeof httpResponseCode === "number" && httpResponseCode >= 400) {
+      retryLater(`HTTP ${httpResponseCode}`);
+    }
   });
 
   kioskWindow.on("closed", () => {

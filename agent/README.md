@@ -14,7 +14,7 @@ pip install -r requirements.txt
 
 ```bash
 export FACEGATE_DEVICE_KEY=รหัสเครื่องที่คัดลอกมา
-export FACEGATE_CLOUD_URL=https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app
+export FACEGATE_CLOUD_URL=https://connextedscan.lovable.app
 python agent.py
 ```
 
