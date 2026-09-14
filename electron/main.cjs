@@ -565,9 +565,12 @@ app.whenReady().then(async () => {
   if (!cfg.deviceKey || !cfg.deviceKey.trim()) {
     openSettings();
   } else {
-    await checkForUpdates({ initial: true });
+    // Start the engine first: waiting for the update check used to delay the
+    // scanner by many seconds on slow or offline networks.
     startAgent();
     openKiosk();
+    startHealthWatch();
+    void checkForUpdates({ initial: true });
   }
   setInterval(() => {
     void checkForUpdates();
