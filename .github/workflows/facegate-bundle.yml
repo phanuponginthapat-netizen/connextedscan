@@ -16,7 +16,13 @@ jobs:
           bun-version: latest
       - name: Build offline bundle
         shell: pwsh
+        env:
+          CI: "false"
         run: powershell -ExecutionPolicy Bypass -File bundle/build-windows-bundle.ps1
+      - name: Show output
+        if: always()
+        shell: pwsh
+        run: Get-ChildItem bundle/dist -ErrorAction SilentlyContinue | Format-List
       - uses: actions/upload-artifact@v4
         with:
           name: FaceGate-AllInOne-windows-x64
@@ -36,7 +42,12 @@ jobs:
       - name: Install zip tools
         run: sudo apt-get update && sudo apt-get install -y unzip
       - name: Build offline bundle
+        env:
+          CI: "false"
         run: bash bundle/build-linux-bundle.sh
+      - name: Show output
+        if: always()
+        run: ls -lh bundle/dist || true; df -h /
       - uses: actions/upload-artifact@v4
         with:
           name: FaceGate-AllInOne-linux-x64
