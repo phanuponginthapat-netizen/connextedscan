@@ -65,7 +65,10 @@ foreach ($name in @("det_500m.onnx", "w600k_mbf.onnx")) {
 Write-Host "[4/5] Electron shell" -ForegroundColor Yellow
 Push-Location $root
 if (Get-Command bun -ErrorAction SilentlyContinue) {
-    bun install
+    # CI enables --frozen-lockfile by default; allow resolution so the build never dies here
+    bun install --no-frozen-lockfile
+    if ($LASTEXITCODE -ne 0) { bun install --no-frozen-lockfile --force }
+    if ($LASTEXITCODE -ne 0) { throw "bun install failed with exit code $LASTEXITCODE" }
 } else {
     npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
 }
@@ -90,5 +93,15 @@ Get-ChildItem (Join-Path $root "electron") -Filter "*FaceGate.bat" | Copy-Item -
 Write-Host "[5/5] compressing" -ForegroundColor Yellow
 $zip = Join-Path $out "FaceGate-AllInOne-windows-x64.zip"
 Remove-Item $zip -Force -ErrorAction SilentlyContinue
-Compress-Archive -Path (Join-Path $appDir "*") -DestinationPath $zip
+$sevenZip = Get-Command 7z -ErrorAction SilentlyContinue
+if ($sevenZip) {
+    Push-Location $appDir
+    & $sevenZip.Source a -tzip -mx=1 -bso0 $zip "*"
+    $zipExit = $LASTEXITCODE
+    Pop-Location
+    if ($zipExit -ne 0) { throw "7z packaging failed with exit code $zipExit" }
+} else {
+    Compress-Archive -Path (Join-Path $appDir "*") -DestinationPath $zip
+}
+if (-not (Test-Path $zip)) { throw "final archive was not created" }
 Write-Host "done -> $zip" -ForegroundColor Green
