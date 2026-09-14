@@ -9,7 +9,7 @@
 # The kiosk PC only has to unzip and run -- nothing is downloaded at install
 # time or at first launch.
 #
-# Run on Windows with PowerShell 5+ and Node.js 20+:
+# Run on Windows with PowerShell 5+ and Node.js 22+:
 #   powershell -ExecutionPolicy Bypass -File bundle\build-windows-bundle.ps1
 
 $ErrorActionPreference = "Stop"
@@ -65,21 +65,26 @@ foreach ($name in @("det_500m.onnx", "w600k_mbf.onnx")) {
 Write-Host "[4/5] Electron shell" -ForegroundColor Yellow
 Push-Location $root
 if (Get-Command bun -ErrorAction SilentlyContinue) {
-    # CI enables --frozen-lockfile by default; allow resolution so the build never dies here
-    bun install --no-frozen-lockfile
-    if ($LASTEXITCODE -ne 0) { bun install --no-frozen-lockfile --force }
-    if ($LASTEXITCODE -ne 0) { throw "bun install failed with exit code $LASTEXITCODE" }
+    & bunx --bun "@electron/packager@20.3.0" . "FaceGate" `
+        --platform=win32 --arch=x64 `
+        --electron-version=44.3.0 `
+        --out="$work\packaged" --overwrite `
+        --asar=false `
+        --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" `
+        --ignore="^/bundle" --ignore="^/mobile" --ignore="^/supabase" `
+        --ignore="^/.github" --ignore="^/.git" --ignore="^/electron-release" `
+        --ignore="^/dist"
 } else {
-    npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
+    & npx --yes "@electron/packager@20.3.0" . "FaceGate" `
+        --platform=win32 --arch=x64 `
+        --electron-version=44.3.0 `
+        --out="$work\packaged" --overwrite `
+        --asar=false `
+        --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" `
+        --ignore="^/bundle" --ignore="^/mobile" --ignore="^/supabase" `
+        --ignore="^/.github" --ignore="^/.git" --ignore="^/electron-release" `
+        --ignore="^/dist"
 }
-& (Join-Path $root "node_modules\.bin\electron-packager.cmd") . "FaceGate" `
-    --platform=win32 --arch=x64 `
-    --out="$work\packaged" --overwrite `
-    --asar=false `
-    --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" `
-    --ignore="^/bundle" --ignore="^/mobile" --ignore="^/supabase" `
-    --ignore="^/.github" --ignore="^/.git" --ignore="^/electron-release" `
-    --ignore="^/dist"
 if ($LASTEXITCODE -ne 0) { throw "Electron packaging failed with exit code $LASTEXITCODE" }
 Pop-Location
 

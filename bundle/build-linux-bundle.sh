@@ -5,7 +5,7 @@
 # a self-contained Python runtime, every Python library, and the face models.
 # The kiosk PC only unpacks and runs it: nothing is downloaded afterwards.
 #
-# Run on Ubuntu 20.04+ with Node.js 20+:
+# Run on Ubuntu 20.04+ with Node.js 22+:
 #   bash bundle/build-linux-bundle.sh
 set -euo pipefail
 
@@ -49,17 +49,17 @@ for name in det_500m.onnx w600k_mbf.onnx; do
 done
 
 echo "[4/5] Electron shell"
-CURRENT_STEP="installing Electron build tools"
+CURRENT_STEP="checking Electron build tools"
 cd "$ROOT"
 if command -v bun >/dev/null 2>&1; then
-  # CI sets frozen lockfile by default; allow resolution so the build never dies here
-  bun install --no-frozen-lockfile || bun install --no-frozen-lockfile --force
+  PACKAGER=(bunx --bun @electron/packager@20.3.0)
 else
-  npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
+  PACKAGER=(npx --yes @electron/packager@20.3.0)
 fi
 CURRENT_STEP="packaging Electron"
-./node_modules/.bin/electron-packager . "FaceGate" \
+"${PACKAGER[@]}" . "FaceGate" \
   --platform=linux --arch=x64 \
+  --electron-version=44.3.0 \
   --out="$WORK/packaged" --overwrite \
   --asar=false \
   --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" \
