@@ -710,6 +710,7 @@ def health():
         "cached_images": cached_images,
         "pending_uploads": outbox_count(),
         "cache_dir": CACHE_DIR,
+        "engine_ready": _engine is not None,
         "door": door.status(),
     }
 
