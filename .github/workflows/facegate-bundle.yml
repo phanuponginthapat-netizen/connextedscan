@@ -2,6 +2,11 @@ name: FaceGate all-in-one bundle
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "หมายเลขเวอร์ชัน (จะใช้เป็นชื่อ Release เช่น 1.4.0)"
+        required: false
+        default: "1.4.0"
 
 jobs:
   windows:
@@ -53,3 +58,39 @@ jobs:
           name: FaceGate-AllInOne-linux-x64
           path: bundle/dist/FaceGate-AllInOne-linux-x64.tar.gz
           retention-days: 14
+
+  release:
+    needs: [windows, linux]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloaded
+      - name: Collect files
+        id: collect
+        run: |
+          mkdir -p release
+          find downloaded -type f \( -name "*.zip" -o -name "*.tar.gz" \) -exec cp {} release/ \;
+          ls -lh release
+          test -n "$(ls -A release)" || { echo "no bundle files were built"; exit 1; }
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: facegate-v${{ inputs.version }}
+          name: FaceGate ${{ inputs.version }}
+          body: |
+            ไฟล์ติดตั้ง FaceGate แบบครบชุด (ไม่ต้องโหลดอะไรเพิ่มหลังติดตั้ง)
+
+            - Windows: `FaceGate-AllInOne-windows-x64.zip` → แตกไฟล์ → ดับเบิลคลิก `ติดตั้ง-FaceGate.bat`
+            - Linux: `FaceGate-AllInOne-linux-x64.tar.gz` → แตกไฟล์ → `bash install.sh`
+
+            ลิงก์ดาวน์โหลดล่าสุดแบบถาวร:
+            `https://github.com/${{ github.repository }}/releases/latest/download/FaceGate-AllInOne-windows-x64.zip`
+            `https://github.com/${{ github.repository }}/releases/latest/download/FaceGate-AllInOne-linux-x64.tar.gz`
+          files: release/*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
