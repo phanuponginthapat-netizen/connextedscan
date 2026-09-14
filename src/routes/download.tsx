@@ -11,6 +11,8 @@ import {
   Camera,
   MemoryStick,
   MonitorCheck,
+  Smartphone,
+
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -103,7 +105,10 @@ const specs = [
 function DownloadPage() {
   const { t } = useCms();
   const logo = t("brand.logo_url");
+  const apkUrl = t("download.apk_url") || "/downloads/FaceGate-Scanner.apk";
+  const apkVersion = t("download.apk_version") || "1.0.0";
   const origin = typeof window === "undefined" ? "" : window.location.origin;
+
 
   const winCmd = `powershell -ExecutionPolicy Bypass -c "irm '${origin}/api/public/agent/install.ps1' | iex"`;
   const linuxCmd = `curl -fsSL "${origin}/api/public/agent/install.sh" | bash`;
@@ -209,9 +214,10 @@ function DownloadPage() {
         <div className="rounded-3xl border border-sky-100 bg-white p-6 shadow-xl shadow-blue-900/10 sm:p-8">
           <h2 className="font-display text-2xl font-bold">ใช้แท็บเล็ตหรือมือถือเครื่องเก่าแทนคอมพิวเตอร์</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            ไม่ต้องติดตั้งโปรแกรม เปิดหน้าสแกนบนแท็บเล็ต ใส่รหัสเครื่องที่ได้จากหน้าหลังบ้าน
-            แล้วเพิ่มลงหน้าจอโฮมเพื่อใช้แบบเต็มจอ เหมาะกับจุดสแกนเพิ่มเติมหรือใช้ชั่วคราว
+            ติดตั้งแอปแท็บเล็ต (ไฟล์ APK) ที่ใช้โมเดลใบหน้าแบบเบา หรือเปิดหน้าสแกนผ่านเบราว์เซอร์ก็ได้
+            ใส่รหัสเครื่องที่ได้จากหน้าหลังบ้าน แล้วใช้เป็นจุดสแกนเพิ่มได้ทันที
           </p>
+
           <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
             <li>เปิดหน้าสแกนบนแท็บเล็ต แล้วอนุญาตให้ใช้กล้อง</li>
             <li>ใส่รหัสเครื่อง และเลือกว่าเครื่องนี้ใช้สแกนเข้า ออก หรืออัตโนมัติตามเวลา</li>
@@ -222,15 +228,27 @@ function DownloadPage() {
             กล้องหน้า 2 ล้านพิกเซลขึ้นไป และต่ออินเทอร์เน็ตตลอดเวลา
             ความเร็วจะช้ากว่าเครื่องที่ติดตั้งโปรแกรม และไม่รองรับการควบคุมประตู micro:bit
           </p>
-          <Button
-            asChild
-            size="lg"
-            className="mt-5 rounded-full bg-[#1d6fe0] px-7 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5"
-          >
-            <Link to="/tablet">เปิดหน้าสแกนบนแท็บเล็ต</Link>
-          </Button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button
+              asChild
+              size="lg"
+              className="rounded-full bg-[#1d6fe0] px-7 text-white shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5"
+            >
+              <a href={apkUrl} download>
+                <Smartphone className="size-5" /> ดาวน์โหลดแอปแท็บเล็ต (APK)
+              </a>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full px-7">
+              <Link to="/tablet">เปิดหน้าสแกนบนแท็บเล็ต</Link>
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            ไฟล์ APK เวอร์ชัน {apkVersion} · ติดตั้งแล้วได้ไอคอนแอปและเปิดเต็มจอ
+            ต้องอนุญาต “ติดตั้งแอปจากแหล่งนี้” และอนุญาตกล้องเมื่อเปิดครั้งแรก
+          </p>
         </div>
       </section>
+
 
       <section className="mx-auto max-w-5xl px-6 pb-16">
         <h2 className="font-display text-2xl font-bold">สเปคเครื่องขั้นต่ำที่แนะนำ</h2>
