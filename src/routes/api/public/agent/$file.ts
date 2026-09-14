@@ -1,4 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createZip } from "@/lib/zip";
+import electronMain from "../../../../../electron/main.cjs?raw";
+import electronPreload from "../../../../../electron/preload.cjs?raw";
+import electronUpdater from "../../../../../electron/updater.cjs?raw";
+import electronSettings from "../../../../../electron/settings.html?raw";
+import electronLoading from "../../../../../electron/loading.html?raw";
 import agentSource from "../../../../../agent/agent.py?raw";
 import faceEngineSource from "../../../../../agent/face_engine.py?raw";
 import doorSource from "../../../../../agent/door.py?raw";
