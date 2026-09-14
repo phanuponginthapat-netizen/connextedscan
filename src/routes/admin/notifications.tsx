@@ -20,6 +20,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { sendTestNotification } from "@/lib/system-admin.functions";
+import type { Database } from "@/integrations/supabase/types";
+
+type SettingsUpdate = Database["public"]["Tables"]["settings"]["Update"];
+type RecipientUpdate = Database["public"]["Tables"]["notification_recipients"]["Update"];
 
 export const Route = createFileRoute("/admin/notifications")({
   head: () => ({
@@ -85,7 +89,7 @@ function NotificationsPage() {
   });
 
   const saveSetting = useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: SettingsUpdate) => {
       const { error } = await supabase.from("settings").update(patch).eq("id", true);
       if (error) throw error;
     },
@@ -115,7 +119,7 @@ function NotificationsPage() {
   });
 
   const updateRecipient = useMutation({
-    mutationFn: async (args: { id: string; patch: Record<string, unknown> }) => {
+    mutationFn: async (args: { id: string; patch: RecipientUpdate }) => {
       const { error } = await supabase
         .from("notification_recipients")
         .update(args.patch)
