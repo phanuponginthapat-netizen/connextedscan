@@ -31,7 +31,7 @@ import door
 from face_engine import Face, FaceEngine
 from pydantic import BaseModel
 
-CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app")
+CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.app")
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))

@@ -39,11 +39,11 @@ python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 export FACEGATE_DEVICE_KEY=รหัสเครื่อง
-export FACEGATE_CLOUD_URL=https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app
+export FACEGATE_CLOUD_URL=https://connextedscan.lovable.app
 python agent.py
 ```
 
-จากนั้นเปิดเบราว์เซอร์ที่ `https://project--8a2237fd-d733-4dca-9c68-fe5d05c002f8.lovable.app/kiosk`
+จากนั้นเปิดเบราว์เซอร์ที่ `https://connextedscan.lovable.app/kiosk`
 
 ## หมายเหตุเรื่องฮาร์ดแวร์
 
