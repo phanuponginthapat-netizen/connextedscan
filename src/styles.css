@@ -307,7 +307,18 @@
 
 @utility animate-marquee {
   animation: marquee-x 28s linear infinite;
+  will-change: transform;
 }
+
+/* The kiosk announcement bar must keep scrolling even when the operating
+   system asks for reduced motion, otherwise the text is unreadable. */
+.facegate-marquee {
+  animation: marquee-x 28s linear infinite !important;
+  animation-duration: 28s !important;
+  animation-iteration-count: infinite !important;
+  will-change: transform;
+}
+
 
 /* Children fade up one after another. */
 @utility stagger-children {

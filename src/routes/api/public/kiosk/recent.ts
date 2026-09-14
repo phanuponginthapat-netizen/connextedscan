@@ -58,12 +58,21 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
           voice_volume: Number(settings?.voice_volume ?? 1),
         };
 
+        // Only scans from the current Bangkok day, so the board resets at midnight.
+        const nowBkk = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        const dayStart = new Date(
+          Date.UTC(nowBkk.getUTCFullYear(), nowBkk.getUTCMonth(), nowBkk.getUTCDate()) -
+            7 * 60 * 60 * 1000,
+        ).toISOString();
+
         const { data: logs } = await supabaseAdmin
           .from("attendance_logs")
           .select("id, scanned_at, direction, snapshot_path, student_id")
           .eq("status", "ok")
+          .gte("scanned_at", dayStart)
           .order("scanned_at", { ascending: false })
           .limit(display.recent_limit);
+
 
         const rows = logs ?? [];
         const ids = [...new Set(rows.map((r) => r.student_id).filter(Boolean))] as string[];

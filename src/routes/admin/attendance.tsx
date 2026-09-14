@@ -276,7 +276,9 @@ function AttendancePage() {
         )
         .gte("scanned_at", start.toISOString())
         .lte("scanned_at", end.toISOString())
-        .neq("status", "duplicate")
+        // Out-of-window and duplicate taps are not attendance history.
+        .not("status", "in", "(duplicate,out_of_window)")
+
         .order("scanned_at", { ascending: false })
         // A safety cap so a very wide date range cannot freeze the page.
         .limit(5000);
