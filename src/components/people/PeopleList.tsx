@@ -158,6 +158,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative max-w-sm">
