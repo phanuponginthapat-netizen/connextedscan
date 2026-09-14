@@ -356,6 +356,7 @@ function Kiosk() {
     if (typeof window === "undefined" || agentOnline === true) {
       setAgentWaitSeconds(0);
       setAgentMessage("");
+      setAgentDetail("");
       return;
     }
     const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
@@ -366,7 +367,17 @@ function Kiosk() {
       if (!desktop?.getAgentStatus) return;
       try {
         const next = await desktop.getAgentStatus();
-        if (!cancelled) setAgentMessage(next.message || next.lastError || "");
+        if (cancelled) return;
+        setAgentMessage(next.message || next.lastError || "");
+        setAgentDetail(
+          [
+            next.python ? `Python: ${next.python}` : "",
+            next.lastError ? `รายละเอียด: ${next.lastError}` : "",
+            next.logPath ? `บันทึก: ${next.logPath}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        );
       } catch {
         // An older FaceGate shell has no diagnostics; the health check remains active.
       }
