@@ -18,15 +18,34 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
         if (!device) return jsonResponse({ error: "invalid device key" }, 401);
 
         let known: Record<string, string> = {};
+        let agentVersion: string | null = null;
+        let platform: string | null = null;
         try {
-          const body = (await request.json()) as { known?: Record<string, string> } | null;
+          const body = (await request.json()) as {
+            known?: Record<string, string>;
+            agent_version?: string;
+            platform?: string;
+          } | null;
           if (body?.known && typeof body.known === "object") known = body.known;
+          if (typeof body?.agent_version === "string") agentVersion = body.agent_version.slice(0, 40);
+          if (typeof body?.platform === "string") platform = body.platform.slice(0, 80);
         } catch {
           known = {};
         }
         const incremental = Object.keys(known).length > 0;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // Record which program version each kiosk is running (system health page).
+        if (agentVersion || platform) {
+          await supabaseAdmin
+            .from("devices")
+            .update({
+              ...(agentVersion ? { agent_version: agentVersion } : {}),
+              ...(platform ? { platform } : {}),
+            })
+            .eq("id", device.id);
+        }
 
         const [{ data: settings }, { data: students }, { data: faces }] = await Promise.all([
           supabaseAdmin.from("settings").select("*").eq("id", true).maybeSingle(),
