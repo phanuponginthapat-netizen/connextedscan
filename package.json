@@ -1,5 +1,7 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "facegate",
+  "version": "1.4.0",
+  "author": "ConnextED",
   "private": true,
   "sideEffects": false,
   "type": "module",
