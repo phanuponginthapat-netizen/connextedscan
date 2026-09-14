@@ -1,17 +1,9 @@
 # Roadmap
 
-- [x] หน้าติดตั้ง: ปุ่มดาวน์โหลด FaceGate ZIP
-- [x] FaceGate โหลดโมดูล/กล้อง/เสียงให้พร้อมก่อนเข้าหน้าสแกน (หน้าเตรียมระบบ)
-- [x] ข้อความประชาสัมพันธ์ marquee บนหน้าตู้สแกน + ช่องตั้งค่า News ในหลังบ้าน
-- [x] แสดงกรอบตรวจจับและจุดโครงใบหน้าแบบสด ทั้งหน้าสแกนและหน้าลงทะเบียน
-- [x] ประตูอัจฉริยะ micro:bit: โค้ด micro:bit, ตัวควบคุมในโปรแกรมตู้, ตั้งค่าและหน้าคู่มือ
-- [x] ช่วงเปิดประตูค้าง (เข้าแถว) + สั่งเปิด/ล็อกประตูจากระยะไกล
-- [x] แจ้งเตือนเมื่อสแกนไม่ผ่านติดกันหลายครั้ง พร้อมปุ่มรับทราบในหน้าภาพรวม
-- [x] รายชื่อคนที่ยังไม่มาวันนี้ในหน้าภาพรวม
-- [x] รายงานรายเดือน (มา/สาย/ขาด) พร้อมดาวน์โหลดและพิมพ์
-- [x] โหมดงานกิจกรรม/ผู้มาเยือน บันทึกคนนอกที่มาติดต่อ
-- [x] จอแสดงผลจอใหญ่สำหรับทีวีหน้าโรงเรียน
-- [x] โปรแกรมตู้สแกนอัปเดตตัวเองอัตโนมัติจากเซิร์ฟเวอร์
-- [x] รองรับกล้องตัวที่สอง (ตั้งทิศทางเข้า/ออกแยกได้)
-- [x] สำรองข้อมูลรายสัปดาห์ + ปุ่มสำรองเดี๋ยวนี้ในหน้าตั้งค่า
-- [x] โหมดสแกนบนแท็บเล็ต/มือถือ (ใช้เครื่องเก่าแทนคอมได้) ที่หน้า /tablet
+- [ ] Auto cleanup of old snapshots/logs by retention settings (cron + manual)
+- [ ] Email/LINE notifications (absent, late, early leave, failed streak, device offline) — email needs a verified domain, LINE needs a channel token
+- [ ] Bulk import people from CSV/Excel
+- [ ] Admin "System health" page (devices online, last scan, agent version)
+- [ ] Alert admins when a kiosk device is offline too long
+- [ ] Automated tests for check-in/out time rules
+- [ ] Extra database indexes

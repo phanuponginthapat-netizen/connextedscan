@@ -2,9 +2,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   bangkokMinutes,
   bangkokWeekday,
-  parseWorkDays,
-  timeToMinutes,
-} from "@/lib/kiosk-auth.server";
+  decideDirection,
+  isEarlyLeave,
+  isLate,
+  isWorkDay,
+  type Direction,
+} from "@/lib/attendance-rules";
 
 export type RecordScanInput = {
   studentId: string;
@@ -64,16 +67,13 @@ export async function recordScan(input: RecordScanInput) {
   }
 
   // Days the system is open for scanning (e.g. Mon–Fri).
-  if (settings?.block_non_work_days) {
-    const days = parseWorkDays(settings.work_days);
-    if (!days.includes(bangkokWeekday())) {
-      return {
-        result: "denied" as const,
-        message: "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
-        speak: settings.voice_out_of_window_text ?? "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
-        next_delay_seconds: settings.next_person_delay_seconds ?? 5,
-      };
-    }
+  if (settings && !isWorkDay(settings, bangkokWeekday())) {
+    return {
+      result: "denied" as const,
+      message: "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
+      speak: settings.voice_out_of_window_text ?? "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
+      next_delay_seconds: settings.next_person_delay_seconds ?? 5,
+    };
   }
 
   const now = bangkokMinutes();
@@ -114,32 +114,19 @@ export async function recordScan(input: RecordScanInput) {
   }
 
   // Decide direction strictly from the configured windows.
-  let direction = input.direction ?? null;
+  let direction: Direction | null = input.direction ?? null;
   const deviceDefault = input.deviceDefaultDirection ?? "auto";
   if (!direction && deviceDefault !== "auto") {
     direction = deviceDefault === "out" ? "out" : "in";
   }
 
   if (settings) {
-    const inStart = timeToMinutes(settings.checkin_start);
-    const inEnd = timeToMinutes(settings.checkin_end);
-    const outStart = timeToMinutes(settings.checkout_start);
-    const outEnd = timeToMinutes(settings.checkout_end);
-    const inWindow = now >= inStart && now <= inEnd;
-    const outWindow = now >= outStart && now <= outEnd;
-
-    if (!direction) {
-      if (inWindow) direction = "in";
-      else if (outWindow) direction = "out";
-    }
-
-    // Outside the configured windows nothing is recorded.
-    const allowed = direction === "in" ? inWindow : direction === "out" ? outWindow : false;
-    if (!allowed) {
+    const decision = decideDirection(settings, now, direction, bangkokWeekday());
+    if (!decision.allowed) {
       const fmt = (v: string) => v.slice(0, 5);
       await supabaseAdmin.from("attendance_logs").insert({
         student_id: studentId,
-        direction: direction ?? "in",
+        direction: decision.direction,
         status: "out_of_window",
         confidence,
         geometry_score: geometryScore,
@@ -153,6 +140,7 @@ export async function recordScan(input: RecordScanInput) {
         next_delay_seconds: settings.next_person_delay_seconds ?? 5,
       };
     }
+    direction = decision.direction;
   }
   if (!direction) direction = now < 720 ? "in" : "out";
 
@@ -217,14 +205,8 @@ export async function recordScan(input: RecordScanInput) {
     };
   }
 
-  const late =
-    direction === "in" && settings
-      ? now > timeToMinutes(settings.late_after) + (settings.late_grace_minutes ?? 0)
-      : false;
-  const earlyLeave =
-    direction === "out" && settings?.early_leave_before
-      ? now < timeToMinutes(settings.early_leave_before)
-      : false;
+  const late = settings ? isLate(settings, now, direction) : false;
+  const earlyLeave = settings ? isEarlyLeave(settings, now, direction) : false;
 
   const { data: inserted } = await supabaseAdmin
     .from("attendance_logs")
