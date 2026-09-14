@@ -6,9 +6,10 @@
  * the cloud kiosk page in full-screen mode.
  */
 
-const { app, BrowserWindow, ipcMain, globalShortcut } = require("electron");
+const { app, BrowserWindow, ipcMain, globalShortcut, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const http = require("http");
 const { spawn, spawnSync } = require("child_process");
 const { syncAgent } = require("./updater.cjs");
 
@@ -39,12 +40,73 @@ let agentProcess = null;
 let currentAppVersion = null;
 let agentRestartTimer = null;
 let appIsQuitting = false;
+let healthTimer = null;
 let agentStatus = {
   state: "stopped",
   message: "ยังไม่ได้เริ่มตัวประมวลผลใบหน้า",
   lastError: "",
   startedAt: null,
+  python: "",
+  script: "",
+  logPath: AGENT_LOG_PATH,
+  attempts: 0,
 };
+
+/**
+ * The kiosk page can only scan once the local engine answers on 127.0.0.1.
+ * Asking it directly from the main process is far more reliable than guessing
+ * from the log lines Python happens to print.
+ */
+function probeAgentHealth() {
+  return new Promise((resolve) => {
+    const req = http.get(
+      { host: "127.0.0.1", port: 8899, path: "/health", timeout: 2500 },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.on("error", () => resolve(false));
+  });
+}
+
+function startHealthWatch() {
+  if (healthTimer) return;
+  healthTimer = setInterval(async () => {
+    const ok = await probeAgentHealth();
+    if (ok) {
+      if (agentStatus.state !== "running") {
+        agentStatus = {
+          ...agentStatus,
+          state: "running",
+          message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน",
+        };
+      }
+      return;
+    }
+    if (agentStatus.state === "running") {
+      agentStatus = {
+        ...agentStatus,
+        state: "error",
+        message: "ตัวประมวลผลใบหน้าหยุดตอบสนอง กำลังเปิดใหม่",
+      };
+    }
+    // Nothing is running at all: bring it back instead of waiting forever.
+    if (
+      !agentProcess &&
+      !agentRestartTimer &&
+      !appIsQuitting &&
+      agentStatus.state !== "configuration_required" &&
+      agentStatus.state !== "python_missing"
+    ) {
+      startAgent();
+    }
+  }, 2000);
+}
 
 function loadConfig() {
   let cfg;
@@ -106,6 +168,8 @@ function stopAgent({ restart = false } = {}) {
  * its own runtime, but on machines where it is missing we try the usual
  * commands instead of failing silently.
  */
+let lastPythonTried = [];
+
 function resolvePython(runtimeDir, agentDir) {
   const win = process.platform === "win32";
   const candidates = [];
@@ -115,28 +179,41 @@ function resolvePython(runtimeDir, agentDir) {
     ? path.join(runtimeDir, "python", "python.exe")
     : path.join(runtimeDir, "python", "bin", "python3"));
   push(win
+    ? path.join(runtimeDir, "python", "bin", "python3.11")
+    : path.join(runtimeDir, "python", "bin", "python3.11"));
+  push(win
     ? path.join(agentDir, ".venv", "Scripts", "python.exe")
     : path.join(agentDir, ".venv", "bin", "python"));
   if (win) {
+    push(path.join(process.env.LOCALAPPDATA || "", "Programs", "Python", "Python311", "python.exe"));
     push("py", ["-3"]);
     push("python");
     push("python3");
   } else {
     push("python3");
     push("python");
+    push("/usr/bin/python3");
   }
 
+  lastPythonTried = [];
   for (const candidate of candidates) {
+    if (!candidate.command) continue;
     const absolute = path.isAbsolute(candidate.command);
-    if (absolute && !fs.existsSync(candidate.command)) continue;
+    if (absolute && !fs.existsSync(candidate.command)) {
+      lastPythonTried.push(`${candidate.command} (ไม่พบไฟล์)`);
+      continue;
+    }
     try {
       const probe = spawnSync(candidate.command, [...candidate.args, "--version"], {
         timeout: 8000,
         windowsHide: true,
       });
       if (!probe.error && probe.status === 0) return candidate;
-    } catch {
-      // try the next candidate
+      lastPythonTried.push(
+        `${candidate.command} (${probe.error ? probe.error.code || probe.error.message : `exit ${probe.status}`})`,
+      );
+    } catch (err) {
+      lastPythonTried.push(`${candidate.command} (${err?.message || "error"})`);
     }
   }
   return null;
@@ -183,11 +260,22 @@ function startAgent() {
   const resolved = resolvePython(runtimeDir, agentDir);
   if (!resolved) {
     agentStatus = {
+      ...agentStatus,
       state: "python_missing",
       message: "ไม่พบโปรแกรม Python ในเครื่องนี้ กรุณาติดตั้ง Python 3.9 ขึ้นไป แล้วกดเปิดใหม่",
-      lastError: "python interpreter not found",
+      lastError: `python interpreter not found: ${lastPythonTried.join(" | ")}`,
+      python: "",
+      script,
       startedAt: null,
     };
+    try {
+      fs.appendFileSync(
+        AGENT_LOG_PATH,
+        `${new Date().toISOString()} python not found: ${lastPythonTried.join(" | ")}\n`,
+      );
+    } catch {
+      // logging must never break the kiosk
+    }
     return false;
   }
 
@@ -227,11 +315,17 @@ function startAgent() {
       windowsHide: true,
     });
     agentStatus = {
+      ...agentStatus,
       state: "starting",
-      message: "กำลังเปิดตัวประมวลผลใบหน้า",
+      message: "กำลังเปิดตัวประมวลผลใบหน้า (ครั้งแรกอาจใช้เวลาสักครู่)",
       lastError: "",
+      python: `${resolved.command} ${resolved.args.join(" ")}`.trim(),
+      script,
+      logPath: AGENT_LOG_PATH,
+      attempts: (agentStatus.attempts || 0) + 1,
       startedAt: Date.now(),
     };
+    startHealthWatch();
   } catch (err) {
     console.error("[agent] failed to start", err);
     appendLog(`spawn failed: ${err?.message || err}`);
@@ -440,6 +534,14 @@ async function checkForUpdates({ initial = false } = {}) {
 ipcMain.handle("get-config", () => loadConfig());
 ipcMain.handle("get-agent-status", () => agentStatus);
 ipcMain.handle("restart-agent", () => startAgent());
+ipcMain.handle("open-agent-log", async () => {
+  try {
+    if (!fs.existsSync(AGENT_LOG_PATH)) fs.writeFileSync(AGENT_LOG_PATH, "");
+    await shell.openPath(AGENT_LOG_PATH);
+  } catch {
+    // opening the log must never break the kiosk
+  }
+});
 ipcMain.handle("open-settings", () => openSettings());
 ipcMain.handle("save-config", (_event, cfg) => {
   saveConfig(cfg);
@@ -463,9 +565,12 @@ app.whenReady().then(async () => {
   if (!cfg.deviceKey || !cfg.deviceKey.trim()) {
     openSettings();
   } else {
-    await checkForUpdates({ initial: true });
+    // Start the engine first: waiting for the update check used to delay the
+    // scanner by many seconds on slow or offline networks.
     startAgent();
     openKiosk();
+    startHealthWatch();
+    void checkForUpdates({ initial: true });
   }
   setInterval(() => {
     void checkForUpdates();

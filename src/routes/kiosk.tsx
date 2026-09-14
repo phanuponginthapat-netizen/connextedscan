@@ -76,9 +76,13 @@ type FaceGateDesktopApi = {
     state?: string;
     message?: string;
     lastError?: string;
+    python?: string;
+    logPath?: string;
+    attempts?: number;
   }>;
   restartAgent?: () => Promise<boolean>;
   openSettings?: () => Promise<void>;
+  openAgentLog?: () => Promise<void>;
 };
 
 const AGENT_KEY = "facegate_agent_url";
@@ -99,6 +103,7 @@ function Kiosk() {
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
   const [agentMessage, setAgentMessage] = useState("");
+  const [agentDetail, setAgentDetail] = useState("");
   const [agentWaitSeconds, setAgentWaitSeconds] = useState(0);
   const [knownFaces, setKnownFaces] = useState<number | null>(null);
   const [agentStats, setAgentStats] = useState<{
@@ -351,6 +356,7 @@ function Kiosk() {
     if (typeof window === "undefined" || agentOnline === true) {
       setAgentWaitSeconds(0);
       setAgentMessage("");
+      setAgentDetail("");
       return;
     }
     const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
@@ -361,7 +367,17 @@ function Kiosk() {
       if (!desktop?.getAgentStatus) return;
       try {
         const next = await desktop.getAgentStatus();
-        if (!cancelled) setAgentMessage(next.message || next.lastError || "");
+        if (cancelled) return;
+        setAgentMessage(next.message || next.lastError || "");
+        setAgentDetail(
+          [
+            next.python ? `Python: ${next.python}` : "",
+            next.lastError ? `รายละเอียด: ${next.lastError}` : "",
+            next.logPath ? `บันทึก: ${next.logPath}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        );
       } catch {
         // An older FaceGate shell has no diagnostics; the health check remains active.
       }
@@ -385,6 +401,11 @@ function Kiosk() {
     const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
     if (desktop?.openSettings) await desktop.openSettings();
     else setShowConfig(true);
+  }, []);
+
+  const openAgentLog = useCallback(async () => {
+    const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
+    await desktop?.openAgentLog?.();
   }, []);
 
 
@@ -804,12 +825,20 @@ function Kiosk() {
                 <p className="text-xs text-muted-foreground">
                   โปรแกรมจะลองเปิดใหม่อัตโนมัติ หรือกดปุ่มด้านล่างเพื่อลองทันที
                 </p>
-                <div className="flex gap-2">
+                {agentDetail && (
+                  <pre className="max-h-32 overflow-auto rounded-lg bg-background/60 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                    {agentDetail}
+                  </pre>
+                )}
+                <div className="flex flex-wrap gap-2">
                   <Button className="flex-1" onClick={() => void restartDesktopAgent()}>
                     ลองเปิดใหม่
                   </Button>
                   <Button className="flex-1" variant="secondary" onClick={() => void openDesktopSettings()}>
                     ตรวจการตั้งค่า
+                  </Button>
+                  <Button className="flex-1" variant="outline" onClick={() => void openAgentLog()}>
+                    ดูบันทึกปัญหา
                   </Button>
                 </div>
               </div>
