@@ -825,12 +825,20 @@ function Kiosk() {
                 <p className="text-xs text-muted-foreground">
                   โปรแกรมจะลองเปิดใหม่อัตโนมัติ หรือกดปุ่มด้านล่างเพื่อลองทันที
                 </p>
-                <div className="flex gap-2">
+                {agentDetail && (
+                  <pre className="max-h-32 overflow-auto rounded-lg bg-background/60 p-2 text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                    {agentDetail}
+                  </pre>
+                )}
+                <div className="flex flex-wrap gap-2">
                   <Button className="flex-1" onClick={() => void restartDesktopAgent()}>
                     ลองเปิดใหม่
                   </Button>
                   <Button className="flex-1" variant="secondary" onClick={() => void openDesktopSettings()}>
                     ตรวจการตั้งค่า
+                  </Button>
+                  <Button className="flex-1" variant="outline" onClick={() => void openAgentLog()}>
+                    ดูบันทึกปัญหา
                   </Button>
                 </div>
               </div>
