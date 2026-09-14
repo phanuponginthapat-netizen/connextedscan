@@ -44,6 +44,51 @@ const files: Record<string, { body: string; type: string; download?: string }> =
 /** Files the FaceGate desktop program keeps up to date automatically. */
 const AGENT_FILES = ["agent.py", "face_engine.py", "door.py", "requirements.txt"];
 
+const UPDATE_README = `FaceGate — ไฟล์อัปเดตโปรแกรม
+================================
+
+ไฟล์ชุดนี้คือโค้ดล่าสุดของโปรแกรมบนเครื่องตู้สแกน ใช้อัปเดตเครื่องที่ติดตั้ง
+ไฟล์ครบชุด (all-in-one) ไว้แล้ว โดยไม่ต้องดาวน์โหลดไฟล์ใหญ่ใหม่ทั้งก้อน
+
+วิธีอัปเดต (Windows)
+1. ปิดโปรแกรม FaceGate ให้สนิท
+2. เปิดโฟลเดอร์ที่ติดตั้ง FaceGate ไว้ (โฟลเดอร์ที่มีไฟล์ FaceGate.exe)
+3. คัดลอกไฟล์ในโฟลเดอร์ agent ของชุดนี้ ไปทับที่
+   resources\\app.asar.unpacked\\agent
+4. ถ้าโฟลเดอร์ resources\\app มีอยู่ (ติดตั้งแบบไม่บีบ asar)
+   ให้คัดลอกไฟล์ในโฟลเดอร์ electron ไปทับที่ resources\\app\\electron
+5. เปิดโปรแกรม FaceGate ใหม่
+
+วิธีอัปเดต (Linux)
+เหมือนกับ Windows แต่โฟลเดอร์ติดตั้งอยู่ที่
+  ~/.local/share/facegate
+
+หมายเหตุ
+- โค้ดตัวประมวลผลใบหน้า (โฟลเดอร์ agent) โปรแกรมอัปเดตให้เองอยู่แล้วทุก 15 นาที
+  ชุดไฟล์นี้มีไว้สำหรับกรณีที่เครื่องต่อเน็ตไม่ได้ หรืออยากอัปเดตทันที
+- โค้ดสำหรับ micro:bit อยู่ในโฟลเดอร์ microbit — นำไปวางที่ python.microbit.org
+  แล้วแฟลชลงบอร์ดเมื่อมีการเปลี่ยนแปลง
+`;
+
+function buildUpdateZip() {
+  return createZip([
+    { name: "อ่านก่อน-วิธีอัปเดต.txt", content: UPDATE_README },
+    { name: "agent/agent.py", content: agentSource },
+    { name: "agent/face_engine.py", content: faceEngineSource },
+    { name: "agent/door.py", content: doorSource },
+    { name: "agent/requirements.txt", content: requirements },
+    { name: "agent/install.ps1", content: installPs1 },
+    { name: "agent/install.sh", content: installSh },
+    { name: "agent/install.bat", content: installBat },
+    { name: "electron/main.cjs", content: electronMain },
+    { name: "electron/preload.cjs", content: electronPreload },
+    { name: "electron/updater.cjs", content: electronUpdater },
+    { name: "electron/settings.html", content: electronSettings },
+    { name: "electron/loading.html", content: electronLoading },
+    { name: "microbit/door.py", content: microbitSource },
+  ]);
+}
+
 async function sha256(text: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest))
