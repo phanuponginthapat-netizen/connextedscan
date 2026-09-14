@@ -127,6 +127,18 @@ export const Route = createFileRoute("/api/public/agent/$file")({
           });
         }
 
+        if (params.file === "FaceGate-Update.zip") {
+          const zip = buildUpdateZip();
+          return new Response(zip, {
+            headers: {
+              "content-type": "application/zip",
+              "content-disposition": 'attachment; filename="FaceGate-Update.zip"',
+              "cache-control": "no-store",
+              "access-control-allow-origin": "*",
+            },
+          });
+        }
+
         const entry = files[params.file];
         if (!entry) return new Response("Not found", { status: 404 });
 
