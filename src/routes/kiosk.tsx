@@ -70,6 +70,17 @@ function personRole(s: NonNullable<ScanResult["student"]>) {
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
 
+type FaceGateDesktopApi = {
+  isFaceGate?: boolean;
+  getAgentStatus?: () => Promise<{
+    state?: string;
+    message?: string;
+    lastError?: string;
+  }>;
+  restartAgent?: () => Promise<boolean>;
+  openSettings?: () => Promise<void>;
+};
+
 const AGENT_KEY = "facegate_agent_url";
 
 function Kiosk() {
@@ -87,6 +98,8 @@ function Kiosk() {
   const [countdown, setCountdown] = useState(0);
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
+  const [agentMessage, setAgentMessage] = useState("");
+  const [agentWaitSeconds, setAgentWaitSeconds] = useState(0);
   const [knownFaces, setKnownFaces] = useState<number | null>(null);
   const [agentStats, setAgentStats] = useState<{
     known_faces?: number;
@@ -331,6 +344,48 @@ function Kiosk() {
       if (timer) clearTimeout(timer);
     };
   }, [agentUrl]);
+
+  // Electron can tell us why its background process stopped. Previously the
+  // page showed an endless spinner whenever Python or a model failed to start.
+  useEffect(() => {
+    if (typeof window === "undefined" || agentOnline === true) {
+      setAgentWaitSeconds(0);
+      setAgentMessage("");
+      return;
+    }
+    const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
+    let cancelled = false;
+    const startedAt = Date.now();
+    const inspect = async () => {
+      setAgentWaitSeconds(Math.floor((Date.now() - startedAt) / 1000));
+      if (!desktop?.getAgentStatus) return;
+      try {
+        const next = await desktop.getAgentStatus();
+        if (!cancelled) setAgentMessage(next.message || next.lastError || "");
+      } catch {
+        // An older FaceGate shell has no diagnostics; the health check remains active.
+      }
+    };
+    void inspect();
+    const timer = setInterval(() => void inspect(), 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [agentOnline]);
+
+  const restartDesktopAgent = useCallback(async () => {
+    const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
+    setAgentMessage("กำลังเปิดตัวประมวลผลใบหน้าใหม่…");
+    setAgentOnline(null);
+    await desktop?.restartAgent?.();
+  }, []);
+
+  const openDesktopSettings = useCallback(async () => {
+    const desktop = (window as unknown as { electronAPI?: FaceGateDesktopApi }).electronAPI;
+    if (desktop?.openSettings) await desktop.openSettings();
+    else setShowConfig(true);
+  }, []);
 
 
   useEffect(() => {
@@ -720,7 +775,7 @@ function Kiosk() {
                 <span>
                   {agentOnline === true
                     ? `โปรแกรม FaceGate พร้อม (ใบหน้า ${knownFaces ?? 0} คน)`
-                    : "กำลังรอโปรแกรม FaceGate… กรุณาเปิดโปรแกรมบนเครื่องนี้"}
+                    : agentMessage || "กำลังรอโปรแกรม FaceGate… กรุณาเปิดโปรแกรมบนเครื่องนี้"}
                 </span>
               </li>
               <li className="flex items-center gap-3 rounded-xl border p-3">
@@ -742,6 +797,22 @@ function Kiosk() {
               <Button className="w-full" onClick={enableVoice}>
                 <Volume2 className="size-4" /> แตะเพื่อเปิดเสียงและเริ่มใช้งาน
               </Button>
+            )}
+            {agentOnline !== true && agentWaitSeconds >= 8 && (
+              <div className="space-y-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-left">
+                <p className="text-sm font-semibold text-destructive">ตัวประมวลผลใบหน้ายังไม่เริ่มทำงาน</p>
+                <p className="text-xs text-muted-foreground">
+                  โปรแกรมจะลองเปิดใหม่อัตโนมัติ หรือกดปุ่มด้านล่างเพื่อลองทันที
+                </p>
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => void restartDesktopAgent()}>
+                    ลองเปิดใหม่
+                  </Button>
+                  <Button className="flex-1" variant="secondary" onClick={() => void openDesktopSettings()}>
+                    ตรวจการตั้งค่า
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </div>
