@@ -14,7 +14,7 @@
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$work = Join-Path $root "bundle\.work-win"
+$work = Join-Path $env:TEMP "facegate-work-win"
 $runtime = Join-Path $work "runtime"
 $pythonDir = Join-Path $runtime "python"
 $siteDir = Join-Path $runtime "site"
