@@ -80,6 +80,7 @@ def _connect() -> bool:
         time.sleep(0.4)  # let the micro:bit reset after the port opens
         _serial.reset_input_buffer()
         _state.update({"port": port, "connected": True, "last_error": None})
+        _push_config()
         print(f"[door] connected to micro:bit on {port}")
         return True
     except Exception as exc:  # noqa: BLE001
@@ -192,6 +193,7 @@ def status() -> dict:
         "port": _state.get("port"),
         "opens": _state.get("opens"),
         "last_open": _state.get("last_open"),
+        "config": _state.get("config"),
         "error": _state.get("last_error"),
     }
 
