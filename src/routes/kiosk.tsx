@@ -76,9 +76,13 @@ type FaceGateDesktopApi = {
     state?: string;
     message?: string;
     lastError?: string;
+    python?: string;
+    logPath?: string;
+    attempts?: number;
   }>;
   restartAgent?: () => Promise<boolean>;
   openSettings?: () => Promise<void>;
+  openAgentLog?: () => Promise<void>;
 };
 
 const AGENT_KEY = "facegate_agent_url";
@@ -99,6 +103,7 @@ function Kiosk() {
   const [camError, setCamError] = useState<string | null>(null);
   const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
   const [agentMessage, setAgentMessage] = useState("");
+  const [agentDetail, setAgentDetail] = useState("");
   const [agentWaitSeconds, setAgentWaitSeconds] = useState(0);
   const [knownFaces, setKnownFaces] = useState<number | null>(null);
   const [agentStats, setAgentStats] = useState<{
