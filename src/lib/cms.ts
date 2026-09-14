@@ -156,6 +156,25 @@ CMS_GROUPS.push(
       { key: "report.signer_line", label: "ช่องลงชื่อผู้รับรอง", default: "ลงชื่อผู้รับรองรายงาน" },
     ],
   },
+  {
+    id: "download",
+    title: "ไฟล์ดาวน์โหลดสำหรับแท็บเล็ต",
+    description: "ลิงก์ไฟล์แอปแท็บเล็ต (APK) ที่แสดงบนหน้าดาวน์โหลด",
+    fields: [
+      {
+        key: "download.apk_url",
+        label: "ลิงก์ไฟล์ APK สำหรับแท็บเล็ต",
+        type: "url",
+        default: "/downloads/FaceGate-Scanner.apk",
+        help: "วางไฟล์ไว้ที่ public/downloads หรือใส่ลิงก์ภายนอก เช่น GitHub Releases",
+      },
+      {
+        key: "download.apk_version",
+        label: "เวอร์ชันแอปแท็บเล็ต",
+        default: "1.0.0",
+      },
+    ],
+  },
 );
 
 export const CMS_FIELDS: CmsField[] = CMS_GROUPS.flatMap((g) => g.fields);
