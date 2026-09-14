@@ -270,6 +270,34 @@ function DownloadPage() {
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-10">
+        <div className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-xl shadow-emerald-900/5 sm:p-8">
+          <h2 className="font-display text-2xl font-bold">อัปเดตเครื่องที่ติดตั้งไว้แล้ว (ไฟล์เล็ก)</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            ถ้าเคยติดตั้งไฟล์ครบชุดไว้แล้ว ไม่ต้องโหลดไฟล์ใหญ่ใหม่ ดาวน์โหลดไฟล์อัปเดตนี้
+            (ไม่กี่ร้อย KB) แล้วคัดลอกไปทับไฟล์เดิมตามคำแนะนำที่แนบมาในไฟล์
+            ไฟล์นี้สร้างจากโค้ดล่าสุดของระบบทุกครั้งที่กดดาวน์โหลด จึงไม่ใช่ไฟล์เก่าแน่นอน
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button
+              asChild
+              size="lg"
+              className="rounded-full bg-emerald-600 px-7 text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
+            >
+              <a href="/api/public/agent/FaceGate-Update.zip" download>
+                <Download className="size-5" /> ดาวน์โหลดไฟล์อัปเดตล่าสุด (ZIP)
+              </a>
+            </Button>
+          </div>
+          <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+            <li>ปิดโปรแกรม FaceGate บนเครื่องตู้สแกนให้สนิท</li>
+            <li>แตกไฟล์ ZIP แล้วอ่านไฟล์ “อ่านก่อน-วิธีอัปเดต.txt”</li>
+            <li>คัดลอกไฟล์ในโฟลเดอร์ agent และ electron ไปทับไฟล์เดิมในโฟลเดอร์ที่ติดตั้ง</li>
+            <li>เปิดโปรแกรมใหม่ ระบบจะใช้โค้ดล่าสุดทันที</li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-6 pb-10">
         <div className="rounded-3xl border border-sky-100 bg-white p-6 shadow-xl shadow-blue-900/10 sm:p-8">
           <h2 className="font-display text-2xl font-bold">ใช้แท็บเล็ตหรือมือถือเครื่องเก่าแทนคอมพิวเตอร์</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
