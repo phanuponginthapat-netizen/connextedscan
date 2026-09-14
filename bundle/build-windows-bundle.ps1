@@ -64,9 +64,12 @@ foreach ($name in @("det_500m.onnx", "w600k_mbf.onnx")) {
 # ---------- 4. Electron shell ----------
 Write-Host "[4/5] Electron shell" -ForegroundColor Yellow
 Push-Location $root
-npm install --no-audit --no-fund
-npm install --no-audit --no-fund --save-dev electron @electron/packager
-npx @electron/packager . "FaceGate" `
+if (Get-Command bun -ErrorAction SilentlyContinue) {
+    bun install
+} else {
+    npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
+}
+npx --yes @electron/packager . "FaceGate" `
     --platform=win32 --arch=x64 `
     --out=bundle\.work-win\packaged --overwrite `
     --asar.unpackDir=agent `
