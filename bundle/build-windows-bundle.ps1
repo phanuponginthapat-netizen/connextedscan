@@ -72,7 +72,7 @@ if (Get-Command bun -ErrorAction SilentlyContinue) {
 & (Join-Path $root "node_modules\.bin\electron-packager.cmd") . "FaceGate" `
     --platform=win32 --arch=x64 `
     --out="$work\packaged" --overwrite `
-    --asar.unpackDir=agent `
+    --asar=false `
     --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" `
     --ignore="^/bundle" --ignore="^/mobile" --ignore="^/supabase" `
     --ignore="^/.github" --ignore="^/.git" --ignore="^/electron-release" `

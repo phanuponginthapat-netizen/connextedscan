@@ -180,7 +180,7 @@ CMS_GROUPS.push(
       {
         key: "download.bundle_version",
         label: "เวอร์ชันไฟล์ติดตั้งแบบครบชุด",
-        default: "1.3.0",
+        default: "1.4.0",
       },
       {
         key: "download.apk_url",

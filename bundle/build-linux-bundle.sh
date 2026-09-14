@@ -60,7 +60,7 @@ CURRENT_STEP="packaging Electron"
 ./node_modules/.bin/electron-packager . "FaceGate" \
   --platform=linux --arch=x64 \
   --out="$WORK/packaged" --overwrite \
-  --asar.unpackDir=agent \
+  --asar=false \
   --ignore="^/node_modules" --ignore="^/src" --ignore="^/public" \
   --ignore="^/bundle" --ignore="^/mobile" --ignore="^/supabase" \
   --ignore="^/.github" --ignore="^/.git" --ignore="^/electron-release" \
