@@ -44,9 +44,12 @@ done
 
 echo "[4/5] Electron shell"
 cd "$ROOT"
-npm install --no-audit --no-fund
-npm install --no-audit --no-fund --save-dev electron @electron/packager
-npx @electron/packager . "FaceGate" \
+if command -v bun >/dev/null 2>&1; then
+  bun install
+else
+  npm install --no-audit --no-fund --legacy-peer-deps --no-package-lock
+fi
+npx --yes @electron/packager . "FaceGate" \
   --platform=linux --arch=x64 \
   --out="$WORK/packaged" --overwrite \
   --asar.unpackDir=agent \
