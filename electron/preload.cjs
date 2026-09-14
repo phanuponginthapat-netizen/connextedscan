@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   isFaceGate: true,
   autoplayAllowed: true,
   getConfig: () => ipcRenderer.invoke("get-config"),
+  getAgentStatus: () => ipcRenderer.invoke("get-agent-status"),
+  restartAgent: () => ipcRenderer.invoke("restart-agent"),
+  openSettings: () => ipcRenderer.invoke("open-settings"),
   saveConfig: (cfg) => ipcRenderer.invoke("save-config", cfg),
   quit: () => ipcRenderer.invoke("quit"),
 });

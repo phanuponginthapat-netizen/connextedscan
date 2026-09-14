@@ -36,6 +36,14 @@ let kioskWindow = null;
 let settingsWindow = null;
 let agentProcess = null;
 let currentAppVersion = null;
+let agentRestartTimer = null;
+let appIsQuitting = false;
+let agentStatus = {
+  state: "stopped",
+  message: "ยังไม่ได้เริ่มตัวประมวลผลใบหน้า",
+  lastError: "",
+  startedAt: null,
+};
 
 function loadConfig() {
   let cfg;
@@ -76,8 +84,13 @@ function saveConfig(cfg) {
   );
 }
 
-function stopAgent() {
+function stopAgent({ restart = false } = {}) {
+  if (agentRestartTimer) {
+    clearTimeout(agentRestartTimer);
+    agentRestartTimer = null;
+  }
   if (agentProcess) {
+    agentProcess._faceGateRestart = restart;
     try {
       agentProcess.kill();
     } catch {
@@ -88,12 +101,18 @@ function stopAgent() {
 }
 
 function startAgent() {
-  stopAgent();
+  stopAgent({ restart: true });
   const cfg = loadConfig();
   const deviceKey = (cfg.deviceKey || "").trim();
   const cloudUrl = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "");
 
   if (!deviceKey) {
+    agentStatus = {
+      state: "configuration_required",
+      message: "ยังไม่ได้ตั้งรหัสเครื่อง",
+      lastError: "",
+      startedAt: null,
+    };
     return false;
   }
 
@@ -142,22 +161,62 @@ function startAgent() {
 
   try {
     agentProcess = spawn(python, [script], { env, detached: false, cwd: agentDir });
+    agentStatus = {
+      state: "starting",
+      message: "กำลังเปิดตัวประมวลผลใบหน้า",
+      lastError: "",
+      startedAt: Date.now(),
+    };
   } catch (err) {
     console.error("[agent] failed to start", err);
     agentProcess = null;
+    agentStatus = {
+      state: "error",
+      message: "เปิดตัวประมวลผลใบหน้าไม่สำเร็จ",
+      lastError: String(err?.message || err),
+      startedAt: null,
+    };
     return false;
   }
   agentProcess.on("error", (err) => {
     console.error("[agent] failed to start", err);
+    agentStatus = {
+      ...agentStatus,
+      state: "error",
+      message: "เปิดตัวประมวลผลใบหน้าไม่สำเร็จ",
+      lastError: String(err?.message || err),
+    };
   });
   agentProcess.stdout.on("data", (data) => {
-    console.log("[agent]", data.toString().trim());
+    const line = data.toString().trim();
+    console.log("[agent]", line);
+    if (line.includes("Uvicorn running") || line.includes("face models ready")) {
+      agentStatus = { ...agentStatus, state: "running", message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน" };
+    }
   });
   agentProcess.stderr.on("data", (data) => {
-    console.error("[agent]", data.toString().trim());
+    const line = data.toString().trim();
+    console.error("[agent]", line);
+    if (/error|exception|traceback|missing|no module/i.test(line)) {
+      agentStatus = { ...agentStatus, lastError: line.slice(-500) };
+    }
   });
   agentProcess.on("close", (code) => {
     console.log(`[agent] process exited with code ${code}`);
+    const shouldRestart = !appIsQuitting && !agentProcess?._faceGateRestart;
+    agentProcess = null;
+    agentStatus = {
+      ...agentStatus,
+      state: "error",
+      message: `ตัวประมวลผลหยุดทำงาน (รหัส ${code ?? "ไม่ทราบ"})`,
+    };
+    if (shouldRestart) {
+      agentStatus.message = "ตัวประมวลผลหยุดทำงาน กำลังเปิดใหม่อัตโนมัติ";
+      agentRestartTimer = setTimeout(() => {
+        agentRestartTimer = null;
+        startAgent();
+      }, 3000);
+    }
   });
 
   return true;
@@ -296,6 +355,9 @@ async function checkForUpdates({ initial = false } = {}) {
 
 // IPC exposed to the settings page.
 ipcMain.handle("get-config", () => loadConfig());
+ipcMain.handle("get-agent-status", () => agentStatus);
+ipcMain.handle("restart-agent", () => startAgent());
+ipcMain.handle("open-settings", () => openSettings());
 ipcMain.handle("save-config", (_event, cfg) => {
   saveConfig(cfg);
   startAgent();
@@ -328,10 +390,13 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
+  appIsQuitting = true;
   stopAgent();
   app.quit();
 });
 
 app.on("will-quit", () => {
+  appIsQuitting = true;
+  stopAgent();
   globalShortcut.unregisterAll();
 });
