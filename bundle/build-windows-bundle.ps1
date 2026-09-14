@@ -14,7 +14,7 @@
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$work = Join-Path $root "bundle\.work-win"
+$work = Join-Path $env:TEMP "facegate-work-win"
 $runtime = Join-Path $work "runtime"
 $pythonDir = Join-Path $runtime "python"
 $siteDir = Join-Path $runtime "site"
@@ -71,7 +71,7 @@ if (Get-Command bun -ErrorAction SilentlyContinue) {
 }
 npx --yes @electron/packager . "FaceGate" `
     --platform=win32 --arch=x64 `
-    --out=bundle\.work-win\packaged --overwrite `
+    --out="$work\packaged" --overwrite `
     --asar.unpackDir=agent `
     --ignore="^/src" --ignore="^/public" --ignore="^/bundle" `
     --ignore="^/mobile" --ignore="^/supabase" --ignore="^/.github"

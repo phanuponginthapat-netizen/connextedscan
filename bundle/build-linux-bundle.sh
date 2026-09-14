@@ -10,7 +10,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK="$ROOT/bundle/.work-linux"
+WORK="${TMPDIR:-/tmp}/facegate-work-linux"
 RUNTIME="$WORK/runtime"
 OUT="$ROOT/bundle/dist"
 
