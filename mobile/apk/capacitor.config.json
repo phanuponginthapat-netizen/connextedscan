@@ -1,0 +1,13 @@
+{
+  "appId": "app.facegate.tablet",
+  "appName": "FaceGate Scanner",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "url": "https://connextedscan.lovable.app/tablet",
+    "cleartext": false,
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,35 @@
+name: Build Tablet APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: "URL ของเว็บระบบ (ไม่ต้องมี /tablet)"
+        required: false
+        default: "https://connextedscan.lovable.app"
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        run: bash mobile/apk/build-apk.sh "${{ inputs.site_url }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceGate-Scanner-apk
+          path: mobile/apk/FaceGate-Scanner.apk
+          if-no-files-found: error
