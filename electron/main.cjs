@@ -534,6 +534,14 @@ async function checkForUpdates({ initial = false } = {}) {
 ipcMain.handle("get-config", () => loadConfig());
 ipcMain.handle("get-agent-status", () => agentStatus);
 ipcMain.handle("restart-agent", () => startAgent());
+ipcMain.handle("open-agent-log", async () => {
+  try {
+    if (!fs.existsSync(AGENT_LOG_PATH)) fs.writeFileSync(AGENT_LOG_PATH, "");
+    await shell.openPath(AGENT_LOG_PATH);
+  } catch {
+    // opening the log must never break the kiosk
+  }
+});
 ipcMain.handle("open-settings", () => openSettings());
 ipcMain.handle("save-config", (_event, cfg) => {
   saveConfig(cfg);

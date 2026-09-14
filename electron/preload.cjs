@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getConfig: () => ipcRenderer.invoke("get-config"),
   getAgentStatus: () => ipcRenderer.invoke("get-agent-status"),
   restartAgent: () => ipcRenderer.invoke("restart-agent"),
+  openAgentLog: () => ipcRenderer.invoke("open-agent-log"),
   openSettings: () => ipcRenderer.invoke("open-settings"),
   saveConfig: (cfg) => ipcRenderer.invoke("save-config", cfg),
   quit: () => ipcRenderer.invoke("quit"),
