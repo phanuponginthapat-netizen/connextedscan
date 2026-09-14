@@ -260,11 +260,22 @@ function startAgent() {
   const resolved = resolvePython(runtimeDir, agentDir);
   if (!resolved) {
     agentStatus = {
+      ...agentStatus,
       state: "python_missing",
       message: "ไม่พบโปรแกรม Python ในเครื่องนี้ กรุณาติดตั้ง Python 3.9 ขึ้นไป แล้วกดเปิดใหม่",
-      lastError: "python interpreter not found",
+      lastError: `python interpreter not found: ${lastPythonTried.join(" | ")}`,
+      python: "",
+      script,
       startedAt: null,
     };
+    try {
+      fs.appendFileSync(
+        AGENT_LOG_PATH,
+        `${new Date().toISOString()} python not found: ${lastPythonTried.join(" | ")}\n`,
+      );
+    } catch {
+      // logging must never break the kiosk
+    }
     return false;
   }
 
