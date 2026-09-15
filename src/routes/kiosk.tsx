@@ -68,6 +68,19 @@ function personRole(s: NonNullable<ScanResult["student"]>) {
   return `นักเรียน${s.class_room ? ` • ชั้น ${s.class_room}` : ""}`;
 }
 
+type TodayStats = {
+  school_name?: string;
+  screensaver_mode?: string;
+  people?: number;
+  present?: number;
+  late?: number;
+  on_time?: number;
+  absent?: number;
+  left?: number;
+  windows_closed?: boolean;
+  is_workday?: boolean;
+};
+
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
 
 type FaceGateDesktopApi = {
