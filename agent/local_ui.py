@@ -189,6 +189,28 @@ function frame() {
   c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.82).split(',')[1];
 }
+// Live view: a small preview frame for the admin page, sent from the kiosk so
+// staff can watch the queue over the school LAN. No video is stored.
+let lastStatusText = '';
+function previewFrame() {
+  const v = $('cam'); if (!v.videoWidth) return null;
+  const c = document.createElement('canvas');
+  c.width = 320; c.height = Math.round(320 * v.videoHeight / v.videoWidth);
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.5);
+}
+async function sendPreview() {
+  if (display.live_view === false) return;
+  const image = previewFrame(); if (!image) return;
+  try {
+    await fetch('/local/api/public/kiosk/live', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ image, status: lastStatusText }),
+    });
+  } catch (e) {}
+}
+setInterval(sendPreview, 2000);
+
 async function tick() {
   if (busy || Date.now() < pausedUntil) return;
   const image = frame(); if (!image) return;

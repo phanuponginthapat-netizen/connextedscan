@@ -554,6 +554,7 @@ def kiosk_recent():
         "voice_enabled": settings.get("voice_enabled", True),
         "voice_rate": settings.get("voice_rate", 1),
         "voice_volume": settings.get("voice_volume", 1),
+        "live_view": settings.get("live_view_enabled", True),
     }
     today = rules.bangkok_date_iso()
     rows = db.query(
