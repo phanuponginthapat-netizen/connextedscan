@@ -925,6 +925,46 @@ function Kiosk() {
         </div>
       )}
 
+      {/* Summary board: shown once both scan windows are closed, and used as
+          the screensaver instead of a plain black screen. */}
+      {(todayStats?.screensaver_mode ?? "stats") === "stats" &&
+        (todayStats?.windows_closed || powerInfo?.screen_off) && (
+          <button
+            type="button"
+            className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-8 bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 p-8 text-white"
+            onClick={() => {
+              if (powerInfo?.screen_off) void sendPowerCommand("screen_on");
+            }}
+          >
+            <div className="text-center">
+              <p className="text-sm uppercase tracking-[0.35em] text-white/50">สถิติวันนี้</p>
+              <p className="mt-2 text-3xl font-semibold">{todayStats?.school_name || t("brand.name")}</p>
+              <p className="mt-1 text-base text-white/60">
+                {new Date().toLocaleDateString("th-TH", { dateStyle: "full" })}
+              </p>
+            </div>
+            <div className="grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">
+              {[
+                { label: "มาแล้ว", value: todayStats?.present ?? 0, tone: "text-emerald-300" },
+                { label: "มาสาย", value: todayStats?.late ?? 0, tone: "text-amber-300" },
+                { label: "ขาด", value: todayStats?.absent ?? 0, tone: "text-rose-300" },
+                { label: "กลับแล้ว", value: todayStats?.left ?? 0, tone: "text-sky-300" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur"
+                >
+                  <p className={`text-6xl font-bold tabular-nums ${item.tone}`}>{item.value}</p>
+                  <p className="mt-2 text-sm text-white/70">{item.label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-white/50">
+              รวมทั้งหมด {todayStats?.people ?? 0} คน • หมดเวลาสแกนของวันนี้แล้ว — แตะหน้าจอเพื่อใช้งานต่อ
+            </p>
+          </button>
+        )}
+
       {/* Screen asleep to save electricity — tap anywhere to wake it up */}
       {powerInfo?.screen_off && (
         <button
