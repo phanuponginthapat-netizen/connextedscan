@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Cpu, MonitorOff, MonitorSmartphone, Moon, Power, RotateCw, Zap } from "lucide-react";
+import { Cpu, MonitorOff, MonitorSmartphone, Moon, Power, RotateCw, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
