@@ -28,6 +28,7 @@ import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import door
+import power
 from face_engine import Face, FaceEngine
 from pydantic import BaseModel
 
@@ -35,7 +36,7 @@ CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
-AGENT_VERSION = "1.4.0"
+AGENT_VERSION = "1.5.0"
 
 
 def default_cache_dir() -> str:
@@ -96,6 +97,8 @@ state: dict[str, Any] = {
     "students": {},
     "settings": {},
     "last_sync": None,
+    "last_activity": time.time(),
+    "power": {},
 }
 lock = threading.Lock()
 outbox_lock = threading.Lock()
@@ -544,6 +547,78 @@ def command_once() -> None:
         print("[agent] remote lock")
 
 
+def power_once() -> None:
+    """Ask the cloud for remote power buttons and enforce the daily schedule."""
+    res = requests.post(
+        f"{CLOUD_URL}/api/public/kiosk/power-command",
+        headers=HEADERS,
+        json={},
+        timeout=20,
+    )
+    res.raise_for_status()
+    data = res.json() or {}
+    with lock:
+        state["power"] = data
+        last_activity = float(state.get("last_activity") or time.time())
+
+    command = data.get("command")
+    if command:
+        print(f"[power] remote command: {command}")
+        power.apply(str(command), 60)
+
+    if data.get("power_saving_enabled"):
+        idle_minutes = float(data.get("screen_idle_minutes") or 0)
+        idle = idle_minutes > 0 and (time.time() - last_activity) > idle_minutes * 60
+        should_be_off = bool(data.get("screen_off_window")) or idle
+        currently_off = bool(power.status().get("screen_off"))
+        if should_be_off and not currently_off:
+            power.screen_off()
+        elif not should_be_off and currently_off:
+            power.screen_on()
+
+        if data.get("power_off_due") and not power.pending():
+            action = str(data.get("power_off_action") or "shutdown")
+            print(f"[power] scheduled {action} in 60s")
+            power.schedule(action, 60)
+
+    power.tick()
+
+
+def power_loop() -> None:
+    while True:
+        try:
+            power_once()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] power poll failed: {exc}")
+        try:
+            power.tick()
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(5)
+
+
+class PowerRequest(BaseModel):
+    command: str
+    seconds: int | None = None
+
+
+@app.get("/power/status")
+def power_status():
+    with lock:
+        cloud = dict(state.get("power") or {})
+    return {"ok": True, "cloud": cloud, **power.status()}
+
+
+@app.post("/power/command")
+def power_command(req: PowerRequest):
+    """Run a power action locally (used by the kiosk screen and the test page)."""
+    if req.command in ("screen_on", "cancel"):
+        with lock:
+            state["last_activity"] = time.time()
+    ok = power.apply(req.command, int(req.seconds or 60))
+    return {"ok": ok, **power.status()}
+
+
 def command_loop() -> None:
     while True:
         try:
@@ -747,6 +822,7 @@ def health():
         "cache_dir": CACHE_DIR,
         "engine_ready": _engine is not None,
         "door": door.status(),
+        "power": power.status(),
     }
 
 
@@ -845,6 +921,8 @@ def test_scan(req: ScanRequest):
 
 
 def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
+    with lock:
+        state["last_activity"] = time.time()
 
     raw = image.split(",", 1)[-1]
     arr = cv2.imdecode(np.frombuffer(base64.b64decode(raw), np.uint8), cv2.IMREAD_COLOR)
@@ -1101,6 +1179,7 @@ if __name__ == "__main__":
     threading.Thread(target=sync_loop, daemon=True).start()
     threading.Thread(target=outbox_loop, daemon=True).start()
     threading.Thread(target=command_loop, daemon=True).start()
+    threading.Thread(target=power_loop, daemon=True).start()
     threading.Thread(target=update_loop, daemon=True).start()
     threading.Thread(target=second_camera_loop, daemon=True).start()
 
