@@ -247,6 +247,13 @@ def connect() -> sqlite3.Connection:
             columns = {row[1] for row in _conn.execute("PRAGMA table_info(students)").fetchall()}
             if "gender" not in columns:
                 _conn.execute("ALTER TABLE students ADD COLUMN gender TEXT")
+            # LAN mode: remember which kiosk produced each row.
+            for table in ("attendance_logs", "visitor_logs", "security_alerts"):
+                cols = {row[1] for row in _conn.execute(f"PRAGMA table_info({table})").fetchall()}
+                if "device_id" not in cols:
+                    _conn.execute(f"ALTER TABLE {table} ADD COLUMN device_id TEXT")
+                if "device_name" not in cols:
+                    _conn.execute(f"ALTER TABLE {table} ADD COLUMN device_name TEXT")
             _conn.commit()
         return _conn
 
