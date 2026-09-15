@@ -100,6 +100,12 @@ function PowerPage() {
           }
           return next;
         });
+        const row = settings as Record<string, unknown>;
+        setWake({
+          wake_mac: String(row["wake_mac"] ?? ""),
+          wake_broadcast: String(row["wake_broadcast"] ?? "255.255.255.255"),
+          wake_port: Number(row["wake_port"] ?? 9),
+        });
       }
       const device = devices?.[0];
       if (device?.last_seen_at) {
