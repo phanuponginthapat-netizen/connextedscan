@@ -38,6 +38,7 @@ import { Route as ApiPublicKioskAlertRouteImport } from './routes/api/public/kio
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskDoorCommandRouteImport } from './routes/api/public/kiosk/door-command'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
+import { Route as ApiPublicKioskPowerCommandRouteImport } from './routes/api/public/kiosk/power-command'
 import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/kiosk/recent'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
@@ -193,6 +194,12 @@ const ApiPublicKioskEmbeddingsRoute =
     path: '/api/public/kiosk/embeddings',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicKioskPowerCommandRoute =
+  ApiPublicKioskPowerCommandRouteImport.update({
+    id: '/api/public/kiosk/power-command',
+    path: '/api/public/kiosk/power-command',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskRecentRoute = ApiPublicKioskRecentRouteImport.update({
   id: '/api/public/kiosk/recent',
   path: '/api/public/kiosk/recent',
@@ -249,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
@@ -284,6 +292,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
@@ -321,6 +330,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
@@ -430,6 +442,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
@@ -453,6 +466,7 @@ export interface RootRouteChildren {
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskDoorCommandRoute: typeof ApiPublicKioskDoorCommandRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
+  ApiPublicKioskPowerCommandRoute: typeof ApiPublicKioskPowerCommandRoute
   ApiPublicKioskRecentRoute: typeof ApiPublicKioskRecentRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
@@ -665,6 +679,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskEmbeddingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/power-command': {
+      id: '/api/public/kiosk/power-command'
+      path: '/api/public/kiosk/power-command'
+      fullPath: '/api/public/kiosk/power-command'
+      preLoaderRoute: typeof ApiPublicKioskPowerCommandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/recent': {
       id: '/api/public/kiosk/recent'
       path: '/api/public/kiosk/recent'
@@ -757,6 +778,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskDoorCommandRoute: ApiPublicKioskDoorCommandRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
+  ApiPublicKioskPowerCommandRoute: ApiPublicKioskPowerCommandRoute,
   ApiPublicKioskRecentRoute: ApiPublicKioskRecentRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
