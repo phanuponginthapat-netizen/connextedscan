@@ -1038,4 +1038,3 @@ function NewsMarquee({ text }: { text: string }) {
     </footer>
   );
 }
-}
