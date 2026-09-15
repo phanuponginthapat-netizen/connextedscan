@@ -1365,17 +1365,18 @@ def cleanup(x_local_token: str | None = Header(None)):
 
 @router.post("/api/public/kiosk/tts")
 async def kiosk_tts(request: Request):
-    """Speaks a sentence with the PC's own offline voice (no internet)."""
+    """Thai speech for one sentence: stored clip, online voice, or PC voice."""
     body = await request.json()
     text = str(body.get("text") or "").strip()[:300]
     if not text:
         return json_error(400, "ไม่มีข้อความให้อ่าน")
-    audio = local_voice.synthesize(text)
-    if not audio:
-        return json_error(503, "เครื่องนี้ยังไม่มีเสียงพูดที่ใช้ได้")
+    clip = await run_in_threadpool(local_voice.synthesize, text)
+    if not clip:
+        return json_error(503, "เครื่องนี้ยังไม่มีเสียงพูดไทยที่ใช้ได้")
+    audio, media_type = clip
     return Response(
         content=audio,
-        media_type="audio/wav",
+        media_type=media_type,
         headers={"Cache-Control": "no-store"},
     )
 
@@ -1391,13 +1392,16 @@ def voice_status(x_local_token: str | None = Header(None)):
     return local_voice.status()
 
 
-@router.post("/api/local/voice/install")
-async def voice_install(x_local_token: str | None = Header(None)):
-    """Fetches the Thai voice once (needs internet only at this moment)."""
+@router.post("/api/local/voice/prepare")
+async def voice_prepare(x_local_token: str | None = Header(None)):
+    """Stores every spoken sentence so the kiosk speaks Thai without internet."""
     require_admin(x_local_token)
-    result = await run_in_threadpool(local_voice.install_thai_voice)
-    if result.get("installed"):
-        db.add_audit("ติดตั้งเสียงพูดไทย", "voice", result.get("engine") or "")
+    result = await run_in_threadpool(local_voice.prepare_offline_voice)
+    db.add_audit(
+        "เตรียมเสียงพูดไทยไว้ใช้ออฟไลน์",
+        "voice",
+        f"ดาวน์โหลด {result.get('downloaded', 0)} / ทั้งหมด {result.get('total', 0)}",
+    )
     return result
 
 
