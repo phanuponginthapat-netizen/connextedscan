@@ -98,6 +98,50 @@ async def auth_change(request: Request, x_local_token: str | None = Header(None)
     return {"ok": True}
 
 
+# ------------------------------------------------------- kiosks on the LAN
+
+
+LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+
+
+def lan_addresses() -> list[str]:
+    """Best-effort list of this PC's LAN addresses, for the setup instructions."""
+    import socket
+
+    found: list[str] = []
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
+            addr = info[4][0]
+            if addr not in found and not addr.startswith("127."):
+                found.append(addr)
+    except Exception:  # noqa: BLE001
+        pass
+    if not found:
+        try:
+            probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            probe.connect(("8.8.8.8", 80))
+            found.append(probe.getsockname()[0])
+            probe.close()
+        except Exception:  # noqa: BLE001
+            pass
+    return found
+
+
+def resolve_device(request: Request, device_key: str | None) -> dict:
+    """Which kiosk is calling? The hub PC itself, or a registered LAN kiosk."""
+    key = (device_key or "").strip()
+    client = (request.client.host if request.client else "") or ""
+    if not key or key == "local":
+        if client in LOOPBACK:
+            return dict(db.HUB_DEVICE)
+        raise HTTPException(status_code=401, detail="ตู้สแกนนี้ยังไม่ได้ลงทะเบียนกับเครื่องแม่")
+    device = db.device_by_key(key)
+    if not device:
+        raise HTTPException(status_code=401, detail="รหัสเชื่อมต่อของตู้สแกนไม่ถูกต้องหรือถูกปิดใช้งาน")
+    return device
+
+
 # -------------------------------------------------------------------- media
 
 
