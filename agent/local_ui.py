@@ -112,12 +112,76 @@ async function startCamera() {
   catch (e) { say('ไม่พบกล้อง กรุณาตรวจสายกล้องแล้วเปิดโปรแกรมใหม่', 'bad'); }
 }
 function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); }
-function speak(text) {
-  if (!display.voice_enabled || !text || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'th-TH'; u.rate = Number(display.voice_rate || 1); u.volume = Number(display.voice_volume || 1);
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+let audioReady = false, thaiVoice = null, browserVoiceOk = false;
+const clipCache = new Map();
+
+function unlockAudio() {
+  if (audioReady) return;
+  audioReady = true;
+  try { new AudioContext().resume(); } catch (e) {}
+  if (window.speechSynthesis) speechSynthesis.resume();
 }
+document.addEventListener('click', unlockAudio, { once: true });
+document.addEventListener('keydown', unlockAudio, { once: true });
+document.addEventListener('touchstart', unlockAudio, { once: true });
+
+function pickVoice() {
+  if (!window.speechSynthesis) return;
+  const voices = speechSynthesis.getVoices() || [];
+  thaiVoice = voices.find((v) => (v.lang || '').toLowerCase().startsWith('th')) || null;
+  browserVoiceOk = !!thaiVoice;
+}
+if (window.speechSynthesis) {
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+
+function chime() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.frequency.value = 880; gain.gain.value = 0.12;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.18);
+  } catch (e) {}
+}
+
+async function speakOnDevice(text) {
+  try {
+    let url = clipCache.get(text);
+    if (!url) {
+      const res = await fetch('/local/api/public/kiosk/tts', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return false;
+      url = URL.createObjectURL(await res.blob());
+      if (clipCache.size > 60) clipCache.clear();
+      clipCache.set(text, url);
+    }
+    const audio = new Audio(url);
+    audio.volume = Math.min(Math.max(Number(display.voice_volume || 1), 0), 1);
+    audio.playbackRate = Math.min(Math.max(Number(display.voice_rate || 1), 0.5), 2);
+    await audio.play();
+    return true;
+  } catch (e) { return false; }
+}
+
+async function speak(text) {
+  if (!display.voice_enabled || !text) return;
+  if (browserVoiceOk) {
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'th-TH'; u.voice = thaiVoice;
+      u.rate = Number(display.voice_rate || 1); u.volume = Number(display.voice_volume || 1);
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+      return;
+    } catch (e) {}
+  }
+  const played = await speakOnDevice(text);
+  if (!played) chime();
+}
+
 function frame() {
   const v = $('cam'); if (!v.videoWidth) return null;
   const c = document.createElement('canvas');
