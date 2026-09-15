@@ -34,7 +34,7 @@ export const Route = createFileRoute("/api/public/kiosk/power-command")({
           supabaseAdmin
             .from("settings")
             .select(
-              "power_saving_enabled, screen_idle_minutes, screen_off_start, screen_off_end, auto_power_off_enabled, auto_power_off_time, auto_power_off_action, power_off_workdays_only, work_days",
+              "power_saving_enabled, screen_idle_minutes, screen_off_start, screen_off_end, auto_power_off_enabled, auto_power_off_time, auto_power_off_action, power_off_workdays_only, work_days, wake_mac, wake_broadcast, wake_port",
             )
             .eq("id", true)
             .maybeSingle(),
