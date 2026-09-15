@@ -988,3 +988,54 @@ function Kiosk() {
     </main>
   );
 }
+
+/**
+ * Scrolling news bar. The track slides -50%, so it renders two identical
+ * halves; each half repeats the text enough times to fill the bar, which
+ * prevents a short message from appearing twice on screen at once.
+ */
+function NewsMarquee({ text }: { text: string }) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const itemRef = useRef<HTMLSpanElement>(null);
+  const [copies, setCopies] = useState(1);
+
+  useEffect(() => {
+    const measure = () => {
+      const bar = barRef.current;
+      const item = itemRef.current;
+      if (!bar || !item) return;
+      const itemWidth = item.getBoundingClientRect().width;
+      const barWidth = bar.getBoundingClientRect().width;
+      if (itemWidth <= 0 || barWidth <= 0) return;
+      // One half must be at least as wide as the bar for a seamless -50% loop.
+      setCopies(Math.max(1, Math.ceil(barWidth / itemWidth) + 1));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [text]);
+
+  const half = (
+    <>
+      {Array.from({ length: copies }).map((_, i) => (
+        <span key={i} ref={i === 0 ? itemRef : undefined} className="flex items-center gap-16">
+          <span>{text}</span>
+          <span aria-hidden="true" className="text-muted-foreground">•</span>
+        </span>
+      ))}
+    </>
+  );
+
+  return (
+    <footer
+      ref={barRef}
+      className="mt-3 shrink-0 overflow-hidden rounded-full border bg-card/80 px-5 py-2 shadow-panel backdrop-blur"
+    >
+      <div className="facegate-marquee flex w-max gap-16 whitespace-nowrap text-sm font-medium">
+        {half}
+        <span aria-hidden="true" className="flex gap-16">{half}</span>
+      </div>
+    </footer>
+  );
+}
+}
