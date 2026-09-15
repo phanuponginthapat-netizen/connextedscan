@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Cpu, MonitorOff, MonitorSmartphone, Moon, Power, RotateCw, Zap } from "lucide-react";
+import { Cpu, MonitorOff, MonitorSmartphone, Moon, Power, RotateCw, Wifi, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,12 @@ function PowerPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [wake, setWake] = useState({
+    wake_mac: "",
+    wake_broadcast: "255.255.255.255",
+    wake_port: 9,
+  });
+  const [savingWake, setSavingWake] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -94,6 +100,12 @@ function PowerPage() {
           }
           return next;
         });
+        const row = settings as Record<string, unknown>;
+        setWake({
+          wake_mac: String(row["wake_mac"] ?? ""),
+          wake_broadcast: String(row["wake_broadcast"] ?? "255.255.255.255"),
+          wake_port: Number(row["wake_port"] ?? 9),
+        });
       }
       const device = devices?.[0];
       if (device?.last_seen_at) {
@@ -119,6 +131,29 @@ function PowerPage() {
       return;
     }
     toast.success("บันทึกแล้ว ตู้สแกนจะนำค่าไปใช้ภายในไม่กี่วินาที");
+  };
+
+  const saveWake = async () => {
+    const clean = wake.wake_mac.replace(/[^0-9a-fA-F]/g, "");
+    if (clean.length !== 12) {
+      toast.error("กรอกหมายเลขเครื่อง (MAC) ให้ครบ 12 ตัว เช่น 1A:2B:3C:4D:5E:6F");
+      return;
+    }
+    setSavingWake(true);
+    const { error } = await supabase
+      .from("settings")
+      .update({
+        wake_mac: clean.match(/.{2}/g)!.join(":").toUpperCase(),
+        wake_broadcast: wake.wake_broadcast || "255.255.255.255",
+        wake_port: Number(wake.wake_port) || 9,
+      })
+      .eq("id", true);
+    setSavingWake(false);
+    if (error) {
+      toast.error("บันทึกไม่สำเร็จ: " + error.message);
+      return;
+    }
+    toast.success("บันทึกแล้ว");
   };
 
   const sendCommand = async (command: string) => {
@@ -287,6 +322,83 @@ function PowerPage() {
               <item.icon className="size-4" /> {item.label}
             </Button>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wifi className="size-4 text-primary" /> ปลุกเครื่องจากระยะไกล (Wake-on-LAN / WAN)
+          </CardTitle>
+          <CardDescription>
+            ใช้ได้กับเครื่องที่ “พักเครื่อง” ไว้ (หรือปิดเครื่องแบบเปิด Wake-on-LAN ใน BIOS)
+            ต้องมีคอมพิวเตอร์อีกเครื่องที่ลงโปรแกรม FaceGate และเปิดอยู่ในเครือข่ายเดียวกันเป็นตัวส่งสัญญาณปลุก
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="wake-mac">หมายเลขเครื่องตู้สแกน (MAC Address)</Label>
+              <Input
+                id="wake-mac"
+                placeholder="1A:2B:3C:4D:5E:6F"
+                value={wake.wake_mac}
+                onChange={(e) => setWake((prev) => ({ ...prev, wake_mac: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                ดูได้ที่เครื่องตู้สแกน: เปิด Command Prompt แล้วพิมพ์ getmac
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="wake-port">พอร์ต</Label>
+              <Input
+                id="wake-port"
+                type="number"
+                value={wake.wake_port}
+                onChange={(e) =>
+                  setWake((prev) => ({ ...prev, wake_port: Number(e.target.value) }))
+                }
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="wake-broadcast">ปลายทางสัญญาณปลุก</Label>
+            <Input
+              id="wake-broadcast"
+              value={wake.wake_broadcast}
+              onChange={(e) => setWake((prev) => ({ ...prev, wake_broadcast: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              ปล่อยไว้เป็น 255.255.255.255 ถ้าปลุกกันภายในโรงเรียน
+              หรือใส่ที่อยู่อินเทอร์เน็ตของเราเตอร์ถ้าจะปลุกจากนอกโรงเรียน
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={savingWake} onClick={() => void saveWake()}>
+              {savingWake ? "กำลังบันทึก..." : "บันทึกหมายเลขเครื่อง"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={sending !== null}
+              onClick={() => void sendCommand("wake")}
+            >
+              <Wifi className="size-4" /> ปลุกเครื่องเดี๋ยวนี้
+            </Button>
+          </div>
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">สิ่งที่ต้องตั้งครั้งเดียว</p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>ใน BIOS ของเครื่องตู้สแกน เปิด “Wake on LAN” หรือ “Power On By PCI-E”</li>
+              <li>
+                ใน Windows: Device Manager → การ์ดแลน → Power Management → ติ๊ก “Allow this device to
+                wake the computer”
+              </li>
+              <li>
+                ปลุกจากนอกโรงเรียน (Wake-on-WAN): ให้ผู้ดูแลเน็ตตั้ง Port Forward พอร์ตนี้ (UDP)
+                ในเราเตอร์ไปที่ตู้สแกน และควรใช้สาย LAN ไม่ใช้ Wi‑Fi
+              </li>
+            </ol>
+          </div>
         </CardContent>
       </Card>
 

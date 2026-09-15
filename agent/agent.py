@@ -562,7 +562,15 @@ def power_once() -> None:
         last_activity = float(state.get("last_activity") or time.time())
 
     command = data.get("command")
-    if command:
+    if command == "wake":
+        # Any online FaceGate machine on the same LAN can wake a sleeping kiosk.
+        print("[power] remote command: wake")
+        power.wake_lan(
+            str(data.get("wake_mac") or ""),
+            str(data.get("wake_broadcast") or "255.255.255.255"),
+            int(data.get("wake_port") or 9),
+        )
+    elif command:
         print(f"[power] remote command: {command}")
         power.apply(str(command), 60)
 

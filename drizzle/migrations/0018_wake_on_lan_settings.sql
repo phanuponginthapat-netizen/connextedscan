@@ -1,0 +1,4 @@
+ALTER TABLE public.settings
+  ADD COLUMN IF NOT EXISTS wake_mac text,
+  ADD COLUMN IF NOT EXISTS wake_broadcast text NOT NULL DEFAULT '255.255.255.255',
+  ADD COLUMN IF NOT EXISTS wake_port integer NOT NULL DEFAULT 9;
