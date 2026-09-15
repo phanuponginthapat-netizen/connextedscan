@@ -370,6 +370,9 @@ export type Database = {
           voice_rate: number
           voice_template: string
           voice_volume: number
+          wake_broadcast: string
+          wake_mac: string | null
+          wake_port: number
           web_match_threshold: number
           work_days: string
         }
@@ -460,6 +463,9 @@ export type Database = {
           voice_rate?: number
           voice_template?: string
           voice_volume?: number
+          wake_broadcast?: string
+          wake_mac?: string | null
+          wake_port?: number
           web_match_threshold?: number
           work_days?: string
         }
@@ -550,6 +556,9 @@ export type Database = {
           voice_rate?: number
           voice_template?: string
           voice_volume?: number
+          wake_broadcast?: string
+          wake_mac?: string | null
+          wake_port?: number
           web_match_threshold?: number
           work_days?: string
         }

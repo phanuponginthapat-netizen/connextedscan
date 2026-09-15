@@ -127,6 +127,13 @@
       "when": 1789438446457,
       "tag": "0017_power_saving_and_device_commands",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789440186874,
+      "tag": "0018_wake_on_lan_settings",
+      "breakpoints": true
     }
   ]
 }
