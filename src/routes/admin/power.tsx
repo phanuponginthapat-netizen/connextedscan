@@ -133,6 +133,29 @@ function PowerPage() {
     toast.success("บันทึกแล้ว ตู้สแกนจะนำค่าไปใช้ภายในไม่กี่วินาที");
   };
 
+  const saveWake = async () => {
+    const clean = wake.wake_mac.replace(/[^0-9a-fA-F]/g, "");
+    if (clean.length !== 12) {
+      toast.error("กรอกหมายเลขเครื่อง (MAC) ให้ครบ 12 ตัว เช่น 1A:2B:3C:4D:5E:6F");
+      return;
+    }
+    setSavingWake(true);
+    const { error } = await supabase
+      .from("settings")
+      .update({
+        wake_mac: clean.match(/.{2}/g)!.join(":").toUpperCase(),
+        wake_broadcast: wake.wake_broadcast || "255.255.255.255",
+        wake_port: Number(wake.wake_port) || 9,
+      })
+      .eq("id", true);
+    setSavingWake(false);
+    if (error) {
+      toast.error("บันทึกไม่สำเร็จ: " + error.message);
+      return;
+    }
+    toast.success("บันทึกแล้ว");
+  };
+
   const sendCommand = async (command: string) => {
     setSending(command);
     const { error } = await supabase.from("device_commands").insert({ command });
