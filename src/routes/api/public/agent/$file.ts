@@ -54,6 +54,7 @@ const AGENT_FILES = [
   "local_rules.py",
   "local_api.py",
   "local_ui.py",
+  "local_admin_ui.py",
   "requirements.txt",
 ];
 

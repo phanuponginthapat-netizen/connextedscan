@@ -427,7 +427,7 @@ async function renderReport(view) {
     <table><thead><tr><th>วันที่</th><th>มาแล้ว</th><th>มาสาย</th><th>ขาด</th></tr></thead><tbody>
       ${d.days.map((x) => `<tr><td>${x.date}</td><td>${x.present}</td><td>${x.late}</td><td>${x.absent}</td></tr>`).join('')
         || '<tr><td colspan="4">ไม่มีข้อมูลในช่วงนี้</td></tr>'}</tbody></table></div>
-    <div class="card"><h3>อันดับมาสา ย</h3>
+    <div class="card"><h3>อันดับมาสาย</h3>
     <table><thead><tr><th>ชื่อ</th><th>ชั้น</th><th>มาสาย (วัน)</th><th>มาเรียน (วัน)</th></tr></thead><tbody>
       ${d.top_late.map((p) => `<tr><td>${esc(p.name || '')}</td><td>${esc(p.class_room || '')}</td>
         <td>${p.late}</td><td>${p.present}</td></tr>`).join('') || '<tr><td colspan="4">ไม่มีคนมาสายในช่วงนี้</td></tr>'}
