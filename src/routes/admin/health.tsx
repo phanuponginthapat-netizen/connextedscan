@@ -15,6 +15,7 @@ import {
   Trash2,
   Users,
   WifiOff,
+  FileText,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatCard } from "@/components/reports/report-ui";
-import { systemHealth, cleanupNow, notifyNow } from "@/lib/system-admin.functions";
+import {
+  systemHealth,
+  cleanupNow,
+  notifyNow,
+  weeklyReportNow,
+} from "@/lib/system-admin.functions";
 import { backupNow } from "@/lib/backup.functions";
 
 export const Route = createFileRoute("/admin/health")({
@@ -74,6 +80,7 @@ function HealthPage() {
   const cleanup = useServerFn(cleanupNow);
   const notify = useServerFn(notifyNow);
   const backup = useServerFn(backupNow);
+  const report = useServerFn(weeklyReportNow);
 
   const { data, isFetching, refetch } = useQuery({
     queryKey: ["system-health"],
@@ -107,6 +114,16 @@ function HealthPage() {
     mutationFn: () => backup(),
     onSuccess: () => {
       toast.success("สำรองข้อมูลแล้ว");
+      refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const runReport = useMutation({
+    mutationFn: () => report({ data: { days: 7 } }),
+    onSuccess: (r) => {
+      toast.success(`ส่งรายงานสรุปแล้ว (LINE ${r.line} / อีเมล ${r.email})`);
+      if (r.blocked.length > 0) toast.warning(r.blocked[0]);
       refetch();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -178,12 +195,14 @@ function HealthPage() {
                   <TableHead>ติดต่อล่าสุด</TableHead>
                   <TableHead>เวอร์ชันโปรแกรม</TableHead>
                   <TableHead>ระบบปฏิบัติการ</TableHead>
+                  <TableHead>พื้นที่ว่าง</TableHead>
+                  <TableHead>กล้อง / ประตู</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {devices.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                       ยังไม่มีตู้สแกนลงทะเบียน
                     </TableCell>
                   </TableRow>
@@ -208,6 +227,28 @@ function HealthPage() {
                     <TableCell className="tabular-nums">{agoText(d.last_seen_at)}</TableCell>
                     <TableCell>{d.agent_version ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{d.platform ?? "—"}</TableCell>
+                    <TableCell className="tabular-nums">
+                      {d.disk_free_mb == null ? (
+                        "—"
+                      ) : d.disk_free_mb < 1024 ? (
+                        <span className="font-medium text-destructive">
+                          {(d.disk_free_mb / 1024).toFixed(1)} GB
+                        </span>
+                      ) : (
+                        `${(d.disk_free_mb / 1024).toFixed(1)} GB`
+                      )}
+                    </TableCell>
+                    <TableCell className="space-x-1">
+                      <Badge variant={d.camera_ok === false ? "destructive" : "outline"}>
+                        กล้อง {d.camera_ok === false ? "ผิดปกติ" : d.camera_ok ? "ปกติ" : "—"}
+                      </Badge>
+                      <Badge variant={d.door_ok === false ? "destructive" : "outline"}>
+                        ประตู {d.door_ok === false ? "ไม่พบ" : d.door_ok ? "ปกติ" : "—"}
+                      </Badge>
+                      {d.health_note ? (
+                        <p className="mt-1 text-xs text-destructive">{d.health_note}</p>
+                      ) : null}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -276,6 +317,23 @@ function HealthPage() {
                 disabled={runBackup.isPending}
               >
                 <CloudDownload className="size-4" /> สำรองเลย
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div>
+                <p className="font-medium">รายงานสรุป 7 วัน</p>
+                <p className="text-xs text-muted-foreground">
+                  ส่งให้ผู้รับแจ้งเตือนทุกคน • ล่าสุด {whenText(data?.settings?.weekly_report_last_at)}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => runReport.mutate()}
+                disabled={runReport.isPending}
+              >
+                <FileText className="size-4" /> ส่งรายงาน
               </Button>
             </div>
           </CardContent>
