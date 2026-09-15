@@ -1,9 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  authenticateDevice,
-  corsPreflight,
-  jsonResponse,
-} from "@/lib/kiosk-auth.server";
+import { corsPreflight, jsonResponse } from "@/lib/kiosk-auth.server";
 import { bangkokMinutes, parseWorkDays, timeToMinutes } from "@/lib/attendance-rules";
 import { bangkokWeekday } from "@/lib/attendance-rules";
 
@@ -17,16 +13,13 @@ export const Route = createFileRoute("/api/public/kiosk/today-stats")({
   server: {
     handlers: {
       OPTIONS: () => corsPreflight(),
-      GET: async ({ request }) => handle(request),
-      POST: async ({ request }) => handle(request),
+      GET: () => handle(),
+      POST: () => handle(),
     },
   },
 });
 
-async function handle(request: Request) {
-  const device = await authenticateDevice(request);
-  if (!device) return jsonResponse({ error: "invalid device key" }, 401);
-
+async function handle() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: settings } = await supabaseAdmin
     .from("settings")
