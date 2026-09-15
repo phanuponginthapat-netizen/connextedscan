@@ -18,7 +18,7 @@ const files: Record<string, { body: string; type: string; download?: string }> =
   "agent.py": { body: agentSource, type: "text/plain; charset=utf-8" },
   "face_engine.py": { body: faceEngineSource, type: "text/plain; charset=utf-8" },
   "requirements.txt": { body: requirements, type: "text/plain; charset=utf-8" },
-  "door.py": { body: doorSource, type: "text/plain; charset=utf-8" },
+  "door.py", "power.py": { body: doorSource, type: "text/plain; charset=utf-8" },
   // โค้ดสำหรับ BBC micro:bit (MicroPython) — นำไปวางที่ python.microbit.org
   "microbit-door.py": {
     body: microbitSource,

@@ -24,6 +24,7 @@ import { Route as AdminInstallRouteImport } from './routes/admin/install'
 import { Route as AdminLiveRouteImport } from './routes/admin/live'
 import { Route as AdminMonthlyRouteImport } from './routes/admin/monthly'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
+import { Route as AdminPowerRouteImport } from './routes/admin/power'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
@@ -118,6 +119,11 @@ const AdminMonthlyRoute = AdminMonthlyRouteImport.update({
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPowerRoute = AdminPowerRouteImport.update({
+  id: '/power',
+  path: '/power',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/monthly'
     | '/admin/notifications'
+    | '/admin/power'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/monthly'
     | '/admin/notifications'
+    | '/admin/power'
     | '/admin/settings'
     | '/admin'
     | '/admin/staff/$id'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/monthly'
     | '/admin/notifications'
+    | '/admin/power'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -581,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/power': {
+      id: '/admin/power'
+      path: '/power'
+      fullPath: '/admin/power'
+      preLoaderRoute: typeof AdminPowerRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -733,6 +752,7 @@ interface AdminRouteRouteChildren {
   AdminLiveRoute: typeof AdminLiveRoute
   AdminMonthlyRoute: typeof AdminMonthlyRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminPowerRoute: typeof AdminPowerRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
@@ -750,6 +770,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminLiveRoute: AdminLiveRoute,
   AdminMonthlyRoute: AdminMonthlyRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPowerRoute: AdminPowerRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
