@@ -623,19 +623,54 @@ async function renderSettings(view) {
     <p>${FLAGS.map(([k, l]) => `<label style="display:inline-flex;gap:6px;align-items:center;margin:6px 18px 6px 0;font-weight:600">
       <input id="s_${k}" type="checkbox" style="width:auto" ${s[k] ? 'checked' : ''} /> ${l}</label>`).join('')}</p>
     <p><button class="btn" onclick="saveSettings()">บันทึกการตั้งค่า</button>
-       <button class="btn ghost" onclick="testVoice()">ทดสอบเสียงพูด</button>
        <button class="btn ghost" onclick="changePw()">เปลี่ยนรหัสผู้ดูแล</button></p>
-    <div id="s_msg"></div></div>`;
+    <div id="s_msg"></div></div>
+    <div class="card"><h3>เสียงพูดภาษาไทย</h3>
+      <div id="voice_state" class="msg">กำลังตรวจเสียงในเครื่อง…</div>
+      <p><button class="btn" onclick="installVoice()">ติดตั้งเสียงพูดไทย (ดาวน์โหลดครั้งเดียว)</button>
+         <button class="btn ghost" onclick="testVoice()">ทดสอบเสียงพูด</button>
+         <button class="btn ghost" onclick="clearVoiceCache()">ล้างเสียงที่จำไว้</button></p>
+      <p class="hint">ดาวน์โหลดเสียงไทยประมาณ 80 MB ครั้งเดียว (ต้องมีอินเทอร์เน็ตเฉพาะตอนติดตั้ง)
+         หลังจากนั้นระบบพูดไทยได้เองแบบออฟไลน์ทั้งหมด</p>
+      <div id="voice_msg"></div></div>`;
+  loadVoiceStatus();
+}
+async function loadVoiceStatus() {
+  const box = $('#voice_state'); if (!box) return;
+  try {
+    const s = await api('/api/local/voice/status');
+    box.className = 'msg ' + (s.thai_ready ? 'good' : 'bad');
+    box.textContent = s.message + (s.thai_ready ? ' • เสียงที่จำไว้ ' + (s.cached_clips || 0) + ' ประโยค' : '');
+  } catch (e) { box.className = 'msg bad'; box.textContent = 'ตรวจสถานะเสียงไม่ได้'; }
+}
+async function installVoice() {
+  const box = $('#voice_msg'); box.className = 'msg'; box.textContent = 'กำลังดาวน์โหลดเสียงพูดไทย… อาจใช้เวลา 2-10 นาที';
+  try {
+    const r = await api('/api/local/voice/install', { method: 'POST' });
+    box.className = 'msg ' + (r.installed ? 'good' : 'bad');
+    box.textContent = r.installed
+      ? 'ติดตั้งเสียงพูดไทยเรียบร้อย กดทดสอบเสียงพูดได้เลย'
+      : 'ติดตั้งไม่สำเร็จ: ' + (r.error || 'กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่');
+  } catch (e) { box.className = 'msg bad'; box.textContent = 'ติดตั้งไม่สำเร็จ กรุณาลองอีกครั้ง'; }
+  loadVoiceStatus();
+}
+async function clearVoiceCache() {
+  const box = $('#voice_msg');
+  try {
+    const r = await api('/api/local/voice/clear-cache', { method: 'POST' });
+    box.className = 'msg good'; box.textContent = 'ล้างเสียงที่จำไว้แล้ว ' + (r.removed || 0) + ' ประโยค';
+  } catch (e) { box.className = 'msg bad'; box.textContent = 'ล้างไม่สำเร็จ'; }
+  loadVoiceStatus();
 }
 async function testVoice() {
-  const box = $('#s_msg'); box.className = 'msg'; box.textContent = 'กำลังทดสอบเสียง…';
+  const box = $('#voice_msg'); box.className = 'msg'; box.textContent = 'กำลังทดสอบเสียง…';
   const text = 'ทดสอบเสียง สแกนสำเร็จ ยินดีต้อนรับ';
   const voices = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
   const thai = voices.find((v) => (v.lang || '').toLowerCase().startsWith('th'));
   if (thai) {
     const u = new SpeechSynthesisUtterance(text); u.voice = thai; u.lang = 'th-TH';
     speechSynthesis.cancel(); speechSynthesis.speak(u);
-    box.className = 'msg good'; box.textContent = 'ใช้เสียงในเครื่อง (' + thai.name + ') เรียบร้อย';
+    box.className = 'msg good'; box.textContent = 'ใช้เสียงไทยในเครื่อง (' + thai.name + ') เรียบร้อย';
     return;
   }
   try {
@@ -645,10 +680,10 @@ async function testVoice() {
     });
     if (!res.ok) throw new Error('no engine');
     await new Audio(URL.createObjectURL(await res.blob())).play();
-    box.className = 'msg good'; box.textContent = 'ระบบพูดเองได้ เสียงพร้อมใช้งาน';
+    box.className = 'msg good'; box.textContent = 'ระบบพูดไทยเองได้ เสียงพร้อมใช้งาน';
   } catch (e) {
     box.className = 'msg bad';
-    box.textContent = 'ยังไม่มีเสียงพูดในเครื่องนี้ กรุณาติดตั้งเสียงไทย (Windows: ตั้งค่า > เวลาและภาษา > ภาษา > ไทย > ตัวเลือก > เสียงพูด) แล้วทดสอบอีกครั้ง';
+    box.textContent = 'ยังไม่มีเสียงไทยในเครื่องนี้ กดปุ่ม "ติดตั้งเสียงพูดไทย" หนึ่งครั้ง (หรือติดตั้งเสียงไทยของ Windows: ตั้งค่า > เวลาและภาษา > ภาษา > ไทย > ตัวเลือก > เสียงพูด)';
   }
 }
 
