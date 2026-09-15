@@ -35,6 +35,7 @@ import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agen
 import { Route as ApiPublicCronBackupRouteImport } from './routes/api/public/cron/backup'
 import { Route as ApiPublicCronCleanupRouteImport } from './routes/api/public/cron/cleanup'
 import { Route as ApiPublicCronNotifyRouteImport } from './routes/api/public/cron/notify'
+import { Route as ApiPublicCronWeeklyReportRouteImport } from './routes/api/public/cron/weekly-report'
 import { Route as ApiPublicKioskAlertRouteImport } from './routes/api/public/kiosk/alert'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskDoorCommandRouteImport } from './routes/api/public/kiosk/door-command'
@@ -177,6 +178,12 @@ const ApiPublicCronNotifyRoute = ApiPublicCronNotifyRouteImport.update({
   path: '/api/public/cron/notify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronWeeklyReportRoute =
+  ApiPublicCronWeeklyReportRouteImport.update({
+    id: '/api/public/cron/weekly-report',
+    path: '/api/public/cron/weekly-report',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskAlertRoute = ApiPublicKioskAlertRouteImport.update({
   id: '/api/public/kiosk/alert',
   path: '/api/public/kiosk/alert',
@@ -259,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
   '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
   '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
+  '/api/public/cron/weekly-report': typeof ApiPublicCronWeeklyReportRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -296,6 +304,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
   '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
   '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
+  '/api/public/cron/weekly-report': typeof ApiPublicCronWeeklyReportRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -335,6 +344,7 @@ export interface FileRoutesById {
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
   '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
   '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
+  '/api/public/cron/weekly-report': typeof ApiPublicCronWeeklyReportRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/backup'
     | '/api/public/cron/cleanup'
     | '/api/public/cron/notify'
+    | '/api/public/cron/weekly-report'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/backup'
     | '/api/public/cron/cleanup'
     | '/api/public/cron/notify'
+    | '/api/public/cron/weekly-report'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -450,6 +462,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/backup'
     | '/api/public/cron/cleanup'
     | '/api/public/cron/notify'
+    | '/api/public/cron/weekly-report'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -474,6 +487,7 @@ export interface RootRouteChildren {
   ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
   ApiPublicCronCleanupRoute: typeof ApiPublicCronCleanupRoute
   ApiPublicCronNotifyRoute: typeof ApiPublicCronNotifyRoute
+  ApiPublicCronWeeklyReportRoute: typeof ApiPublicCronWeeklyReportRoute
   ApiPublicKioskAlertRoute: typeof ApiPublicKioskAlertRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskDoorCommandRoute: typeof ApiPublicKioskDoorCommandRoute
@@ -670,6 +684,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronNotifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/weekly-report': {
+      id: '/api/public/cron/weekly-report'
+      path: '/api/public/cron/weekly-report'
+      fullPath: '/api/public/cron/weekly-report'
+      preLoaderRoute: typeof ApiPublicCronWeeklyReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/alert': {
       id: '/api/public/kiosk/alert'
       path: '/api/public/kiosk/alert'
@@ -795,6 +816,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
   ApiPublicCronCleanupRoute: ApiPublicCronCleanupRoute,
   ApiPublicCronNotifyRoute: ApiPublicCronNotifyRoute,
+  ApiPublicCronWeeklyReportRoute: ApiPublicCronWeeklyReportRoute,
   ApiPublicKioskAlertRoute: ApiPublicKioskAlertRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskDoorCommandRoute: ApiPublicKioskDoorCommandRoute,
