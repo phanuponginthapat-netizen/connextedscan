@@ -134,6 +134,13 @@
       "when": 1789440186874,
       "tag": "0018_wake_on_lan_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789440811631,
+      "tag": "0019_audit_logs_weekly_report_device_health",
+      "breakpoints": true
     }
   ]
 }

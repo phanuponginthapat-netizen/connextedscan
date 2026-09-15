@@ -132,7 +132,57 @@ export async function notify(
   return outcome;
 }
 
-type Settings = {
+/**
+ * Sends one message to every active recipient, ignoring their per-event
+ * subscriptions. Used for whole-school messages such as the weekly report.
+ */
+export async function notifyAll(
+  event: NotifyEvent,
+  subject: string,
+  message: string,
+  channels: { email: boolean; line: boolean },
+): Promise<NotifyOutcome> {
+  const outcome: NotifyOutcome = { event, subject, message, line: 0, email: 0, blocked: [] };
+  const { data } = await supabaseAdmin
+    .from("notification_recipients")
+    .select("id, name, email, line_user_id, events")
+    .eq("is_active", true);
+
+  for (const recipient of (data ?? []) as Recipient[]) {
+    if (channels.line && recipient.line_user_id) {
+      const error = await pushLine(recipient.line_user_id, `${subject}\n\n${message}`);
+      await logDelivery({
+        channel: "line",
+        event,
+        target: recipient.line_user_id,
+        subject,
+        message,
+        status: error ? "failed" : "sent",
+        error,
+      });
+      if (error) outcome.blocked.push(`LINE ${recipient.name}: ${error}`);
+      else outcome.line += 1;
+    }
+    if (channels.email && recipient.email) {
+      const error = await sendEmail(recipient.email, subject, message);
+      await logDelivery({
+        channel: "email",
+        event,
+        target: recipient.email,
+        subject,
+        message,
+        status: error ? "failed" : "sent",
+        error,
+      });
+      if (error) outcome.blocked.push(`Email ${recipient.name}: ${error}`);
+      else outcome.email += 1;
+    }
+  }
+
+  return outcome;
+}
+
+ type Settings = {
   notify_email_enabled: boolean;
   notify_line_enabled: boolean;
   notify_absent: boolean;

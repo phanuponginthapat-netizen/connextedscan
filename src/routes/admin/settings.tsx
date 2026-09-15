@@ -24,6 +24,7 @@ import {
   DoorOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { recordAudit } from "@/lib/audit.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -160,6 +161,8 @@ function SettingsPage() {
     if (data) setForm(data as SettingsRow);
   }, [data]);
 
+  const audit = useServerFn(recordAudit);
+
   const save = useMutation({
     mutationFn: async () => {
       if (!form) return;
@@ -174,6 +177,7 @@ function SettingsPage() {
       if (error) throw error;
     },
     onSuccess: () => {
+      void audit({ data: { action: "แก้ไขการตั้งค่าระบบ", target: "settings" } });
       toast.success("บันทึกการตั้งค่าแล้ว");
       qc.invalidateQueries({ queryKey: ["settings"] });
     },

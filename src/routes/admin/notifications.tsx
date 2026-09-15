@@ -207,6 +207,53 @@ function NotificationsPage() {
               />
             </div>
 
+            <div className="space-y-3 rounded-lg border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">ส่งรายงานสรุปอัตโนมัติ</p>
+                  <p className="text-xs text-muted-foreground">
+                    สรุปมาแล้ว / มาสาย / ขาด ย้อนหลัง 7 วัน ส่งให้ผู้รับแจ้งเตือนทุกคน
+                  </p>
+                </div>
+                <Switch
+                  checked={settings?.weekly_report_enabled ?? false}
+                  onCheckedChange={(v) => saveSetting.mutate({ weekly_report_enabled: v })}
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="report-weekday">ส่งวัน</Label>
+                  <select
+                    id="report-weekday"
+                    className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                    value={String(settings?.weekly_report_weekday ?? 5)}
+                    onChange={(e) =>
+                      saveSetting.mutate({ weekly_report_weekday: Number(e.target.value) })
+                    }
+                  >
+                    {["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"].map(
+                      (label, index) => (
+                        <option key={label} value={String(index)}>
+                          {label}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="report-time">เวลา</Label>
+                  <Input
+                    id="report-time"
+                    type="time"
+                    defaultValue={String(settings?.weekly_report_time ?? "16:30").slice(0, 5)}
+                    onBlur={(e) =>
+                      saveSetting.mutate({ weekly_report_time: `${e.target.value}:00` })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2 rounded-lg border p-3">
               {SETTING_KEYS.map(({ key, event }) => {
                 const meta = EVENTS.find((e) => e.key === event);

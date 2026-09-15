@@ -17,6 +17,8 @@ import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as TabletRouteImport } from './routes/tablet'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AdminCertificateRouteImport } from './routes/admin/certificate'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminDoorRouteImport } from './routes/admin/door'
 import { Route as AdminHealthRouteImport } from './routes/admin/health'
@@ -35,6 +37,7 @@ import { Route as ApiPublicAgentFileRouteImport } from './routes/api/public/agen
 import { Route as ApiPublicCronBackupRouteImport } from './routes/api/public/cron/backup'
 import { Route as ApiPublicCronCleanupRouteImport } from './routes/api/public/cron/cleanup'
 import { Route as ApiPublicCronNotifyRouteImport } from './routes/api/public/cron/notify'
+import { Route as ApiPublicCronWeeklyReportRouteImport } from './routes/api/public/cron/weekly-report'
 import { Route as ApiPublicKioskAlertRouteImport } from './routes/api/public/kiosk/alert'
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskDoorCommandRouteImport } from './routes/api/public/kiosk/door-command'
@@ -42,6 +45,7 @@ import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/publi
 import { Route as ApiPublicKioskPowerCommandRouteImport } from './routes/api/public/kiosk/power-command'
 import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/kiosk/recent'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
+import { Route as ApiPublicKioskTodayStatsRouteImport } from './routes/api/public/kiosk/today-stats'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskVisitorRouteImport } from './routes/api/public/kiosk/visitor'
 import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
@@ -84,6 +88,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAttendanceRoute = AdminAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCertificateRoute = AdminCertificateRouteImport.update({
+  id: '/certificate',
+  path: '/certificate',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminCmsRoute = AdminCmsRouteImport.update({
@@ -177,6 +191,12 @@ const ApiPublicCronNotifyRoute = ApiPublicCronNotifyRouteImport.update({
   path: '/api/public/cron/notify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronWeeklyReportRoute =
+  ApiPublicCronWeeklyReportRouteImport.update({
+    id: '/api/public/cron/weekly-report',
+    path: '/api/public/cron/weekly-report',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskAlertRoute = ApiPublicKioskAlertRouteImport.update({
   id: '/api/public/kiosk/alert',
   path: '/api/public/kiosk/alert',
@@ -216,6 +236,12 @@ const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
   path: '/api/public/kiosk/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskTodayStatsRoute =
+  ApiPublicKioskTodayStatsRouteImport.update({
+    id: '/api/public/kiosk/today-stats',
+    path: '/api/public/kiosk/today-stats',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskTtsRoute = ApiPublicKioskTtsRouteImport.update({
   id: '/api/public/kiosk/tts',
   path: '/api/public/kiosk/tts',
@@ -240,6 +266,8 @@ export interface FileRoutesByFullPath {
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/certificate': typeof AdminCertificateRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -259,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
   '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
   '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
+  '/api/public/cron/weekly-report': typeof ApiPublicCronWeeklyReportRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -266,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/today-stats': typeof ApiPublicKioskTodayStatsRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -277,6 +307,8 @@ export interface FileRoutesByTo {
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/certificate': typeof AdminCertificateRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -296,6 +328,7 @@ export interface FileRoutesByTo {
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
   '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
   '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
+  '/api/public/cron/weekly-report': typeof ApiPublicCronWeeklyReportRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -303,6 +336,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/today-stats': typeof ApiPublicKioskTodayStatsRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -316,6 +350,8 @@ export interface FileRoutesById {
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/certificate': typeof AdminCertificateRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -335,6 +371,7 @@ export interface FileRoutesById {
   '/api/public/cron/backup': typeof ApiPublicCronBackupRoute
   '/api/public/cron/cleanup': typeof ApiPublicCronCleanupRoute
   '/api/public/cron/notify': typeof ApiPublicCronNotifyRoute
+  '/api/public/cron/weekly-report': typeof ApiPublicCronWeeklyReportRoute
   '/api/public/kiosk/alert': typeof ApiPublicKioskAlertRoute
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
@@ -342,6 +379,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/today-stats': typeof ApiPublicKioskTodayStatsRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -356,6 +394,8 @@ export interface FileRouteTypes {
     | '/kiosk'
     | '/tablet'
     | '/admin/attendance'
+    | '/admin/audit'
+    | '/admin/certificate'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -375,6 +415,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/backup'
     | '/api/public/cron/cleanup'
     | '/api/public/cron/notify'
+    | '/api/public/cron/weekly-report'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -382,6 +423,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/today-stats'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
@@ -393,6 +435,8 @@ export interface FileRouteTypes {
     | '/kiosk'
     | '/tablet'
     | '/admin/attendance'
+    | '/admin/audit'
+    | '/admin/certificate'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -412,6 +456,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/backup'
     | '/api/public/cron/cleanup'
     | '/api/public/cron/notify'
+    | '/api/public/cron/weekly-report'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -419,6 +464,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/today-stats'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
@@ -431,6 +477,8 @@ export interface FileRouteTypes {
     | '/kiosk'
     | '/tablet'
     | '/admin/attendance'
+    | '/admin/audit'
+    | '/admin/certificate'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -450,6 +498,7 @@ export interface FileRouteTypes {
     | '/api/public/cron/backup'
     | '/api/public/cron/cleanup'
     | '/api/public/cron/notify'
+    | '/api/public/cron/weekly-report'
     | '/api/public/kiosk/alert'
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
@@ -457,6 +506,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/today-stats'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
@@ -474,6 +524,7 @@ export interface RootRouteChildren {
   ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
   ApiPublicCronCleanupRoute: typeof ApiPublicCronCleanupRoute
   ApiPublicCronNotifyRoute: typeof ApiPublicCronNotifyRoute
+  ApiPublicCronWeeklyReportRoute: typeof ApiPublicCronWeeklyReportRoute
   ApiPublicKioskAlertRoute: typeof ApiPublicKioskAlertRoute
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskDoorCommandRoute: typeof ApiPublicKioskDoorCommandRoute
@@ -481,6 +532,7 @@ export interface RootRouteChildren {
   ApiPublicKioskPowerCommandRoute: typeof ApiPublicKioskPowerCommandRoute
   ApiPublicKioskRecentRoute: typeof ApiPublicKioskRecentRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
+  ApiPublicKioskTodayStatsRoute: typeof ApiPublicKioskTodayStatsRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskVisitorRoute: typeof ApiPublicKioskVisitorRoute
   ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
@@ -542,6 +594,20 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/admin/attendance'
       preLoaderRoute: typeof AdminAttendanceRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/certificate': {
+      id: '/admin/certificate'
+      path: '/certificate'
+      fullPath: '/admin/certificate'
+      preLoaderRoute: typeof AdminCertificateRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/cms': {
@@ -670,6 +736,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronNotifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/weekly-report': {
+      id: '/api/public/cron/weekly-report'
+      path: '/api/public/cron/weekly-report'
+      fullPath: '/api/public/cron/weekly-report'
+      preLoaderRoute: typeof ApiPublicCronWeeklyReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/alert': {
       id: '/api/public/kiosk/alert'
       path: '/api/public/kiosk/alert'
@@ -719,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/today-stats': {
+      id: '/api/public/kiosk/today-stats'
+      path: '/api/public/kiosk/today-stats'
+      fullPath: '/api/public/kiosk/today-stats'
+      preLoaderRoute: typeof ApiPublicKioskTodayStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/tts': {
       id: '/api/public/kiosk/tts'
       path: '/api/public/kiosk/tts'
@@ -745,6 +825,8 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminCertificateRoute: typeof AdminCertificateRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminDoorRoute: typeof AdminDoorRoute
   AdminHealthRoute: typeof AdminHealthRoute
@@ -763,6 +845,8 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminCertificateRoute: AdminCertificateRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminDoorRoute: AdminDoorRoute,
   AdminHealthRoute: AdminHealthRoute,
@@ -795,6 +879,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
   ApiPublicCronCleanupRoute: ApiPublicCronCleanupRoute,
   ApiPublicCronNotifyRoute: ApiPublicCronNotifyRoute,
+  ApiPublicCronWeeklyReportRoute: ApiPublicCronWeeklyReportRoute,
   ApiPublicKioskAlertRoute: ApiPublicKioskAlertRoute,
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskDoorCommandRoute: ApiPublicKioskDoorCommandRoute,
@@ -802,6 +887,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskPowerCommandRoute: ApiPublicKioskPowerCommandRoute,
   ApiPublicKioskRecentRoute: ApiPublicKioskRecentRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
+  ApiPublicKioskTodayStatsRoute: ApiPublicKioskTodayStatsRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskVisitorRoute: ApiPublicKioskVisitorRoute,
   ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,

@@ -39,6 +39,7 @@ type PowerForm = {
   auto_power_off_time: string;
   auto_power_off_action: string;
   power_off_workdays_only: boolean;
+  screensaver_mode: string;
 };
 
 const DEFAULTS: PowerForm = {
@@ -50,6 +51,7 @@ const DEFAULTS: PowerForm = {
   auto_power_off_time: "18:30",
   auto_power_off_action: "shutdown",
   power_off_workdays_only: false,
+  screensaver_mode: "stats",
 };
 
 const REMOTE: Array<{ command: string; label: string; hint: string; icon: typeof Power }> = [
@@ -94,6 +96,8 @@ function PowerPage() {
               (next as Record<string, unknown>)[key] = Boolean(value);
             } else if (typeof DEFAULTS[key] === "number") {
               (next as Record<string, unknown>)[key] = Number(value);
+            } else if (key === "screensaver_mode" || key === "auto_power_off_action") {
+              (next as Record<string, unknown>)[key] = String(value);
             } else {
               (next as Record<string, unknown>)[key] = trimTime(String(value));
             }
@@ -198,6 +202,24 @@ function PowerPage() {
                 setForm((prev) => ({ ...prev, power_saving_enabled: checked }))
               }
             />
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">ตอนพักหน้าจอให้แสดงอะไร</p>
+              <p className="text-xs text-muted-foreground">
+                เลือก "สถิติวันนี้" แล้วจอจะโชว์จำนวนมาแล้ว / มาสาย / ขาด แทนจอดำ
+                หลังหมดเวลาสแกนเข้า–ออก
+              </p>
+            </div>
+            <select
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+              value={form.screensaver_mode}
+              onChange={(e) => setForm((prev) => ({ ...prev, screensaver_mode: e.target.value }))}
+            >
+              <option value="stats">สถิติวันนี้</option>
+              <option value="black">จอดำ</option>
+            </select>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

@@ -58,6 +58,36 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          target: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          target?: string | null
+        }
+        Relationships: []
+      }
       device_commands: {
         Row: {
           command: string
@@ -100,8 +130,12 @@ export type Database = {
         Row: {
           agent_version: string | null
           api_key: string
+          camera_ok: boolean | null
           created_at: string
           default_direction: string
+          disk_free_mb: number | null
+          door_ok: boolean | null
+          health_note: string | null
           id: string
           is_active: boolean
           last_seen_at: string | null
@@ -112,8 +146,12 @@ export type Database = {
         Insert: {
           agent_version?: string | null
           api_key: string
+          camera_ok?: boolean | null
           created_at?: string
           default_direction?: string
+          disk_free_mb?: number | null
+          door_ok?: boolean | null
+          health_note?: string | null
           id?: string
           is_active?: boolean
           last_seen_at?: string | null
@@ -124,8 +162,12 @@ export type Database = {
         Update: {
           agent_version?: string | null
           api_key?: string
+          camera_ok?: boolean | null
           created_at?: string
           default_direction?: string
+          disk_free_mb?: number | null
+          door_ok?: boolean | null
+          health_note?: string | null
           id?: string
           is_active?: boolean
           last_seen_at?: string | null
@@ -357,6 +399,7 @@ export type Database = {
           screen_idle_minutes: number
           screen_off_end: string
           screen_off_start: string
+          screensaver_mode: string
           second_camera_direction: string
           second_camera_index: number
           snapshot_retention_days: number
@@ -374,6 +417,10 @@ export type Database = {
           wake_mac: string | null
           wake_port: number
           web_match_threshold: number
+          weekly_report_enabled: boolean
+          weekly_report_last_at: string | null
+          weekly_report_time: string
+          weekly_report_weekday: number
           work_days: string
         }
         Insert: {
@@ -450,6 +497,7 @@ export type Database = {
           screen_idle_minutes?: number
           screen_off_end?: string
           screen_off_start?: string
+          screensaver_mode?: string
           second_camera_direction?: string
           second_camera_index?: number
           snapshot_retention_days?: number
@@ -467,6 +515,10 @@ export type Database = {
           wake_mac?: string | null
           wake_port?: number
           web_match_threshold?: number
+          weekly_report_enabled?: boolean
+          weekly_report_last_at?: string | null
+          weekly_report_time?: string
+          weekly_report_weekday?: number
           work_days?: string
         }
         Update: {
@@ -543,6 +595,7 @@ export type Database = {
           screen_idle_minutes?: number
           screen_off_end?: string
           screen_off_start?: string
+          screensaver_mode?: string
           second_camera_direction?: string
           second_camera_index?: number
           snapshot_retention_days?: number
@@ -560,6 +613,10 @@ export type Database = {
           wake_mac?: string | null
           wake_port?: number
           web_match_threshold?: number
+          weekly_report_enabled?: boolean
+          weekly_report_last_at?: string | null
+          weekly_report_time?: string
+          weekly_report_weekday?: number
           work_days?: string
         }
         Relationships: []

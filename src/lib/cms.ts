@@ -114,6 +114,12 @@ export const CMS_GROUPS: CmsGroup[] = [
       { key: "nav.monthly", label: "เมนู – รายงานรายเดือน", default: "รายงานรายเดือน" },
       { key: "nav.live", label: "เมนู – จอแสดงผลจอใหญ่", default: "จอแสดงผลจอใหญ่" },
       { key: "nav.health", label: "เมนู – สุขภาพระบบ", default: "สุขภาพระบบ" },
+      { key: "nav.audit", label: "เมนู – บันทึกการใช้งาน", default: "บันทึกการใช้งาน" },
+      {
+        key: "nav.certificate",
+        label: "เมนู – ใบรับรองเวลาเรียน",
+        default: "ใบรับรองเวลาเรียน",
+      },
       { key: "nav.notifications", label: "เมนู – แจ้งเตือนอัตโนมัติ", default: "แจ้งเตือนอัตโนมัติ" },
       { key: "nav.cms", label: "เมนู – จัดการเนื้อหา", default: "จัดการเนื้อหา" },
       { key: "nav.settings", label: "เมนู – ตั้งค่า", default: "ตั้งค่า" },
@@ -181,7 +187,7 @@ CMS_GROUPS.push(
       {
         key: "download.bundle_version",
         label: "เวอร์ชันไฟล์ติดตั้งแบบครบชุด",
-        default: "1.4.0",
+        default: "1.5.0",
       },
       {
         key: "download.apk_url",
