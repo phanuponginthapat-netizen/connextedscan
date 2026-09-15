@@ -11,7 +11,14 @@
 - [x] Attendance time rules extracted to `src/lib/attendance-rules.ts` with 12 vitest tests
 - [x] Extra database indexes (migration 0015)
 
+- [x] Audit log of admin actions (`audit_logs`, `/admin/audit`, `recordAudit`)
+- [x] Deeper device health: disk free, camera, micro:bit door reported on sync, shown on `/admin/health`
+- [x] Attendance summary report: `src/lib/report.server.ts`, `/api/public/cron/weekly-report`, manual send button, schedule in `/admin/notifications`
+- [x] Printable attendance certificate per person (`/admin/certificate`)
+- [x] Today's stats screensaver on the kiosk (`/api/public/kiosk/today-stats`, `screensaver_mode` setting)
+
 ## Open (blocked)
 - [ ] Email delivery: needs a verified sender domain for the project. `src/lib/email/send.server.ts` is the single place to complete once the domain exists.
 - [ ] LINE delivery: needs `LINE_CHANNEL_ACCESS_TOKEN` secret from the school's LINE Official Account.
+- [ ] Weekly report cron schedule: same cron secret dependency as below.
 - [ ] Automatic hourly schedule for cleanup/notify cron endpoints: needs the cron secret to be wired into a scheduled job. Manual buttons work today.
