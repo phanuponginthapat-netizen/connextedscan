@@ -219,6 +219,14 @@ function resolvePython(runtimeDir, agentDir) {
   return null;
 }
 
+function resolveAgentDir() {
+  const bundled = path.join(__dirname, "..", "agent").replace("app.asar", "app.asar.unpacked");
+  const hasUpdate =
+    fs.existsSync(path.join(UPDATE_DIR, "agent.py")) &&
+    fs.existsSync(path.join(UPDATE_DIR, "face_engine.py"));
+  return hasUpdate ? UPDATE_DIR : bundled;
+}
+
 function startAgent() {
   stopAgent({ restart: true });
   const cfg = loadConfig();
@@ -340,6 +348,7 @@ function startAgent() {
       startedAt: Date.now(),
     };
     startHealthWatch();
+    watchRestartRequest();
   } catch (err) {
     console.error("[agent] failed to start", err);
     appendLog(`spawn failed: ${err?.message || err}`);
@@ -542,6 +551,25 @@ async function checkForUpdates({ initial = false } = {}) {
   } catch (err) {
     console.warn("[update] check failed:", err.message);
   }
+}
+
+// The Python program writes this file when the admin site asks for a restart
+// (remote "restart app" button in the power-saving page).
+function watchRestartRequest() {
+  setInterval(() => {
+    try {
+      const agentDir = resolveAgentDir();
+      if (!agentDir) return;
+      const flag = path.join(agentDir, ".restart-requested");
+      if (!fs.existsSync(flag)) return;
+      fs.unlinkSync(flag);
+      console.log("[power] restart requested from the admin site");
+      startAgent();
+      if (kioskWindow && !kioskWindow.isDestroyed()) kioskWindow.reload();
+    } catch {
+      // a failed restart must never take the kiosk down
+    }
+  }, 5000);
 }
 
 // IPC exposed to the settings page.

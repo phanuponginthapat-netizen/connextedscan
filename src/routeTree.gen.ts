@@ -24,6 +24,7 @@ import { Route as AdminInstallRouteImport } from './routes/admin/install'
 import { Route as AdminLiveRouteImport } from './routes/admin/live'
 import { Route as AdminMonthlyRouteImport } from './routes/admin/monthly'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
+import { Route as AdminPowerRouteImport } from './routes/admin/power'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
@@ -38,6 +39,7 @@ import { Route as ApiPublicKioskAlertRouteImport } from './routes/api/public/kio
 import { Route as ApiPublicKioskAttendanceRouteImport } from './routes/api/public/kiosk/attendance'
 import { Route as ApiPublicKioskDoorCommandRouteImport } from './routes/api/public/kiosk/door-command'
 import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/public/kiosk/embeddings'
+import { Route as ApiPublicKioskPowerCommandRouteImport } from './routes/api/public/kiosk/power-command'
 import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/kiosk/recent'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
@@ -119,6 +121,11 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminPowerRoute = AdminPowerRouteImport.update({
+  id: '/power',
+  path: '/power',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -193,6 +200,12 @@ const ApiPublicKioskEmbeddingsRoute =
     path: '/api/public/kiosk/embeddings',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicKioskPowerCommandRoute =
+  ApiPublicKioskPowerCommandRouteImport.update({
+    id: '/api/public/kiosk/power-command',
+    path: '/api/public/kiosk/power-command',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskRecentRoute = ApiPublicKioskRecentRouteImport.update({
   id: '/api/public/kiosk/recent',
   path: '/api/public/kiosk/recent',
@@ -234,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -249,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
@@ -269,6 +284,7 @@ export interface FileRoutesByTo {
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -284,6 +300,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
@@ -306,6 +323,7 @@ export interface FileRoutesById {
   '/admin/live': typeof AdminLiveRoute
   '/admin/monthly': typeof AdminMonthlyRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
@@ -321,6 +339,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/attendance': typeof ApiPublicKioskAttendanceRoute
   '/api/public/kiosk/door-command': typeof ApiPublicKioskDoorCommandRoute
   '/api/public/kiosk/embeddings': typeof ApiPublicKioskEmbeddingsRoute
+  '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
@@ -344,6 +363,7 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/monthly'
     | '/admin/notifications'
+    | '/admin/power'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -359,6 +379,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
@@ -379,6 +400,7 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/monthly'
     | '/admin/notifications'
+    | '/admin/power'
     | '/admin/settings'
     | '/admin'
     | '/admin/staff/$id'
@@ -394,6 +416,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
@@ -415,6 +438,7 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/monthly'
     | '/admin/notifications'
+    | '/admin/power'
     | '/admin/settings'
     | '/admin/'
     | '/admin/staff/$id'
@@ -430,6 +454,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/attendance'
     | '/api/public/kiosk/door-command'
     | '/api/public/kiosk/embeddings'
+    | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
     | '/api/public/kiosk/tts'
@@ -453,6 +478,7 @@ export interface RootRouteChildren {
   ApiPublicKioskAttendanceRoute: typeof ApiPublicKioskAttendanceRoute
   ApiPublicKioskDoorCommandRoute: typeof ApiPublicKioskDoorCommandRoute
   ApiPublicKioskEmbeddingsRoute: typeof ApiPublicKioskEmbeddingsRoute
+  ApiPublicKioskPowerCommandRoute: typeof ApiPublicKioskPowerCommandRoute
   ApiPublicKioskRecentRoute: typeof ApiPublicKioskRecentRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
@@ -567,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/power': {
+      id: '/admin/power'
+      path: '/power'
+      fullPath: '/admin/power'
+      preLoaderRoute: typeof AdminPowerRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -665,6 +698,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskEmbeddingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/power-command': {
+      id: '/api/public/kiosk/power-command'
+      path: '/api/public/kiosk/power-command'
+      fullPath: '/api/public/kiosk/power-command'
+      preLoaderRoute: typeof ApiPublicKioskPowerCommandRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/recent': {
       id: '/api/public/kiosk/recent'
       path: '/api/public/kiosk/recent'
@@ -712,6 +752,7 @@ interface AdminRouteRouteChildren {
   AdminLiveRoute: typeof AdminLiveRoute
   AdminMonthlyRoute: typeof AdminMonthlyRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminPowerRoute: typeof AdminPowerRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
@@ -729,6 +770,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminLiveRoute: AdminLiveRoute,
   AdminMonthlyRoute: AdminMonthlyRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPowerRoute: AdminPowerRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
@@ -757,6 +799,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskAttendanceRoute: ApiPublicKioskAttendanceRoute,
   ApiPublicKioskDoorCommandRoute: ApiPublicKioskDoorCommandRoute,
   ApiPublicKioskEmbeddingsRoute: ApiPublicKioskEmbeddingsRoute,
+  ApiPublicKioskPowerCommandRoute: ApiPublicKioskPowerCommandRoute,
   ApiPublicKioskRecentRoute: ApiPublicKioskRecentRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,

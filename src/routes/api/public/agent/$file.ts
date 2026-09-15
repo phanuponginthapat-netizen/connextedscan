@@ -8,6 +8,7 @@ import electronLoading from "../../../../../electron/loading.html?raw";
 import agentSource from "../../../../../agent/agent.py?raw";
 import faceEngineSource from "../../../../../agent/face_engine.py?raw";
 import doorSource from "../../../../../agent/door.py?raw";
+import powerSource from "../../../../../agent/power.py?raw";
 import microbitSource from "../../../../../microbit/door.py?raw";
 import requirements from "../../../../../agent/requirements.txt?raw";
 import installPs1 from "../../../../../agent/install.ps1?raw";
@@ -19,6 +20,7 @@ const files: Record<string, { body: string; type: string; download?: string }> =
   "face_engine.py": { body: faceEngineSource, type: "text/plain; charset=utf-8" },
   "requirements.txt": { body: requirements, type: "text/plain; charset=utf-8" },
   "door.py": { body: doorSource, type: "text/plain; charset=utf-8" },
+  "power.py": { body: powerSource, type: "text/plain; charset=utf-8" },
   // โค้ดสำหรับ BBC micro:bit (MicroPython) — นำไปวางที่ python.microbit.org
   "microbit-door.py": {
     body: microbitSource,
@@ -42,7 +44,7 @@ const files: Record<string, { body: string; type: string; download?: string }> =
 };
 
 /** Files the FaceGate desktop program keeps up to date automatically. */
-const AGENT_FILES = ["agent.py", "face_engine.py", "door.py", "requirements.txt"];
+const AGENT_FILES = ["agent.py", "face_engine.py", "door.py", "power.py", "requirements.txt"];
 
 const UPDATE_README = `FaceGate — ไฟล์อัปเดตโปรแกรม
 ================================
@@ -76,6 +78,7 @@ function buildUpdateZip() {
     { name: "agent/agent.py", content: agentSource },
     { name: "agent/face_engine.py", content: faceEngineSource },
     { name: "agent/door.py", content: doorSource },
+    { name: "agent/power.py", content: powerSource },
     { name: "agent/requirements.txt", content: requirements },
     { name: "agent/install.ps1", content: installPs1 },
     { name: "agent/install.sh", content: installSh },

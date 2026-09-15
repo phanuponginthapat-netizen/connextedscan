@@ -129,6 +129,11 @@ function Kiosk() {
   // Boot gate: the scan screen only appears once the camera, the FaceGate
   // program and the voice are all ready, so the kiosk works at full speed
   // from the very first scan.
+  const [powerInfo, setPowerInfo] = useState<{
+    screen_off?: boolean;
+    pending?: { action?: string; at?: number } | null;
+  } | null>(null);
+  const [powerCountdown, setPowerCountdown] = useState(0);
   const [camReady, setCamReady] = useState(false);
   const [booted, setBooted] = useState(false);
   const displayRef = useRef(display);
@@ -532,6 +537,50 @@ function Kiosk() {
     };
   }, [scanOnce]);
 
+  // Power saving: ask the local program whether the screen should be dark and
+  // whether the PC is about to switch itself off, so staff can stop it in time.
+  useEffect(() => {
+    let stopped = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${agentUrl}/power/status`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        const body = (await res.json()) as {
+          screen_off?: boolean;
+          pending?: { action?: string; at?: number } | null;
+        };
+        if (stopped) return;
+        setPowerInfo(body);
+        const at = body.pending?.at ? Number(body.pending.at) * 1000 : 0;
+        setPowerCountdown(at ? Math.max(0, Math.round((at - Date.now()) / 1000)) : 0);
+      } catch {
+        if (!stopped) setPowerInfo(null);
+      }
+    };
+    void poll();
+    const timer = setInterval(() => void poll(), 3000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [agentUrl]);
+
+  const sendPowerCommand = useCallback(
+    async (command: string) => {
+      try {
+        await fetch(`${agentUrl}/power/command`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ command }),
+        });
+      } catch {
+        // the kiosk must never break because a power command failed
+      }
+    },
+    [agentUrl],
+  );
+
   const tone =
     result?.result === "ok"
       ? "border-primary bg-primary/10"
@@ -843,6 +892,42 @@ function Kiosk() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Screen asleep to save electricity — tap anywhere to wake it up */}
+      {powerInfo?.screen_off && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-2 bg-black text-white/80"
+          onClick={() => void sendPowerCommand("screen_on")}
+        >
+          <span className="text-lg font-semibold">พักหน้าจอเพื่อประหยัดไฟ</span>
+          <span className="text-sm text-white/60">แตะหน้าจอเพื่อใช้งานต่อ</span>
+        </button>
+      )}
+
+      {/* Countdown before the PC powers itself off */}
+      {powerInfo?.pending && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-foreground/70 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-md rounded-3xl border bg-card p-8 text-center shadow-panel">
+            <p className="text-xl font-semibold">
+              {powerInfo.pending.action === "sleep"
+                ? "กำลังจะพักเครื่อง"
+                : "กำลังจะปิดเครื่อง"}
+            </p>
+            <p className="mt-2 text-5xl font-bold text-primary">{powerCountdown}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              ถ้ายังต้องใช้งานอยู่ กดปุ่มด้านล่างเพื่อยกเลิก
+            </p>
+            <Button className="mt-5 w-full" onClick={() => void sendPowerCommand("cancel")}>
+              ยังใช้งานอยู่ — ยกเลิก
+            </Button>
           </div>
         </div>
       )}

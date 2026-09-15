@@ -120,6 +120,13 @@
       "when": 1789377655259,
       "tag": "0016_door_servo_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789438446457,
+      "tag": "0017_power_saving_and_device_commands",
+      "breakpoints": true
     }
   ]
 }
