@@ -532,8 +532,9 @@ function openKiosk() {
   // and another spin of the loading screen. Wait for /health instead, and let
   // the loading page report what is wrong while we wait.
   let openTimer = null;
+  let kioskNavigationInProgress = false;
   const openWhenReady = async () => {
-    if (!kioskWindow || kioskWindow.isDestroyed()) return;
+    if (!kioskWindow || kioskWindow.isDestroyed() || kioskNavigationInProgress) return;
     if (STANDALONE) {
       if (!(await probeAgentHealth())) {
         openTimer = setTimeout(openWhenReady, 1500);
@@ -550,7 +551,18 @@ function openKiosk() {
         return;
       }
     }
-    if (kioskWindow && !kioskWindow.isDestroyed()) kioskWindow.loadURL(url);
+    if (kioskWindow && !kioskWindow.isDestroyed()) {
+      kioskNavigationInProgress = true;
+      try {
+        await kioskWindow.loadURL(url);
+      } catch (err) {
+        // did-fail-load owns the visible retry state. Swallow the matching
+        // rejected promise so it cannot start a second navigation loop.
+        console.warn(`[kiosk] navigation failed: ${err?.message || err}`);
+      } finally {
+        kioskNavigationInProgress = false;
+      }
+    }
   };
   openTimer = setTimeout(openWhenReady, 800);
 
@@ -559,9 +571,11 @@ function openKiosk() {
   const retryLater = (reason) => {
     if (!kioskWindow || kioskWindow.isDestroyed()) return;
     console.warn(`[kiosk] load problem (${reason}) — retrying`);
-    kioskWindow.loadFile(path.join(__dirname, "loading.html"));
     if (openTimer) clearTimeout(openTimer);
-    openTimer = setTimeout(openWhenReady, 4000);
+    void kioskWindow.loadFile(path.join(__dirname, "loading.html")).finally(() => {
+      kioskNavigationInProgress = false;
+      openTimer = setTimeout(openWhenReady, 4000);
+    });
   };
 
   kioskWindow.webContents.on("did-fail-load", (_e, code, description, validatedUrl, isMainFrame) => {
