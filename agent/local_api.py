@@ -25,6 +25,7 @@ from typing import Any, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 import localdb as db
 import local_rules as rules
@@ -1364,24 +1365,50 @@ def cleanup(x_local_token: str | None = Header(None)):
 
 @router.post("/api/public/kiosk/tts")
 async def kiosk_tts(request: Request):
-    """Speaks a sentence with the PC's own offline voice (no internet)."""
+    """Thai speech for one sentence: stored clip, online voice, or PC voice."""
     body = await request.json()
     text = str(body.get("text") or "").strip()[:300]
     if not text:
         return json_error(400, "ไม่มีข้อความให้อ่าน")
-    audio = local_voice.synthesize(text)
-    if not audio:
-        return json_error(503, "เครื่องนี้ยังไม่มีเสียงพูดที่ใช้ได้")
+    clip = await run_in_threadpool(local_voice.synthesize, text)
+    if not clip:
+        return json_error(503, "เครื่องนี้ยังไม่มีเสียงพูดไทยที่ใช้ได้")
+    audio, media_type = clip
     return Response(
         content=audio,
-        media_type="audio/wav",
+        media_type=media_type,
         headers={"Cache-Control": "no-store"},
     )
 
 
 @router.get("/api/public/kiosk/voice-status")
 def kiosk_voice_status():
-    return {"engine_available": local_voice.available()}
+    return {"engine_available": local_voice.available(), **local_voice.status()}
+
+
+@router.get("/api/local/voice/status")
+def voice_status(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    return local_voice.status()
+
+
+@router.post("/api/local/voice/prepare")
+async def voice_prepare(x_local_token: str | None = Header(None)):
+    """Stores every spoken sentence so the kiosk speaks Thai without internet."""
+    require_admin(x_local_token)
+    result = await run_in_threadpool(local_voice.prepare_offline_voice)
+    db.add_audit(
+        "เตรียมเสียงพูดไทยไว้ใช้ออฟไลน์",
+        "voice",
+        f"ดาวน์โหลด {result.get('downloaded', 0)} / ทั้งหมด {result.get('total', 0)}",
+    )
+    return result
+
+
+@router.post("/api/local/voice/clear-cache")
+def voice_clear_cache(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    return {"removed": local_voice.clear_cache(), **local_voice.status()}
 
 
 # ------------------------------------------------------------------- screens
