@@ -132,37 +132,35 @@ if SATELLITE:
         return RedirectResponse("/kiosk")
 
     @app.api_route("/local/{path:path}", methods=["GET", "POST", "DELETE"])
-    def hub_proxy(path: str, request: _Request):
-        url = f"{HUB_URL}/{path}"
-        try:
-            body = None
-            if request.method != "GET":
-                import asyncio
+    async def hub_proxy(path: str, request: _Request):
+        from starlette.concurrency import run_in_threadpool
 
-                body = asyncio.run(_read_body(request))
-            res = requests.request(
+        body = await request.body() if request.method != "GET" else None
+
+        def call():
+            return requests.request(
                 request.method,
-                url,
+                f"{HUB_URL}/{path}",
                 headers={"x-device-key": DEVICE_KEY,
                          "content-type": request.headers.get("content-type", "application/json")},
                 params=dict(request.query_params),
                 data=body,
                 timeout=30,
             )
-            return _Response(
-                content=res.content,
-                status_code=res.status_code,
-                media_type=res.headers.get("content-type"),
-            )
+
+        try:
+            res = await run_in_threadpool(call)
         except Exception as exc:  # noqa: BLE001
             return _Response(
                 content=json.dumps({"detail": f"ติดต่อเครื่องแม่ไม่ได้: {exc}"}, ensure_ascii=False),
                 status_code=503,
                 media_type="application/json",
             )
-
-    async def _read_body(request: _Request) -> bytes:
-        return await request.body()
+        return _Response(
+            content=res.content,
+            status_code=res.status_code,
+            media_type=res.headers.get("content-type"),
+        )
 
 
 # ArcFace. det_size kept small so an Intel Atom can keep up.
