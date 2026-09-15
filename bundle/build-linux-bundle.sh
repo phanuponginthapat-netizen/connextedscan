@@ -57,6 +57,15 @@ for name in det_500m.onnx w600k_mbf.onnx; do
   cp "$found" "$RUNTIME/models/$name"
 done
 
+echo "[3b/5] Thai offline voice (piper)"
+CURRENT_STEP="downloading Thai voice"
+mkdir -p "$RUNTIME/voices"
+curl -fsSL "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz" -o "$WORK/piper.tar.gz"
+tar xzf "$WORK/piper.tar.gz" -C "$RUNTIME/voices"
+curl -fsSL "https://huggingface.co/rhasspy/piper-voices/resolve/main/th/th_TH/tsync2/medium/th_TH-tsync2-medium.onnx?download=true" -o "$RUNTIME/voices/th_TH-tsync2-medium.onnx"
+curl -fsSL "https://huggingface.co/rhasspy/piper-voices/resolve/main/th/th_TH/tsync2/medium/th_TH-tsync2-medium.onnx.json?download=true" -o "$RUNTIME/voices/th_TH-tsync2-medium.onnx.json"
+chmod +x "$RUNTIME/voices/piper/piper" 2>/dev/null || true
+
 echo "[4/5] Electron shell"
 CURRENT_STEP="checking Electron build tools"
 cd "$ROOT"
