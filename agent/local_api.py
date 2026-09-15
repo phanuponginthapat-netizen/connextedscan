@@ -104,6 +104,19 @@ async def auth_change(request: Request, x_local_token: str | None = Header(None)
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
 
 
+def seen_recently(stamp: str | None, seconds: int = 120) -> bool:
+    """A kiosk counts as online while it keeps polling the hub."""
+    if not stamp:
+        return False
+    try:
+        import calendar
+
+        seen = calendar.timegm(time.strptime(stamp[:19], "%Y-%m-%dT%H:%M:%S"))
+    except Exception:  # noqa: BLE001
+        return False
+    return (time.time() - seen) < seconds
+
+
 def lan_addresses() -> list[str]:
     """Best-effort list of this PC's LAN addresses, for the setup instructions."""
     import socket
@@ -950,18 +963,8 @@ async def settings_post(request: Request, x_local_token: str | None = Header(Non
 def devices_list(x_local_token: str | None = Header(None)):
     require_admin(x_local_token)
     settings = db.get_settings()
-    now = time.time()
-    items = []
-    for device in db.list_devices():
-        online = False
-        if device.get("last_seen"):
-            try:
-                seen = time.mktime(time.strptime(device["last_seen"][:19], "%Y-%m-%dT%H:%M:%S"))
-                online = (now - time.mktime(time.gmtime()) + seen) > -120 and (
-                    time.mktime(time.gmtime()) - seen) < 120
-            except Exception:  # noqa: BLE001
-                online = False
-        items.append({**device, "online": online})
+    items = [{**device, "online": seen_recently(device.get("last_seen"))}
+             for device in db.list_devices()]
     port = int(settings.get("lan_port") or 8899)
     return {
         "items": items,
