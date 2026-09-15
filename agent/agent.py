@@ -34,17 +34,40 @@ from pydantic import BaseModel
 
 # Standalone build: everything (database, admin pages, kiosk screen) lives on
 # this PC, so the "cloud" the agent talks to is its own local API.
+#
+# LAN mode adds a second role: one PC keeps the data (the hub, FACEGATE_STANDALONE=1)
+# and extra kiosks run as satellites (FACEGATE_HUB_URL=http://<hub-ip>:8899) that
+# scan with their own camera but read and write the hub's database.
 STANDALONE = os.environ.get("FACEGATE_STANDALONE", "") in ("1", "true", "on", "yes")
 PORT_ENV = int(os.environ.get("FACEGATE_PORT", "8899"))
+
+
+def _hub_url() -> str:
+    raw = os.environ.get("FACEGATE_HUB_URL", "").strip().rstrip("/")
+    if not raw:
+        return ""
+    if not raw.startswith("http"):
+        raw = f"http://{raw}"
+    if not raw.endswith("/local"):
+        raw = f"{raw}/local"
+    return raw
+
+
+HUB_URL = _hub_url()
+SATELLITE = bool(HUB_URL)
+if SATELLITE:
+    STANDALONE = False
 CLOUD_URL = (
-    f"http://127.0.0.1:{PORT_ENV}/local"
+    HUB_URL
+    if SATELLITE
+    else f"http://127.0.0.1:{PORT_ENV}/local"
     if STANDALONE
     else os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.app")
 )
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "local") if STANDALONE else os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
-AGENT_VERSION = "1.5.0"
+AGENT_VERSION = "1.6.0"
 
 
 def default_cache_dir() -> str:
