@@ -1202,6 +1202,49 @@ def kiosk_content(request: Request, x_device_key: str | None = Header(None)):
             "device_direction": device.get("direction") or "auto"}
 
 
+# ------------------------------------------------------- live camera view
+
+
+# Kept in memory only: the last small preview frame each kiosk sent, so the
+# admin can watch the queue over the school LAN without storing video.
+LIVE_FRAMES: dict[str, dict] = {}
+
+
+@router.post("/api/public/kiosk/live")
+async def kiosk_live_frame(request: Request, x_device_key: str | None = Header(None)):
+    """A kiosk posts a small preview image every couple of seconds."""
+    device = resolve_device(request, x_device_key)
+    body = await request.json()
+    image = str(body.get("image") or "")
+    if not image:
+        raise HTTPException(status_code=400, detail="ไม่มีภาพ")
+    if len(image) > 400_000:
+        raise HTTPException(status_code=413, detail="ภาพใหญ่เกินไป")
+    LIVE_FRAMES[device["id"]] = {
+        "device_id": device["id"],
+        "device_name": device["name"],
+        "image": image,
+        "status": str(body.get("status") or "")[:160],
+        "faces": int(body.get("faces") or 0),
+        "at": db.now_iso(),
+    }
+    if len(LIVE_FRAMES) > 24:
+        oldest = sorted(LIVE_FRAMES.items(), key=lambda kv: kv[1]["at"])[0][0]
+        LIVE_FRAMES.pop(oldest, None)
+    return {"ok": True}
+
+
+@router.get("/api/local/live")
+def live_frames(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    frames = [
+        {**frame, "online": seen_recently(frame.get("at"), 15)}
+        for frame in sorted(LIVE_FRAMES.values(), key=lambda f: f["device_name"])
+    ]
+    recent = db.recent_scans(limit=8)
+    return {"frames": frames, "recent": recent, "enabled": bool(db.get_settings().get("live_view_enabled", True))}
+
+
 # ------------------------------------------------- admin: certificate & logs
 
 
