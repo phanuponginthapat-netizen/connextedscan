@@ -109,6 +109,9 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "auto_power_off_time": "18:30",
     "auto_power_off_action": "shutdown",
     "power_off_workdays_only": True,
+    # LAN mode: this PC becomes the hub other kiosks connect to.
+    "lan_enabled": False,
+    "lan_port": 8899,
 }
 
 # Look-and-feel and wording of the kiosk screen and the printed reports — the
