@@ -34,17 +34,40 @@ from pydantic import BaseModel
 
 # Standalone build: everything (database, admin pages, kiosk screen) lives on
 # this PC, so the "cloud" the agent talks to is its own local API.
+#
+# LAN mode adds a second role: one PC keeps the data (the hub, FACEGATE_STANDALONE=1)
+# and extra kiosks run as satellites (FACEGATE_HUB_URL=http://<hub-ip>:8899) that
+# scan with their own camera but read and write the hub's database.
 STANDALONE = os.environ.get("FACEGATE_STANDALONE", "") in ("1", "true", "on", "yes")
 PORT_ENV = int(os.environ.get("FACEGATE_PORT", "8899"))
+
+
+def _hub_url() -> str:
+    raw = os.environ.get("FACEGATE_HUB_URL", "").strip().rstrip("/")
+    if not raw:
+        return ""
+    if not raw.startswith("http"):
+        raw = f"http://{raw}"
+    if not raw.endswith("/local"):
+        raw = f"{raw}/local"
+    return raw
+
+
+HUB_URL = _hub_url()
+SATELLITE = bool(HUB_URL)
+if SATELLITE:
+    STANDALONE = False
 CLOUD_URL = (
-    f"http://127.0.0.1:{PORT_ENV}/local"
+    HUB_URL
+    if SATELLITE
+    else f"http://127.0.0.1:{PORT_ENV}/local"
     if STANDALONE
     else os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.app")
 )
 DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "local") if STANDALONE else os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
-AGENT_VERSION = "1.5.0"
+AGENT_VERSION = "1.6.0"
 
 
 def default_cache_dir() -> str:
@@ -91,6 +114,53 @@ if STANDALONE:
     @app.get("/")
     def home_screen():
         return RedirectResponse("/kiosk")
+
+
+if SATELLITE:
+    # A satellite kiosk has no database of its own: it shows the same offline
+    # kiosk screen and forwards every data request to the hub PC on the LAN.
+    import local_ui
+    from fastapi import Request as _Request
+    from fastapi.responses import HTMLResponse, RedirectResponse, Response as _Response
+
+    @app.get("/kiosk")
+    def kiosk_screen_satellite():
+        return HTMLResponse(local_ui.KIOSK_HTML)
+
+    @app.get("/")
+    def home_screen_satellite():
+        return RedirectResponse("/kiosk")
+
+    @app.api_route("/local/{path:path}", methods=["GET", "POST", "DELETE"])
+    async def hub_proxy(path: str, request: _Request):
+        from starlette.concurrency import run_in_threadpool
+
+        body = await request.body() if request.method != "GET" else None
+
+        def call():
+            return requests.request(
+                request.method,
+                f"{HUB_URL}/{path}",
+                headers={"x-device-key": DEVICE_KEY,
+                         "content-type": request.headers.get("content-type", "application/json")},
+                params=dict(request.query_params),
+                data=body,
+                timeout=30,
+            )
+
+        try:
+            res = await run_in_threadpool(call)
+        except Exception as exc:  # noqa: BLE001
+            return _Response(
+                content=json.dumps({"detail": f"ติดต่อเครื่องแม่ไม่ได้: {exc}"}, ensure_ascii=False),
+                status_code=503,
+                media_type="application/json",
+            )
+        return _Response(
+            content=res.content,
+            status_code=res.status_code,
+            media_type=res.headers.get("content-type"),
+        )
 
 
 # ArcFace. det_size kept small so an Intel Atom can keep up.
@@ -1246,6 +1316,8 @@ if __name__ == "__main__":
 
     if not DEVICE_KEY and not STANDALONE:
         raise SystemExit("ตั้งค่า FACEGATE_DEVICE_KEY ก่อนเริ่มโปรแกรม (ดูรหัสได้ในหน้าตั้งค่าระบบ)")
+    if SATELLITE:
+        print(f"[agent] LAN kiosk mode — hub: {HUB_URL}")
     if STANDALONE:
         import local_api
 
@@ -1284,4 +1356,19 @@ if __name__ == "__main__":
 
     threading.Thread(target=warm_engine, daemon=True).start()
 
-    uvicorn.run(app, host="127.0.0.1", port=PORT)
+    # LAN mode: the hub PC has to answer other kiosks, so it listens on the
+    # network card. Otherwise the program stays private to this PC.
+    host = "127.0.0.1"
+    if os.environ.get("FACEGATE_BIND"):
+        host = os.environ["FACEGATE_BIND"]
+    elif STANDALONE:
+        try:
+            import local_api
+
+            if local_api.db.get_settings().get("lan_enabled"):
+                host = "0.0.0.0"  # noqa: S104 — school LAN only
+                print(f"[agent] LAN hub mode — kiosks connect to http://<this-pc-ip>:{PORT}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] LAN setting check failed: {exc}")
+
+    uvicorn.run(app, host=host, port=PORT)

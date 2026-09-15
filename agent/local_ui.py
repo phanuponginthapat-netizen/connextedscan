@@ -214,7 +214,8 @@ async function loadBrand() {
     document.documentElement.style.setProperty('--accent', c.theme_accent || '#0ea5e9');
     document.documentElement.style.setProperty('--ink', c.theme_ink || '#132a4f');
     $('school').textContent = c.school_name || c.brand_name || 'FaceGate';
-    $('subtitle').textContent = c.kiosk_subtitle || 'กรุณามองกล้องในกรอบวงรี';
+    const sub = c.kiosk_subtitle || 'กรุณามองกล้องในกรอบวงรี';
+    $('subtitle').textContent = c.device_name ? `${c.device_name} • ${sub}` : sub;
     $('saverTitle').textContent = (c.school_name || '') + ' — สถิติวันนี้';
     if (c.logo_url) { $('logo').src = c.logo_url; $('logo').style.display = 'block'; }
   } catch (e) {}

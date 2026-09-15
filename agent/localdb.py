@@ -109,6 +109,9 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "auto_power_off_time": "18:30",
     "auto_power_off_action": "shutdown",
     "power_off_workdays_only": True,
+    # LAN mode: this PC becomes the hub other kiosks connect to.
+    "lan_enabled": False,
+    "lan_port": 8899,
 }
 
 # Look-and-feel and wording of the kiosk screen and the printed reports — the
@@ -216,6 +219,17 @@ CREATE TABLE IF NOT EXISTS kv (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS devices (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  device_key TEXT NOT NULL UNIQUE,
+  direction TEXT NOT NULL DEFAULT 'auto',
+  location TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  last_seen TEXT,
+  last_scan_at TEXT,
+  created_at TEXT NOT NULL
+);
 """
 
 
@@ -233,6 +247,13 @@ def connect() -> sqlite3.Connection:
             columns = {row[1] for row in _conn.execute("PRAGMA table_info(students)").fetchall()}
             if "gender" not in columns:
                 _conn.execute("ALTER TABLE students ADD COLUMN gender TEXT")
+            # LAN mode: remember which kiosk produced each row.
+            for table in ("attendance_logs", "visitor_logs", "security_alerts"):
+                cols = {row[1] for row in _conn.execute(f"PRAGMA table_info({table})").fetchall()}
+                if "device_id" not in cols:
+                    _conn.execute(f"ALTER TABLE {table} ADD COLUMN device_id TEXT")
+                if "device_name" not in cols:
+                    _conn.execute(f"ALTER TABLE {table} ADD COLUMN device_name TEXT")
             _conn.commit()
         return _conn
 
@@ -373,3 +394,76 @@ def add_audit(action: str, target: str | None = None, detail: str | None = None,
         " VALUES (?,?,?,?,?,?)",
         (new_id(), actor_email, action[:120], (target or "")[:200], (detail or "")[:1000], now_iso()),
     )
+
+
+# ----------------------------------------------------------- kiosks on a LAN
+
+HUB_DEVICE = {
+    "id": "local",
+    "name": "ตู้สแกนเครื่องแม่",
+    "direction": "auto",
+    "is_active": True,
+}
+
+
+def list_devices() -> list[dict]:
+    rows = query("SELECT * FROM devices ORDER BY created_at")
+    return [{**r, "is_active": bool(r["is_active"])} for r in rows]
+
+
+def device_by_key(key: str) -> dict | None:
+    if not key:
+        return None
+    row = one("SELECT * FROM devices WHERE device_key = ?", (key,))
+    if not row or not row["is_active"]:
+        return None
+    return {**row, "is_active": True}
+
+
+def create_device(name: str, direction: str = "auto", location: str | None = None) -> dict:
+    device_id = new_id()
+    key = secrets.token_urlsafe(18)
+    run(
+        "INSERT INTO devices (id, name, device_key, direction, location, is_active, created_at)"
+        " VALUES (?,?,?,?,?,1,?)",
+        (device_id, name[:80], key, direction if direction in ("in", "out", "auto") else "auto",
+         (location or None), now_iso()),
+    )
+    return one("SELECT * FROM devices WHERE id = ?", (device_id,)) or {}
+
+
+def update_device(device_id: str, patch: dict[str, Any]) -> None:
+    fields, values = [], []
+    for key in ("name", "direction", "location", "is_active"):
+        if key not in patch:
+            continue
+        value = patch[key]
+        if key == "direction" and value not in ("in", "out", "auto"):
+            value = "auto"
+        if key == "is_active":
+            value = 1 if value else 0
+        fields.append(f"{key} = ?")
+        values.append(value)
+    if not fields:
+        return
+    run(f"UPDATE devices SET {', '.join(fields)} WHERE id = ?", (*values, device_id))
+
+
+def rotate_device_key(device_id: str) -> str:
+    key = secrets.token_urlsafe(18)
+    run("UPDATE devices SET device_key = ? WHERE id = ?", (key, device_id))
+    return key
+
+
+def delete_device(device_id: str) -> None:
+    run("DELETE FROM devices WHERE id = ?", (device_id,))
+
+
+def touch_device(device_id: str, scanned: bool = False) -> None:
+    if device_id == "local":
+        return
+    if scanned:
+        run("UPDATE devices SET last_seen = ?, last_scan_at = ? WHERE id = ?",
+            (now_iso(), now_iso(), device_id))
+    else:
+        run("UPDATE devices SET last_seen = ? WHERE id = ?", (now_iso(), device_id))

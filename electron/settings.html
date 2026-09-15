@@ -174,6 +174,19 @@
     </div>
 
     <div class="card">
+      <div class="field" id="modeField" style="display:none">
+        <label for="mode">🖥️ โหมดการใช้งานเครื่องนี้</label>
+        <select id="mode" style="width:100%;padding:11px 14px;border:1.5px solid #2a4161;border-radius:10px;background:#0d1a2e;color:#f1f6fc;font-size:14px;font-family:inherit">
+          <option value="hub">เครื่องแม่ — เก็บข้อมูลและเปิดหลังบ้านที่เครื่องนี้</option>
+          <option value="satellite">ตู้สแกนลูก — ใช้ข้อมูลจากเครื่องแม่ในวง LAN</option>
+        </select>
+      </div>
+
+      <div class="field" id="hubField" style="display:none">
+        <label for="hubUrl">🏠 ที่อยู่เครื่องแม่ในวง LAN</label>
+        <input id="hubUrl" placeholder="http://192.168.1.50:8899" style="padding-right: 14px" />
+      </div>
+
       <div class="field">
         <label for="deviceKey">🔑 รหัสเครื่อง (Device Key)</label>
         <div class="input-wrap">
@@ -182,7 +195,7 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="cloudField">
         <label for="cloudUrl">🌐 ที่อยู่ระบบหลังบ้าน</label>
         <input id="cloudUrl" type="url" placeholder="https://...lovable.app" style="padding-right: 14px" />
       </div>
@@ -197,7 +210,9 @@
 
     <div class="hint">
       <b>หารหัสเครื่องได้จาก:</b> เปิดระบบหลังบ้าน → เมนู <b>ตั้งค่าระบบ</b> → หัวข้อ <b>เครื่องตู้สแกน</b> →
-      กด "สร้างรหัสเครื่อง" แล้วคัดลอกมาวางที่นี่
+      กด "สร้างรหัสเครื่อง" แล้วคัดลอกมาวางที่นี่<br />
+      <b>โหมดติดตั้งในเครื่อง (หลายตู้ในวง LAN):</b> ที่เครื่องแม่เปิดหลังบ้าน (กด <code>F9</code>) →
+      เมนู <b>ตู้สแกนในวง LAN</b> → เปิดโหมด LAN แล้วเพิ่มตู้สแกนเพื่อรับที่อยู่เครื่องแม่และรหัสเชื่อมต่อ
     </div>
 
     <div class="statusbar">
@@ -208,12 +223,36 @@
     <script>
       const $ = (id) => document.getElementById(id);
 
+      let standalone = false;
+
       async function init() {
         const cfg = await window.electronAPI.getConfig();
+        standalone = Boolean(cfg.standalone);
         $("deviceKey").value = cfg.deviceKey || "";
         $("cloudUrl").value = cfg.cloudUrl || "";
+        $("hubUrl").value = cfg.hubUrl || "";
+        $("mode").value = cfg.mode === "satellite" ? "satellite" : "hub";
+        if (standalone) {
+          $("modeField").style.display = "";
+          $("cloudField").style.display = "none";
+          $("dot").className = "dot ok";
+          $("statusText").textContent = "โหมดติดตั้งในเครื่อง — ไม่ต้องใช้อินเทอร์เน็ต";
+          applyMode();
+          return;
+        }
         checkConnection();
       }
+
+      function applyMode() {
+        const satellite = $("mode").value === "satellite";
+        $("hubField").style.display = satellite ? "" : "none";
+        $("deviceKey").parentElement.parentElement.style.display = satellite ? "" : "none";
+        $("statusText").textContent = satellite
+          ? "ตู้สแกนลูก — ข้อมูลทั้งหมดเก็บที่เครื่องแม่"
+          : "เครื่องแม่ — ข้อมูลทั้งหมดเก็บในเครื่องนี้";
+      }
+
+      $("mode").addEventListener("change", applyMode);
 
       async function checkConnection() {
         const dot = $("dot"), text = $("statusText");
@@ -258,6 +297,28 @@
 
       $("saveBtn").addEventListener("click", async () => {
         const deviceKey = $("deviceKey").value.trim();
+        if (standalone) {
+          const mode = $("mode").value;
+          if (mode === "satellite" && !$("hubUrl").value.trim()) {
+            $("error").textContent = "กรุณาใส่ที่อยู่เครื่องแม่ เช่น http://192.168.1.50:8899";
+            return;
+          }
+          if (mode === "satellite" && !deviceKey) {
+            $("error").textContent = "กรุณาใส่รหัสเชื่อมต่อของตู้สแกนนี้";
+            return;
+          }
+          $("error").textContent = "";
+          $("saveBtn").textContent = "กำลังเริ่ม…";
+          try {
+            await window.electronAPI.saveConfig({
+              mode, hubUrl: $("hubUrl").value.trim(), deviceKey,
+            });
+          } catch (error) {
+            $("error").textContent = error?.message || "บันทึกไม่สำเร็จ";
+            $("saveBtn").textContent = "บันทึกและเริ่มสแกน";
+          }
+          return;
+        }
         const cloudUrl = $("cloudUrl").value.trim().replace(/\/+$/, "");
         if (!deviceKey) {
           $("error").textContent = "กรุณาใส่รหัสเครื่องก่อน";

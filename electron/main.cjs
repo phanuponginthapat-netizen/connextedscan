@@ -138,7 +138,44 @@ function loadConfig() {
   return cfg;
 }
 
+// A standalone install can run as the hub (keeps the data) or as an extra
+// kiosk on the school LAN that uses the hub's data.
+function isSatellite(cfg) {
+  return STANDALONE && cfg.mode === "satellite" && Boolean(String(cfg.hubUrl || "").trim());
+}
+
+function normaliseHubUrl(raw) {
+  let value = String(raw || "").trim().replace(/\/+$/, "");
+  if (!value) return "";
+  if (!/^https?:\/\//i.test(value)) value = `http://${value}`;
+  const parsed = new URL(value);
+  if (!parsed.port) parsed.port = AGENT_PORT;
+  return parsed.origin;
+}
+
 function saveConfig(cfg) {
+  if (STANDALONE) {
+    const mode = cfg.mode === "satellite" ? "satellite" : "hub";
+    let hubUrl = "";
+    if (mode === "satellite") {
+      try {
+        hubUrl = normaliseHubUrl(cfg.hubUrl);
+      } catch {
+        hubUrl = "";
+      }
+      if (!hubUrl) {
+        throw new Error("ที่อยู่เครื่องแม่ไม่ถูกต้อง ตัวอย่าง http://192.168.1.50:8899");
+      }
+      if (!String(cfg.deviceKey || "").trim()) {
+        throw new Error("กรุณาใส่รหัสเชื่อมต่อของตู้สแกนนี้ (สร้างได้ในหลังบ้านเครื่องแม่)");
+      }
+    }
+    fs.writeFileSync(
+      CONFIG_PATH,
+      JSON.stringify({ ...cfg, mode, hubUrl }, null, 2),
+    );
+    return;
+  }
   const rawUrl = String(cfg.cloudUrl || "").trim();
   let cloudUrl;
   try {
@@ -242,7 +279,7 @@ function startAgent() {
   const deviceKey = (cfg.deviceKey || "").trim();
   const cloudUrl = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "");
 
-  if (!deviceKey && !STANDALONE) {
+  if (!deviceKey && (!STANDALONE || isSatellite(cfg))) {
     agentStatus = {
       state: "configuration_required",
       message: "ยังไม่ได้ตั้งรหัสเครื่อง",
@@ -298,13 +335,17 @@ function startAgent() {
 
   const sitePath = path.join(runtimeDir, "site");
   const modelDir = path.join(runtimeDir, "models");
+  const satellite = isSatellite(cfg);
+  const hubUrl = satellite ? String(cfg.hubUrl || "").replace(/\/$/, "") : "";
   const env = {
     ...process.env,
-    FACEGATE_DEVICE_KEY: STANDALONE ? "local" : deviceKey,
-    FACEGATE_CLOUD_URL: STANDALONE ? `${LOCAL_URL}/local` : cloudUrl,
+    FACEGATE_DEVICE_KEY: STANDALONE && !satellite ? "local" : deviceKey,
+    FACEGATE_CLOUD_URL: STANDALONE && !satellite ? `${LOCAL_URL}/local` : cloudUrl,
     PYTHONUNBUFFERED: "1",
   };
-  if (STANDALONE) {
+  if (satellite) {
+    env.FACEGATE_HUB_URL = hubUrl;
+  } else if (STANDALONE) {
     env.FACEGATE_STANDALONE = "1";
     // Keep every school's data next to the program folder is NOT wanted: user
     // data survives reinstalling the program.
@@ -613,7 +654,7 @@ function watchRestartRequest() {
 }
 
 // IPC exposed to the settings page.
-ipcMain.handle("get-config", () => loadConfig());
+ipcMain.handle("get-config", () => ({ ...loadConfig(), standalone: STANDALONE }));
 ipcMain.handle("get-agent-status", () => agentStatus);
 ipcMain.handle("restart-agent", () => startAgent());
 ipcMain.handle("open-agent-log", async () => {
@@ -648,7 +689,9 @@ app.whenReady().then(async () => {
   }
 
   const cfg = loadConfig();
-  if (!STANDALONE && (!cfg.deviceKey || !cfg.deviceKey.trim())) {
+  const needsSetup =
+    (!STANDALONE || cfg.mode === "satellite") && (!cfg.deviceKey || !cfg.deviceKey.trim());
+  if (needsSetup) {
     openSettings();
   } else {
     // Start the engine first: waiting for the update check used to delay the

@@ -98,6 +98,63 @@ async def auth_change(request: Request, x_local_token: str | None = Header(None)
     return {"ok": True}
 
 
+# ------------------------------------------------------- kiosks on the LAN
+
+
+LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+
+
+def seen_recently(stamp: str | None, seconds: int = 120) -> bool:
+    """A kiosk counts as online while it keeps polling the hub."""
+    if not stamp:
+        return False
+    try:
+        import calendar
+
+        seen = calendar.timegm(time.strptime(stamp[:19], "%Y-%m-%dT%H:%M:%S"))
+    except Exception:  # noqa: BLE001
+        return False
+    return (time.time() - seen) < seconds
+
+
+def lan_addresses() -> list[str]:
+    """Best-effort list of this PC's LAN addresses, for the setup instructions."""
+    import socket
+
+    found: list[str] = []
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
+            addr = info[4][0]
+            if addr not in found and not addr.startswith("127."):
+                found.append(addr)
+    except Exception:  # noqa: BLE001
+        pass
+    if not found:
+        try:
+            probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            probe.connect(("8.8.8.8", 80))
+            found.append(probe.getsockname()[0])
+            probe.close()
+        except Exception:  # noqa: BLE001
+            pass
+    return found
+
+
+def resolve_device(request: Request, device_key: str | None) -> dict:
+    """Which kiosk is calling? The hub PC itself, or a registered LAN kiosk."""
+    key = (device_key or "").strip()
+    client = (request.client.host if request.client else "") or ""
+    if not key or key == "local":
+        if client in LOOPBACK:
+            return dict(db.HUB_DEVICE)
+        raise HTTPException(status_code=401, detail="ตู้สแกนนี้ยังไม่ได้ลงทะเบียนกับเครื่องแม่")
+    device = db.device_by_key(key)
+    if not device:
+        raise HTTPException(status_code=401, detail="รหัสเชื่อมต่อของตู้สแกนไม่ถูกต้องหรือถูกปิดใช้งาน")
+    return device
+
+
 # -------------------------------------------------------------------- media
 
 
@@ -136,7 +193,9 @@ def decode_jpeg(value: str | None) -> bytes | None:
 
 
 @router.post("/api/public/kiosk/sync")
-async def kiosk_sync(request: Request):
+async def kiosk_sync(request: Request, x_device_key: str | None = Header(None)):
+    device = resolve_device(request, x_device_key)
+    db.touch_device(device["id"])
     try:
         body = await request.json()
     except Exception:  # noqa: BLE001
@@ -175,7 +234,8 @@ async def kiosk_sync(request: Request):
     ]
 
     return {
-        "device": {"id": "local", "name": "ตู้สแกนในเครื่อง", "default_direction": "auto"},
+        "device": {"id": device["id"], "name": device["name"],
+                   "default_direction": device.get("direction") or "auto"},
         "settings": settings,
         "students": [{**p, "is_active": bool(p["is_active"])} for p in people],
         "embeddings": ready,
@@ -189,8 +249,9 @@ async def kiosk_sync(request: Request):
 
 
 @router.post("/api/public/kiosk/embeddings")
-async def kiosk_embeddings(request: Request):
+async def kiosk_embeddings(request: Request, x_device_key: str | None = Header(None)):
     """The agent sends back embeddings it computed for newly registered photos."""
+    resolve_device(request, x_device_key)
     body = await request.json()
     saved = 0
     for item in body.get("items", []) or []:
@@ -219,7 +280,8 @@ def person_row(student_id: str) -> dict | None:
 
 
 @router.post("/api/public/kiosk/attendance")
-async def kiosk_attendance(request: Request):
+async def kiosk_attendance(request: Request, x_device_key: str | None = Header(None)):
+    device = resolve_device(request, x_device_key)
     body = await request.json()
     student_id = body.get("student_id")
     confidence = float(body.get("confidence") or 0)
@@ -248,7 +310,7 @@ async def kiosk_attendance(request: Request):
 
     geometry_score = body.get("geometry_score")
     if geometry_score is not None and float(geometry_score) < float(settings.get("geometry_min_score") or 0):
-        insert_log(student_id, "in", "geometry_reject", confidence, geometry_score, None)
+        insert_log(student_id, "in", "geometry_reject", confidence, geometry_score, None, device)
         return {
             "result": "denied",
             "message": "สัดส่วนใบหน้าไม่ตรงกับข้อมูลที่ลงทะเบียน",
@@ -264,10 +326,14 @@ async def kiosk_attendance(request: Request):
                 os.path.join(db.SNAPSHOT_DIR, student_id), f"{int(time.time()*1000)}.jpg", data
             )
 
-    decision = rules.decide_direction(settings, minutes, body.get("direction"), weekday)
+    wanted = body.get("direction")
+    if wanted not in ("in", "out"):
+        preferred = device.get("direction") or "auto"
+        wanted = preferred if preferred in ("in", "out") else None
+    decision = rules.decide_direction(settings, minutes, wanted, weekday)
     if not decision["allowed"]:
         insert_log(student_id, decision["direction"], "out_of_window", confidence,
-                   geometry_score, snapshot_path)
+                   geometry_score, snapshot_path, device)
         fmt = lambda v: str(v)[:5]  # noqa: E731
         return {
             "result": "denied",
@@ -296,7 +362,7 @@ async def kiosk_attendance(request: Request):
     snapshot_url = media_url(snapshot_path)
 
     if recent:
-        insert_log(student_id, direction, "duplicate", confidence, geometry_score, snapshot_path)
+        insert_log(student_id, direction, "duplicate", confidence, geometry_score, snapshot_path, device)
         template = settings.get("voice_duplicate_template") or "สแกนซ้ำ {name} บันทึกเวลาไปแล้ว"
         return {
             "result": "duplicate",
@@ -311,7 +377,7 @@ async def kiosk_attendance(request: Request):
 
     late = rules.is_late(settings, minutes, direction)
     early = rules.is_early_leave(settings, minutes, direction)
-    log_id = insert_log(student_id, direction, "ok", confidence, geometry_score, snapshot_path)
+    log_id = insert_log(student_id, direction, "ok", confidence, geometry_score, snapshot_path, device)
 
     auto_enrolled = False
     if (
@@ -367,35 +433,42 @@ async def kiosk_attendance(request: Request):
 
 
 def insert_log(student_id: str | None, direction: str, status: str, confidence: float | None,
-               geometry_score: Any, snapshot_path: str | None) -> str:
+               geometry_score: Any, snapshot_path: str | None,
+               device: dict | None = None) -> str:
+    device = device or dict(db.HUB_DEVICE)
     log_id = db.new_id()
     db.run(
         "INSERT INTO attendance_logs (id, student_id, direction, status, confidence,"
-        " geometry_score, device_name, snapshot_path, scanned_at) VALUES (?,?,?,?,?,?,?,?,?)",
+        " geometry_score, device_id, device_name, snapshot_path, scanned_at)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?)",
         (log_id, student_id, direction, status, confidence,
          float(geometry_score) if geometry_score is not None else None,
-         "ตู้สแกนในเครื่อง", snapshot_path, db.now_iso()),
+         device["id"], device["name"], snapshot_path, db.now_iso()),
     )
+    db.touch_device(device["id"], scanned=status == "ok")
     return log_id
 
 
 @router.post("/api/public/kiosk/alert")
-async def kiosk_alert(request: Request):
+async def kiosk_alert(request: Request, x_device_key: str | None = Header(None)):
+    device = resolve_device(request, x_device_key)
     body = await request.json()
     path = None
     data = decode_jpeg(body.get("snapshot"))
     if data:
         path = save_jpeg(os.path.join(db.SNAPSHOT_DIR, "alerts"), f"{int(time.time()*1000)}.jpg", data)
     db.run(
-        "INSERT INTO security_alerts (id, kind, detail, snapshot_path, created_at) VALUES (?,?,?,?,?)",
+        "INSERT INTO security_alerts (id, kind, detail, snapshot_path, device_id, device_name,"
+        " created_at) VALUES (?,?,?,?,?,?,?)",
         (db.new_id(), str(body.get("kind") or "failed_scan")[:40],
-         str(body.get("detail") or "")[:300], path, db.now_iso()),
+         str(body.get("detail") or "")[:300], path, device["id"], device["name"], db.now_iso()),
     )
     return {"ok": True}
 
 
 @router.post("/api/public/kiosk/visitor")
-async def kiosk_visitor(request: Request):
+async def kiosk_visitor(request: Request, x_device_key: str | None = Header(None)):
+    device = resolve_device(request, x_device_key)
     body = await request.json()
     path = None
     data = decode_jpeg(body.get("snapshot"))
@@ -403,26 +476,41 @@ async def kiosk_visitor(request: Request):
         path = save_jpeg(os.path.join(db.SNAPSHOT_DIR, "visitors"), f"{int(time.time()*1000)}.jpg", data)
     visitor_id = db.new_id()
     db.run(
-        "INSERT INTO visitor_logs (id, direction, snapshot_path, created_at) VALUES (?,?,?,?)",
-        (visitor_id, body.get("direction"), path, db.now_iso()),
+        "INSERT INTO visitor_logs (id, direction, snapshot_path, device_id, device_name,"
+        " created_at) VALUES (?,?,?,?,?,?)",
+        (visitor_id, body.get("direction"), path, device["id"], device["name"], db.now_iso()),
     )
     return {"ok": True, "id": visitor_id}
 
 
 @router.post("/api/public/kiosk/door-command")
-def kiosk_door_command():
-    command = db.kv_get("door_command")
+def kiosk_door_command(request: Request, x_device_key: str | None = Header(None)):
+    device = resolve_device(request, x_device_key)
+    db.touch_device(device["id"])
+    key = door_command_key(device["id"])
+    command = db.kv_get(key)
     if command:
-        db.kv_set("door_command", None)
-    return {"command": command}
+        db.kv_set(key, None)
+    settings = db.get_settings()
+    return {"command": command, "door_enabled": settings.get("door_enabled", True)}
+
+
+def door_command_key(device_id: str) -> str:
+    return "door_command" if device_id == "local" else f"door_command:{device_id}"
+
+
+def power_command_key(device_id: str) -> str:
+    return "power_command" if device_id == "local" else f"power_command:{device_id}"
 
 
 @router.post("/api/public/kiosk/power-command")
-def kiosk_power_command():
+def kiosk_power_command(request: Request, x_device_key: str | None = Header(None)):
+    device = resolve_device(request, x_device_key)
     settings = db.get_settings()
-    command = db.kv_get("power_command")
+    key = power_command_key(device["id"])
+    command = db.kv_get(key)
     if command:
-        db.kv_set("power_command", None)
+        db.kv_set(key, None)
     minutes = rules.bangkok_minutes()
     weekday = rules.bangkok_weekday()
 
@@ -720,6 +808,7 @@ def attendance_list(x_local_token: str | None = Header(None), start: str = "", e
     like = f"%{q.strip()}%"
     rows = db.query(
         "SELECT l.id, l.scanned_at, l.direction, l.status, l.confidence, l.snapshot_path,"
+        " l.device_name,"
         " s.full_name, s.student_code, s.class_room, s.person_type FROM attendance_logs l"
         " LEFT JOIN students s ON s.id = l.student_id"
         " WHERE l.status NOT IN ('duplicate','out_of_window')"
@@ -870,6 +959,55 @@ async def settings_post(request: Request, x_local_token: str | None = Header(Non
     return {"settings": settings}
 
 
+@router.get("/api/local/devices")
+def devices_list(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    settings = db.get_settings()
+    items = [{**device, "online": seen_recently(device.get("last_seen"))}
+             for device in db.list_devices()]
+    port = int(settings.get("lan_port") or 8899)
+    return {
+        "items": items,
+        "lan_enabled": bool(settings.get("lan_enabled")),
+        "lan_port": port,
+        "addresses": [f"http://{addr}:{port}" for addr in lan_addresses()],
+        "hub": dict(db.HUB_DEVICE),
+    }
+
+
+@router.post("/api/local/devices")
+async def devices_save(request: Request, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    body = await request.json()
+    device_id = body.get("id")
+    if device_id:
+        db.update_device(str(device_id), body)
+        db.add_audit("แก้ไขตู้สแกนในวง LAN", str(device_id), str(body.get("name") or ""))
+        return {"id": device_id}
+    name = str(body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="กรุณาตั้งชื่อตู้สแกน")
+    device = db.create_device(name, str(body.get("direction") or "auto"), body.get("location"))
+    db.add_audit("เพิ่มตู้สแกนในวง LAN", device.get("id"), name)
+    return {"device": device}
+
+
+@router.post("/api/local/devices/{device_id}/key")
+def devices_rotate(device_id: str, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    key = db.rotate_device_key(device_id)
+    db.add_audit("เปลี่ยนรหัสเชื่อมต่อตู้สแกน", device_id)
+    return {"device_key": key}
+
+
+@router.delete("/api/local/devices/{device_id}")
+def devices_delete(device_id: str, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    db.delete_device(device_id)
+    db.add_audit("ลบตู้สแกนในวง LAN", device_id)
+    return {"ok": True}
+
+
 @router.post("/api/local/door/command")
 async def door_command(request: Request, x_local_token: str | None = Header(None)):
     require_admin(x_local_token)
@@ -877,8 +1015,9 @@ async def door_command(request: Request, x_local_token: str | None = Header(None
     action = body.get("action")
     if action not in ("open", "close", "deny"):
         raise HTTPException(status_code=400, detail="คำสั่งไม่ถูกต้อง")
-    db.kv_set("door_command", {"id": db.new_id(), "action": action,
-                               "seconds": body.get("seconds") or 5})
+    device_id = str(body.get("device_id") or "local")
+    db.kv_set(door_command_key(device_id), {"id": db.new_id(), "action": action,
+                                            "seconds": body.get("seconds") or 5})
     return {"ok": True}
 
 
@@ -889,7 +1028,8 @@ async def power_command(request: Request, x_local_token: str | None = Header(Non
     action = body.get("action")
     if action not in ("screen_off", "screen_on", "sleep", "shutdown", "cancel"):
         raise HTTPException(status_code=400, detail="คำสั่งไม่ถูกต้อง")
-    db.kv_set("power_command", {"id": db.new_id(), "command": action})
+    device_id = str(body.get("device_id") or "local")
+    db.kv_set(power_command_key(device_id), {"id": db.new_id(), "command": action})
     return {"ok": True}
 
 
@@ -1048,12 +1188,18 @@ async def content_post(request: Request, x_local_token: str | None = Header(None
 
 
 @router.get("/api/public/kiosk/content")
-def kiosk_content():
+def kiosk_content(request: Request, x_device_key: str | None = Header(None)):
     """Branding the offline kiosk screen reads on every refresh."""
     content = db.get_content()
     settings = db.get_settings()
+    try:
+        device = resolve_device(request, x_device_key)
+    except HTTPException:
+        device = dict(db.HUB_DEVICE)
     return {**content, "logo_url": media_url(content.get("logo_path")),
-            "school_name": settings.get("school_name")}
+            "school_name": settings.get("school_name"),
+            "device_name": device["name"],
+            "device_direction": device.get("direction") or "auto"}
 
 
 # ------------------------------------------------- admin: certificate & logs

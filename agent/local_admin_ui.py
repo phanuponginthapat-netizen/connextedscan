@@ -112,6 +112,7 @@ const TABS = [
   ['content', '🎨 เนื้อหาและธีม', 'เนื้อหาและธีม', 'ชื่อโรงเรียน โลโก้ สี และข้อความบนหน้าจอ'],
   ['settings', '⚙️ ตั้งค่าระบบ', 'ตั้งค่าระบบ', 'เวลาเข้า-ออก การจำใบหน้า เสียงพูด'],
   ['device', '🚪 ประตู / พลังงาน', 'ประตูอัจฉริยะและพลังงาน', 'ทดสอบไม้กั้นและสั่งปิด-เปิดเครื่อง'],
+  ['devices', '🖥️ ตู้สแกนในวง LAN', 'ตู้สแกนในวง LAN', 'เพิ่มตู้สแกนหลายเครื่องที่ใช้ข้อมูลชุดเดียวกัน'],
   ['health', '❤️ สุขภาพระบบ', 'สุขภาพระบบ', 'พื้นที่ว่าง ขนาดข้อมูล และการล้างข้อมูลเก่า'],
   ['backup', '💾 สำรองข้อมูล', 'สำรองและกู้คืนข้อมูล', 'ไฟล์เดียวย้ายเครื่องได้ทั้งระบบ'],
   ['audit', '🧾 บันทึกการใช้งาน', 'บันทึกการใช้งาน', 'ใครแก้ไขอะไร เมื่อไร'],
@@ -171,7 +172,8 @@ async function render() {
   view.innerHTML = '<div class="card">กำลังโหลด…</div>';
   const map = { overview: renderOverview, people: renderPeople, import: renderImport, enroll: renderEnroll,
     history: renderHistory, report: renderReport, class_report: renderClassReport, certificate: renderCertificate, visitors: renderVisitors,
-    content: renderContent, settings: renderSettings, device: renderDevice, health: renderHealth,
+    content: renderContent, settings: renderSettings, device: renderDevice, devices: renderDevices,
+    health: renderHealth,
     backup: renderBackup, audit: renderAudit };
   try { await (map[TAB] || renderOverview)(view); }
   catch (e) { view.innerHTML = `<div class="card msg bad">${esc(e.message)}</div>`; }
@@ -403,10 +405,11 @@ async function renderHistory(view) {
       <button class="btn ghost" onclick="window.__hs=$('#h_s').value;window.__he=$('#h_e').value;window.__hq=$('#h_q').value;render()">ดูข้อมูล</button>
       <button class="btn ghost" onclick="csv()">ส่งออก CSV</button></div>
     <p class="sub">${d.items.length} รายการ</p>
-    <table><thead><tr><th>เวลา</th><th>ชื่อ</th><th>รหัส</th><th>ชั้น</th><th>ทิศทาง</th><th>สถานะ</th><th></th></tr></thead><tbody>
+    <table><thead><tr><th>เวลา</th><th>ชื่อ</th><th>รหัส</th><th>ชั้น</th><th>ทิศทาง</th><th>ตู้สแกน</th><th>สถานะ</th><th></th></tr></thead><tbody>
     ${d.items.map((r) => `<tr><td>${timeText(r.scanned_at)}</td><td>${esc(r.full_name || '-')}</td>
       <td>${esc(r.student_code || '')}</td><td>${esc(r.class_room || '')}</td>
       <td><span class="pill ${r.direction === 'out' ? 'bad' : 'good'}">${r.direction === 'out' ? 'ออก' : 'เข้า'}</span></td>
+      <td>${esc(r.device_name || 'ตู้สแกนเครื่องแม่')}</td>
       <td>${esc(r.status)}</td>
       <td><button class="btn danger sm" onclick="delLog('${r.id}')">ลบ</button></td></tr>`).join('')}
     </tbody></table></div>`;
@@ -415,8 +418,9 @@ async function delLog(id) { await api('/api/local/attendance/' + id, { method: '
 function csv() {
   const rows = window.__rows || [];
   const body = rows.map((r) => [timeText(r.scanned_at), r.full_name || '', r.student_code || '',
-    r.class_room || '', r.direction === 'out' ? 'ออก' : 'เข้า', r.status].join(',')).join('\n');
-  const blob = new Blob(['\ufeff' + 'เวลา,ชื่อ,รหัส,ชั้น,ทิศทาง,สถานะ\n' + body], { type: 'text/csv;charset=utf-8' });
+    r.class_room || '', r.direction === 'out' ? 'ออก' : 'เข้า', r.device_name || 'ตู้สแกนเครื่องแม่',
+    r.status].join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + 'เวลา,ชื่อ,รหัส,ชั้น,ทิศทาง,ตู้สแกน,สถานะ\n' + body], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'facegate-attendance.csv'; a.click();
 }
@@ -682,8 +686,87 @@ async function renderDevice(view) {
          <button class="btn ghost" onclick="power('cancel')">ยกเลิกคำสั่ง</button></p>
       <p class="sub">โหมดจบในเครื่องสั่งงานได้จากเครื่องนี้เท่านั้น (ไม่มีการสั่งงานผ่านอินเทอร์เน็ต)</p></div>`;
 }
-async function door(action) { await api('/api/local/door/command', { method: 'POST', body: JSON.stringify({ action }) }); alert('ส่งคำสั่งแล้ว'); }
-async function power(action) { await api('/api/local/power/command', { method: 'POST', body: JSON.stringify({ action }) }); alert('ส่งคำสั่งแล้ว'); }
+async function door(action, device_id) { await api('/api/local/door/command', { method: 'POST', body: JSON.stringify({ action, device_id: device_id || 'local' }) }); alert('ส่งคำสั่งแล้ว'); }
+async function power(action, device_id) { await api('/api/local/power/command', { method: 'POST', body: JSON.stringify({ action, device_id: device_id || 'local' }) }); alert('ส่งคำสั่งแล้ว'); }
+
+/* ----------------------------------------------------------- LAN kiosks */
+const DIRECTION_LABEL = { in: 'เข้าเท่านั้น', out: 'ออกเท่านั้น', auto: 'อัตโนมัติตามเวลา' };
+async function renderDevices(view) {
+  const d = await api('/api/local/devices');
+  const address = (d.addresses || [])[0] || `http://<ไอพีเครื่องนี้>:${d.lan_port}`;
+  view.innerHTML = `<div class="card"><h3>เปิดให้ตู้สแกนอื่นเชื่อมต่อ</h3>
+      <p><label><input id="d_lan" type="checkbox" ${d.lan_enabled ? 'checked' : ''} />
+        เปิดโหมดวง LAN (เครื่องนี้เป็นเครื่องแม่เก็บข้อมูลทั้งหมด)</label></p>
+      <div class="row"><div><label>พอร์ต</label><input id="d_port" type="number" value="${d.lan_port}" /></div>
+        <button class="btn" onclick="saveLan()">บันทึก</button></div>
+      <p class="sub">ที่อยู่ของเครื่องแม่: <b>${esc(address)}</b><br />
+      หลังเปิดหรือปิดโหมดนี้ ต้องปิดและเปิดโปรแกรมใหม่หนึ่งครั้ง<br />
+      บนตู้สแกนลูก ให้กรอกที่อยู่นี้พร้อม “รหัสเชื่อมต่อ” ของตู้นั้น</p></div>
+
+    <div class="card"><h3>เพิ่มตู้สแกน</h3>
+      <div class="row"><div><label>ชื่อตู้</label><input id="d_name" placeholder="ประตูหน้า" /></div>
+        <div><label>จุดติดตั้ง</label><input id="d_loc" placeholder="อาคาร 1" /></div>
+        <div><label>ทิศทาง</label><select id="d_dir">
+          <option value="auto">อัตโนมัติตามเวลา</option><option value="in">เข้าเท่านั้น</option>
+          <option value="out">ออกเท่านั้น</option></select></div>
+        <button class="btn" onclick="addDevice()">เพิ่มตู้สแกน</button></div></div>
+
+    <div class="card"><h3>ตู้สแกนทั้งหมด</h3>
+      <table><thead><tr><th>ชื่อ</th><th>จุดติดตั้ง</th><th>ทิศทาง</th><th>สถานะ</th>
+        <th>สแกนล่าสุด</th><th>รหัสเชื่อมต่อ</th><th></th></tr></thead><tbody>
+      <tr><td><b>${esc(d.hub.name)}</b></td><td>เครื่องนี้</td><td>อัตโนมัติตามเวลา</td>
+        <td><span class="pill good">เครื่องแม่</span></td><td>-</td><td>-</td>
+        <td><button class="btn ghost sm" onclick="door('open')">ทดสอบไม้กั้น</button></td></tr>
+      ${(d.items || []).map((r) => `<tr>
+        <td><b>${esc(r.name)}</b></td><td>${esc(r.location || '-')}</td>
+        <td><select onchange="setDir('${r.id}', this.value)">
+          ${['auto','in','out'].map((v) => `<option value="${v}" ${r.direction === v ? 'selected' : ''}>${DIRECTION_LABEL[v]}</option>`).join('')}
+        </select></td>
+        <td><span class="pill ${r.online ? 'good' : 'bad'}">${r.online ? 'ออนไลน์' : 'ออฟไลน์'}</span></td>
+        <td>${r.last_scan_at ? timeText(r.last_scan_at) : '-'}</td>
+        <td><code style="font-size:.78rem">${esc(r.device_key)}</code>
+          <button class="btn ghost sm" onclick="copyKey('${esc(r.device_key)}')">คัดลอก</button>
+          <button class="btn ghost sm" onclick="newKey('${r.id}')">ออกรหัสใหม่</button></td>
+        <td><button class="btn ghost sm" onclick="door('open','${r.id}')">ทดสอบไม้กั้น</button>
+          <button class="btn ghost sm" onclick="power('screen_off','${r.id}')">ปิดหน้าจอ</button>
+          <button class="btn danger sm" onclick="delDevice('${r.id}')">ลบ</button></td></tr>`).join('')}
+      </tbody></table>
+      ${(d.items || []).length ? '' : '<p class="sub">ยังไม่มีตู้สแกนลูก</p>'}</div>
+
+    <div class="card"><h3>วิธีตั้งค่าตู้สแกนลูก</h3>
+      <p class="sub">1) ติดตั้งชุดโปรแกรม FaceGate ตัวเดียวกันบนเครื่องลูก<br />
+      2) เปิดโปรแกรม แล้วเลือกโหมด “ตู้สแกนลูก”<br />
+      3) กรอกที่อยู่เครื่องแม่ <b>${esc(address)}</b> และรหัสเชื่อมต่อของตู้นั้น<br />
+      4) ประวัติทั้งหมดจะรวมอยู่ที่เครื่องแม่ และกันสแกนซ้ำข้ามตู้ให้อัตโนมัติ</p></div>`;
+}
+async function saveLan() {
+  await api('/api/local/settings', { method: 'POST', body: JSON.stringify({
+    lan_enabled: $('#d_lan').checked, lan_port: Number($('#d_port').value) || 8899 }) });
+  alert('บันทึกแล้ว — ปิดและเปิดโปรแกรมอีกครั้งเพื่อเริ่มใช้งาน');
+  render();
+}
+async function addDevice() {
+  const name = $('#d_name').value.trim();
+  if (!name) return alert('กรุณาตั้งชื่อตู้สแกน');
+  await api('/api/local/devices', { method: 'POST', body: JSON.stringify({
+    name, location: $('#d_loc').value.trim(), direction: $('#d_dir').value }) });
+  render();
+}
+async function setDir(id, direction) {
+  await api('/api/local/devices', { method: 'POST', body: JSON.stringify({ id, direction }) });
+  render();
+}
+async function newKey(id) {
+  if (!confirm('ออกรหัสใหม่? ตู้เดิมจะเชื่อมต่อไม่ได้จนกรอกรหัสใหม่')) return;
+  await api(`/api/local/devices/${id}/key`, { method: 'POST' });
+  render();
+}
+async function delDevice(id) {
+  if (!confirm('ลบตู้สแกนนี้ออกจากระบบ?')) return;
+  await api('/api/local/devices/' + id, { method: 'DELETE' });
+  render();
+}
+function copyKey(key) { navigator.clipboard.writeText(key); alert('คัดลอกรหัสแล้ว'); }
 
 /* ------------------------------------------------------------------ health */
 async function renderHealth(view) {
