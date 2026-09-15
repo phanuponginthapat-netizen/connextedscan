@@ -37,12 +37,25 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const createAccount = useServerFn(createStaffAccount);
   const signupStatus = useServerFn(getSignupOpen);
+  // Whether the "create account" tab is offered is cosmetic: if the check
+  // fails (offline, stale bundle after a deploy) the sign-in form must still
+  // render instead of the page blanking out on an error boundary.
   const { data: signup } = useQuery({
     queryKey: ["signup-open"],
-    queryFn: () => signupStatus(),
+    queryFn: async () => {
+      try {
+        return await signupStatus();
+      } catch (error) {
+        console.warn("[auth] signup status unavailable", error);
+        return { open: false };
+      }
+    },
     staleTime: 60_000,
+    retry: false,
+    throwOnError: false,
   });
   const signupOpen = signup?.open ?? false;
+
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/admin" });
