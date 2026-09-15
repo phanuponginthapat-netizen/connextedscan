@@ -101,6 +101,38 @@ def screen_on() -> bool:
     return _remember("screen_on", ok)
 
 
+def wake_lan(mac: str, broadcast: str = "255.255.255.255", port: int = 9) -> bool:
+    """Send a Wake-on-LAN magic packet.
+
+    Works from any machine that shares the LAN with the sleeping kiosk, and from
+    the internet when the school router forwards this UDP port to the kiosk
+    (Wake-on-WAN).
+    """
+    import socket
+
+    clean = "".join(ch for ch in str(mac or "") if ch in "0123456789abcdefABCDEF")
+    if len(clean) != 12:
+        with _lock:
+            _state["last_error"] = f"bad mac: {mac}"
+        return False
+    packet = b"\xff" * 6 + bytes.fromhex(clean) * 16
+    ok = False
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sock.sendto(packet, (broadcast or "255.255.255.255", int(port or 9)))
+            # Port 7 is the other common WoL port; harmless to try both.
+            try:
+                sock.sendto(packet, (broadcast or "255.255.255.255", 7))
+            except Exception:  # noqa: BLE001
+                pass
+        ok = True
+    except Exception as exc:  # noqa: BLE001
+        with _lock:
+            _state["last_error"] = str(exc)
+    return _remember("wake_lan", ok)
+
+
 def sleep_machine() -> bool:
     if IS_WINDOWS:
         ok = _run(["rundll32.exe", "powrprof.dll,SetSuspendState", "0,1,0"])
