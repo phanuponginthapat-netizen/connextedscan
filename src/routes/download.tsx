@@ -110,6 +110,9 @@ function DownloadPage() {
   const bundleWin = t("download.bundle_windows_url");
   const bundleLinux = t("download.bundle_linux_url");
   const bundleVersion = t("download.bundle_version") || "1.4.0";
+  const standaloneWin = t("download.standalone_windows_url");
+  const standaloneLinux = t("download.standalone_linux_url");
+  const standaloneVersion = t("download.standalone_version") || "1.6.0";
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
 
@@ -199,6 +202,44 @@ function DownloadPage() {
                 </ol>
               </div>
 
+
+              <div className="rounded-2xl border-2 border-emerald-300/60 bg-emerald-50/60 p-5">
+                <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">
+                  จบในเครื่อง · ไม่ต้องต่ออินเทอร์เน็ต
+                </p>
+                <h3 className="mt-2 font-display text-lg font-bold">
+                  ไฟล์ติดตั้งแบบใช้งานเดี่ยว (Standalone)
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  ติดตั้งเครื่องเดียวได้ทั้งตู้สแกนและหน้าหลังบ้าน ทั้งรายชื่อ ใบหน้า ประวัติการสแกน
+                  รายงาน และการตั้งค่า เก็บอยู่ในเครื่องนั้นทั้งหมด ไม่ต้องใส่รหัสเครื่อง
+                  ไม่ต้องต่อเน็ต เหมาะกับการนำไปใช้แยกในแต่ละโรงเรียน
+                </p>
+                <div className="mt-4">
+                  {standaloneWin ? (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="rounded-full bg-emerald-600 px-7 text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
+                    >
+                      <a href={standaloneWin} download>
+                        <Download className="size-5" /> ดาวน์โหลดรุ่นจบในเครื่อง Windows ({standaloneVersion})
+                      </a>
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      ยังไม่ได้ใส่ลิงก์รุ่นจบในเครื่อง — ใส่ได้ที่หลังบ้าน → ตั้งค่า → เนื้อหา →
+                      “ลิงก์ไฟล์รุ่นจบในเครื่อง (Windows)”
+                    </p>
+                  )}
+                </div>
+                <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+                  <li>แตกไฟล์แล้วติดตั้งตามไฟล์ “อ่านก่อน-ติดตั้ง.txt”</li>
+                  <li>เปิดโปรแกรม กด F9 เพื่อเข้าหลังบ้านในเครื่อง แล้วตั้งรหัสผู้ดูแล</li>
+                  <li>ใส่ชื่อโรงเรียน เวลาเข้า–ออก เพิ่มรายชื่อ และลงทะเบียนใบหน้า</li>
+                  <li>สำรองข้อมูลเป็นไฟล์เดียวได้จากหลังบ้าน → สำรองข้อมูล</li>
+                </ol>
+              </div>
               <div className="space-y-3 rounded-2xl border border-sky-100 p-5">
                 <h3 className="text-sm font-semibold">ไฟล์ติดตั้งแบบเล็ก (โหลดส่วนที่เหลือระหว่างติดตั้ง)</h3>
                 <Button asChild variant="outline" className="rounded-full px-6">
@@ -254,6 +295,44 @@ function DownloadPage() {
                 </ol>
               </div>
 
+
+              <div className="rounded-2xl border-2 border-emerald-300/60 bg-emerald-50/60 p-5">
+                <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">
+                  จบในเครื่อง · ไม่ต้องต่ออินเทอร์เน็ต
+                </p>
+                <h3 className="mt-2 font-display text-lg font-bold">
+                  ไฟล์ติดตั้งแบบใช้งานเดี่ยว (Standalone)
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  ติดตั้งเครื่องเดียวได้ทั้งตู้สแกนและหน้าหลังบ้าน ทั้งรายชื่อ ใบหน้า ประวัติการสแกน
+                  รายงาน และการตั้งค่า เก็บอยู่ในเครื่องนั้นทั้งหมด ไม่ต้องใส่รหัสเครื่อง
+                  ไม่ต้องต่อเน็ต เหมาะกับการนำไปใช้แยกในแต่ละโรงเรียน
+                </p>
+                <div className="mt-4">
+                  {standaloneLinux ? (
+                    <Button
+                      asChild
+                      size="lg"
+                      className="rounded-full bg-emerald-600 px-7 text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
+                    >
+                      <a href={standaloneLinux} download>
+                        <Download className="size-5" /> ดาวน์โหลดรุ่นจบในเครื่อง Linux ({standaloneVersion})
+                      </a>
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      ยังไม่ได้ใส่ลิงก์รุ่นจบในเครื่อง — ใส่ได้ที่หลังบ้าน → ตั้งค่า → เนื้อหา →
+                      “ลิงก์ไฟล์รุ่นจบในเครื่อง (Linux)”
+                    </p>
+                  )}
+                </div>
+                <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+                  <li>แตกไฟล์แล้วติดตั้งตามไฟล์ “อ่านก่อน-ติดตั้ง.txt”</li>
+                  <li>เปิดโปรแกรม กด F9 เพื่อเข้าหลังบ้านในเครื่อง แล้วตั้งรหัสผู้ดูแล</li>
+                  <li>ใส่ชื่อโรงเรียน เวลาเข้า–ออก เพิ่มรายชื่อ และลงทะเบียนใบหน้า</li>
+                  <li>สำรองข้อมูลเป็นไฟล์เดียวได้จากหลังบ้าน → สำรองข้อมูล</li>
+                </ol>
+              </div>
               <div className="space-y-3 rounded-2xl border border-sky-100 p-5">
                 <h3 className="text-sm font-semibold">ไฟล์ติดตั้งแบบเล็ก (โหลดส่วนที่เหลือระหว่างติดตั้ง)</h3>
                 <Button asChild variant="outline" className="rounded-full px-6">
