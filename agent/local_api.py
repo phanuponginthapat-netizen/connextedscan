@@ -1241,8 +1241,16 @@ def live_frames(x_local_token: str | None = Header(None)):
         {**frame, "online": seen_recently(frame.get("at"), 15)}
         for frame in sorted(LIVE_FRAMES.values(), key=lambda f: f["device_name"])
     ]
-    recent = db.recent_scans(limit=8)
-    return {"frames": frames, "recent": recent, "enabled": bool(db.get_settings().get("live_view_enabled", True))}
+    recent = db.query(
+        "SELECT l.scanned_at, l.direction, l.status, l.device_name, s.full_name, s.class_room"
+        " FROM attendance_logs l LEFT JOIN students s ON s.id = l.student_id"
+        " ORDER BY l.scanned_at DESC LIMIT 10",
+    )
+    return {
+        "frames": frames,
+        "recent": recent,
+        "enabled": bool(db.get_settings().get("live_view_enabled", True)),
+    }
 
 
 # ------------------------------------------------- admin: certificate & logs
