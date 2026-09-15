@@ -28,6 +28,8 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 
 import localdb as db
 import local_rules as rules
+import local_voice
+
 
 router = APIRouter()
 
