@@ -559,6 +559,8 @@ function openKiosk() {
   });
 
   kioskWindow.on("closed", () => {
+    if (openTimer) clearTimeout(openTimer);
+    openTimer = null;
     kioskWindow = null;
   });
 }
