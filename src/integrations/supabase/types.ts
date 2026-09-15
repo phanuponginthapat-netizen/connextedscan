@@ -58,6 +58,44 @@ export type Database = {
           },
         ]
       }
+      device_commands: {
+        Row: {
+          command: string
+          consumed_at: string | null
+          created_at: string
+          created_by: string | null
+          device_id: string | null
+          id: string
+          result: string | null
+        }
+        Insert: {
+          command: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_id?: string | null
+          id?: string
+          result?: string | null
+        }
+        Update: {
+          command?: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_id?: string | null
+          id?: string
+          result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_commands_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           agent_version: string | null
@@ -252,6 +290,9 @@ export type Database = {
           auto_enroll: boolean
           auto_enroll_max_faces: number
           auto_enroll_min_confidence: number
+          auto_power_off_action: string
+          auto_power_off_enabled: boolean
+          auto_power_off_time: string
           auto_update_enabled: boolean
           backup_enabled: boolean
           backup_last_at: string | null
@@ -308,9 +349,14 @@ export type Database = {
           notify_last_at: string | null
           notify_late: boolean
           notify_line_enabled: boolean
+          power_off_workdays_only: boolean
+          power_saving_enabled: boolean
           require_liveness: boolean
           save_snapshots: boolean
           school_name: string
+          screen_idle_minutes: number
+          screen_off_end: string
+          screen_off_start: string
           second_camera_direction: string
           second_camera_index: number
           snapshot_retention_days: number
@@ -334,6 +380,9 @@ export type Database = {
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
+          auto_power_off_action?: string
+          auto_power_off_enabled?: boolean
+          auto_power_off_time?: string
           auto_update_enabled?: boolean
           backup_enabled?: boolean
           backup_last_at?: string | null
@@ -390,9 +439,14 @@ export type Database = {
           notify_last_at?: string | null
           notify_late?: boolean
           notify_line_enabled?: boolean
+          power_off_workdays_only?: boolean
+          power_saving_enabled?: boolean
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
+          screen_idle_minutes?: number
+          screen_off_end?: string
+          screen_off_start?: string
           second_camera_direction?: string
           second_camera_index?: number
           snapshot_retention_days?: number
@@ -416,6 +470,9 @@ export type Database = {
           auto_enroll?: boolean
           auto_enroll_max_faces?: number
           auto_enroll_min_confidence?: number
+          auto_power_off_action?: string
+          auto_power_off_enabled?: boolean
+          auto_power_off_time?: string
           auto_update_enabled?: boolean
           backup_enabled?: boolean
           backup_last_at?: string | null
@@ -472,9 +529,14 @@ export type Database = {
           notify_last_at?: string | null
           notify_late?: boolean
           notify_line_enabled?: boolean
+          power_off_workdays_only?: boolean
+          power_saving_enabled?: boolean
           require_liveness?: boolean
           save_snapshots?: boolean
           school_name?: string
+          screen_idle_minutes?: number
+          screen_off_end?: string
+          screen_off_start?: string
           second_camera_direction?: string
           second_camera_index?: number
           snapshot_retention_days?: number
