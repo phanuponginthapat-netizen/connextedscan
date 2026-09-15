@@ -389,7 +389,7 @@ def device_health() -> dict:
     try:
         import shutil
 
-        usage = shutil.disk_usage(BASE_DIR if "BASE_DIR" in globals() else ".")
+        usage = shutil.disk_usage(os.path.dirname(os.path.abspath(__file__)))
         info["disk_free_mb"] = int(usage.free / (1024 * 1024))
     except Exception:
         pass
@@ -966,6 +966,8 @@ def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
 
     raw = image.split(",", 1)[-1]
     arr = cv2.imdecode(np.frombuffer(base64.b64decode(raw), np.uint8), cv2.IMREAD_COLOR)
+    with lock:
+        state["camera_ok"] = arr is not None
     if arr is None:
         return {"result": "no_face", "message": ""}
 
