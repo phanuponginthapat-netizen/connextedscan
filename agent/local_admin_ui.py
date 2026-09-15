@@ -442,7 +442,7 @@ async function renderClassReport(view) {
   const date = window.__crd || new Date().toISOString().slice(0, 10);
   const d = await api(`/api/local/report/class?date=${date}`);
   window.__classReport = d;
-  const g = (x, k) => x.gender[k] || 0;
+  const g = (x, k) => x[k] || 0;
   view.innerHTML = `<div class="card"><div class="row noprint">
     <div><label>วันที่รายงาน</label><input id="cr_date" type="date" value="${d.date}" /></div>
     <button class="btn ghost" onclick="window.__crd=$('#cr_date').value;render()">ดูรายงาน</button>

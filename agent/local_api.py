@@ -815,36 +815,36 @@ def class_report(x_local_token: str | None = Header(None), date: str = ""):
     absent_people = []
     for person in people:
         room = rooms.setdefault(person["class_room"], {
-            "class_room": person["class_room"], "total": {"gender": _gender_counts()},
-            "present": {"gender": _gender_counts()}, "late": {"gender": _gender_counts()},
-            "absent": {"gender": _gender_counts()},
+            "class_room": person["class_room"], "total": _gender_counts(),
+            "present": _gender_counts(), "late": _gender_counts(),
+            "absent": _gender_counts(),
         })
         gender = person["gender"]
         for key in (gender, "all"):
-            room["total"]["gender"][key] += 1
+            room["total"][key] += 1
         scan = first_scan.get(person["id"])
         bucket = "present" if scan else "absent"
         for key in (gender, "all"):
-            room[bucket]["gender"][key] += 1
+            room[bucket][key] += 1
         if scan:
             hour = (int(scan[11:13]) + 7) % 24
             minute = int(scan[14:16])
             if hour * 60 + minute > late_limit:
                 for key in (gender, "all"):
-                    room["late"]["gender"][key] += 1
+                    room["late"][key] += 1
         else:
             absent_people.append({k: person[k] for k in
                                   ("student_code", "full_name", "class_room", "gender")})
 
     classes = sorted(rooms.values(), key=lambda item: item["class_room"])
-    totals = {name: {"gender": _gender_counts()} for name in ("total", "present", "late", "absent")}
+    totals = {name: _gender_counts() for name in ("total", "present", "late", "absent")}
     for room in classes:
-        room["rate"] = round(room["present"]["gender"]["all"] * 100 / room["total"]["gender"]["all"])
+        room["rate"] = round(room["present"]["all"] * 100 / room["total"]["all"])
         for name in totals:
-            for gender in totals[name]["gender"]:
-                totals[name]["gender"][gender] += room[name]["gender"][gender]
-    total_count = totals["total"]["gender"]["all"]
-    totals["rate"] = round(totals["present"]["gender"]["all"] * 100 / total_count) if total_count else 0
+            for gender in totals[name]:
+                totals[name][gender] += room[name][gender]
+    total_count = totals["total"]["all"]
+    totals["rate"] = round(totals["present"]["all"] * 100 / total_count) if total_count else 0
     content = db.get_content()
     return {"date": date, "school_name": content.get("school_name") or "โรงเรียนของเรา",
             "classes": classes, "totals": totals, "absent_people": absent_people}
