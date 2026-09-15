@@ -43,6 +43,7 @@ import { Route as ApiPublicKioskEmbeddingsRouteImport } from './routes/api/publi
 import { Route as ApiPublicKioskPowerCommandRouteImport } from './routes/api/public/kiosk/power-command'
 import { Route as ApiPublicKioskRecentRouteImport } from './routes/api/public/kiosk/recent'
 import { Route as ApiPublicKioskSyncRouteImport } from './routes/api/public/kiosk/sync'
+import { Route as ApiPublicKioskTodayStatsRouteImport } from './routes/api/public/kiosk/today-stats'
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskVisitorRouteImport } from './routes/api/public/kiosk/visitor'
 import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
@@ -223,6 +224,12 @@ const ApiPublicKioskSyncRoute = ApiPublicKioskSyncRouteImport.update({
   path: '/api/public/kiosk/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKioskTodayStatsRoute =
+  ApiPublicKioskTodayStatsRouteImport.update({
+    id: '/api/public/kiosk/today-stats',
+    path: '/api/public/kiosk/today-stats',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicKioskTtsRoute = ApiPublicKioskTtsRouteImport.update({
   id: '/api/public/kiosk/tts',
   path: '/api/public/kiosk/tts',
@@ -274,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/today-stats': typeof ApiPublicKioskTodayStatsRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -312,6 +320,7 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/today-stats': typeof ApiPublicKioskTodayStatsRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -352,6 +361,7 @@ export interface FileRoutesById {
   '/api/public/kiosk/power-command': typeof ApiPublicKioskPowerCommandRoute
   '/api/public/kiosk/recent': typeof ApiPublicKioskRecentRoute
   '/api/public/kiosk/sync': typeof ApiPublicKioskSyncRoute
+  '/api/public/kiosk/today-stats': typeof ApiPublicKioskTodayStatsRoute
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/today-stats'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
@@ -431,6 +442,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/today-stats'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
@@ -470,6 +482,7 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/power-command'
     | '/api/public/kiosk/recent'
     | '/api/public/kiosk/sync'
+    | '/api/public/kiosk/today-stats'
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
@@ -495,6 +508,7 @@ export interface RootRouteChildren {
   ApiPublicKioskPowerCommandRoute: typeof ApiPublicKioskPowerCommandRoute
   ApiPublicKioskRecentRoute: typeof ApiPublicKioskRecentRoute
   ApiPublicKioskSyncRoute: typeof ApiPublicKioskSyncRoute
+  ApiPublicKioskTodayStatsRoute: typeof ApiPublicKioskTodayStatsRoute
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskVisitorRoute: typeof ApiPublicKioskVisitorRoute
   ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
@@ -740,6 +754,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kiosk/today-stats': {
+      id: '/api/public/kiosk/today-stats'
+      path: '/api/public/kiosk/today-stats'
+      fullPath: '/api/public/kiosk/today-stats'
+      preLoaderRoute: typeof ApiPublicKioskTodayStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kiosk/tts': {
       id: '/api/public/kiosk/tts'
       path: '/api/public/kiosk/tts'
@@ -824,6 +845,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskPowerCommandRoute: ApiPublicKioskPowerCommandRoute,
   ApiPublicKioskRecentRoute: ApiPublicKioskRecentRoute,
   ApiPublicKioskSyncRoute: ApiPublicKioskSyncRoute,
+  ApiPublicKioskTodayStatsRoute: ApiPublicKioskTodayStatsRoute,
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskVisitorRoute: ApiPublicKioskVisitorRoute,
   ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
