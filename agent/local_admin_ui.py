@@ -36,6 +36,7 @@ ADMIN_HTML = r"""<!doctype html>
   .card h3 { margin:0 0 12px; font-size:1.02rem; }
   .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
   .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
   label { display:block; font-size:.8rem; font-weight:700; color:#475569; margin-bottom:4px; }
   input, select, textarea { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:12px;
     font:inherit; background:#fff; }
@@ -598,7 +599,8 @@ const FLAGS = [
   ['visitor_mode', 'บันทึกภาพผู้ไม่ลงทะเบียน'],
   ['kiosk_show_recent', 'แสดงรายการล่าสุด'], ['kiosk_mirror', 'กลับภาพกล้องเหมือนกระจก'],
   ['kiosk_show_clock', 'แสดงเวลา'], ['kiosk_news_enabled', 'เปิดข้อความข่าววิ่ง'],
-  ['voice_enabled', 'เปิดเสียงพูด'], ['door_enabled', 'เปิดใช้ประตูอัจฉริยะ'],
+  ['voice_enabled', 'เปิดเสียงพูด'], ['live_view_enabled', 'ส่งภาพสดให้หน้ากล้องสด'],
+  ['door_enabled', 'เปิดใช้ประตูอัจฉริยะ'],
   ['door_hold_power', 'จ่ายไฟเซอร์โวค้างไว้'], ['door_invert_servo', 'สลับทิศการหมุน'],
   ['door_buzzer_enabled', 'เสียงเตือนที่ประตู'], ['door_use_relay', 'ใช้กลอนไฟฟ้า (รีเลย์)'],
   ['power_saving_enabled', 'เปิดโหมดประหยัดพลังงาน'],
@@ -697,7 +699,7 @@ async function renderDevices(view) {
   const address = (d.addresses || [])[0] || `http://<ไอพีเครื่องนี้>:${d.lan_port}`;
   view.innerHTML = `<div class="card"><h3>เปิดให้ตู้สแกนอื่นเชื่อมต่อ</h3>
       <p><label><input id="d_lan" type="checkbox" ${d.lan_enabled ? 'checked' : ''} />
-        เปิดโหมดวง LAN (เครื่องนี้เป็นเครื่องแม่เก็บข้อมูลทั้งหมด)</label></p>
+        เปิดให้เครื่องอื่นในวง LAN เข้าถึง (เปิดหลังบ้าน/รายงาน/กล้องสดผ่านเว็บ และเพิ่มตู้สแกนลูก)</label></p>
       <div class="row"><div><label>พอร์ต</label><input id="d_port" type="number" value="${d.lan_port}" /></div>
         <button class="btn" onclick="saveLan()">บันทึก</button></div>
       <p class="sub">ที่อยู่ของเครื่องแม่: <b>${esc(address)}</b><br />
