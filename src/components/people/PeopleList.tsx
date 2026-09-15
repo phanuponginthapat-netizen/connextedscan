@@ -268,6 +268,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {s.student_code} • {personGroupLabel(s)}
+                  {!isStaff && ` • ${s.gender === "male" ? "ชาย" : s.gender === "female" ? "หญิง" : "ไม่ระบุเพศ"}`}
                 </p>
                 </div>
               </div>

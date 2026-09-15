@@ -230,9 +230,10 @@ async function renderPeople(view) {
       </select></div>
       <button class="btn ghost" onclick="applyFilter()">ค้นหา</button></div>
       <p class="sub">พบ ${rows.length} รายชื่อ</p>
-      <table><thead><tr><th>ชื่อ</th><th>รหัส</th><th>ชั้น/แผนก</th><th>ใบหน้า</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th>ชื่อ</th><th>รหัส</th><th>ชั้น/แผนก</th><th>เพศ</th><th>ใบหน้า</th><th></th></tr></thead><tbody>
       ${rows.map((p) => `<tr><td>${esc(p.full_name)}</td><td>${esc(p.student_code)}</td>
         <td>${esc(p.class_room || p.department || '-')}</td>
+        <td>${p.gender === 'male' ? 'ชาย' : p.gender === 'female' ? 'หญิง' : 'ไม่ระบุ'}</td>
         <td><span class="pill ${p.faces ? 'good' : 'bad'}">${p.faces}</span></td>
         <td style="white-space:nowrap"><button class="btn ghost sm" onclick='editPerson(${JSON.stringify(p)})'>แก้ไข</button>
         <button class="btn danger sm" onclick="delPerson('${p.id}')">ลบ</button></td></tr>`).join('')}
@@ -242,10 +243,11 @@ function applyFilter() { window.__q = $('#q').value; window.__cls = $('#cls').va
 function editPerson(p) {
   $('#f_id').value = p.id; $('#f_code').value = p.student_code; $('#f_name').value = p.full_name;
   $('#f_nick').value = p.nickname || ''; $('#f_class').value = p.class_room || '';
-  $('#f_phone').value = p.guardian_phone || ''; $('#f_type').value = p.person_type || 'student';
+  $('#f_phone').value = p.guardian_phone || ''; $('#f_gender').value = p.gender || 'unspecified';
+  $('#f_type').value = p.person_type || 'student';
   window.scrollTo(0, 0);
 }
-function clearPerson() { ['f_id','f_code','f_name','f_nick','f_class','f_phone'].forEach((id) => $('#' + id).value = ''); }
+function clearPerson() { ['f_id','f_code','f_name','f_nick','f_class','f_phone'].forEach((id) => $('#' + id).value = ''); $('#f_gender').value = 'unspecified'; }
 async function savePerson() {
   await api('/api/local/people', { method: 'POST', body: JSON.stringify({
     id: $('#f_id').value || null, student_code: $('#f_code').value, full_name: $('#f_name').value,
