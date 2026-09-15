@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Activity, BellRing, Briefcase, CalendarClock, ChevronLeft, ChevronRight, DoorOpen, Download, FileBarChart, MonitorPlay, LayoutDashboard, LogOut, ScanFace, Settings, Users , Zap, ShieldCheck, FileCheck2 } from "lucide-react";
+import { Activity, BellRing, Briefcase, CalendarClock, ChevronLeft, ChevronRight, DoorOpen, Download, FileBarChart, MonitorPlay, LayoutDashboard, LogOut, ScanFace, Settings, Users , Zap, ShieldCheck, FileCheck2, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const nav = [
   { to: "/admin/staff", key: "nav.staff", icon: Briefcase },
   { to: "/admin/attendance", key: "nav.attendance", icon: CalendarClock },
   { to: "/admin/monthly", key: "nav.monthly", icon: FileBarChart },
+  { to: "/admin/class-report", key: "nav.class_report", icon: ClipboardList },
   { to: "/admin/live", key: "nav.live", icon: MonitorPlay },
   { to: "/admin/install", key: "nav.install", icon: Download },
   { to: "/admin/door", key: "nav.door", icon: DoorOpen },

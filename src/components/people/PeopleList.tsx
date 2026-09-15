@@ -45,6 +45,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
     department: "",
     position: "",
     guardian_phone: "",
+    gender: "unspecified",
   });
 
   const { data: people } = useQuery({
@@ -84,6 +85,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
         department: isStaff ? form.department.trim() || null : null,
         position: isStaff ? form.position.trim() || null : null,
         guardian_phone: form.guardian_phone.trim() || null,
+        gender: isStaff ? null : form.gender,
         person_type: personType,
       });
       if (error) throw error;
@@ -99,6 +101,7 @@ export function PeopleList({ personType }: { personType: PersonType }) {
         department: "",
         position: "",
         guardian_phone: "",
+        gender: "unspecified",
       });
       qc.invalidateQueries({ queryKey: ["people", personType] });
     },
@@ -172,6 +175,19 @@ export function PeopleList({ personType }: { personType: PersonType }) {
                   />
                 </div>
               ))}
+              {!isStaff && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="gender">เพศ</Label>
+                  <Select value={form.gender} onValueChange={(gender) => setForm({ ...form, gender })}>
+                    <SelectTrigger id="gender"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">ชาย</SelectItem>
+                      <SelectItem value="female">หญิง</SelectItem>
+                      <SelectItem value="unspecified">ไม่ระบุ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button

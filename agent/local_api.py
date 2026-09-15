@@ -595,6 +595,7 @@ async def people_save(request: Request, x_local_token: str | None = Header(None)
         "nickname": (body.get("nickname") or None),
         "class_room": (body.get("class_room") or None),
         "guardian_phone": (body.get("guardian_phone") or None),
+        "gender": body.get("gender") if body.get("gender") in ("male", "female", "unspecified") else "unspecified",
         "person_type": "staff" if body.get("person_type") == "staff" else "student",
         "department": (body.get("department") or None),
         "position": (body.get("position") or None),
@@ -606,7 +607,7 @@ async def people_save(request: Request, x_local_token: str | None = Header(None)
     if person_id:
         db.run(
             "UPDATE students SET student_code=?, full_name=?, nickname=?, class_room=?,"
-            " guardian_phone=?, person_type=?, department=?, position=?, is_active=?, updated_at=?"
+            " guardian_phone=?, gender=?, person_type=?, department=?, position=?, is_active=?, updated_at=?"
             " WHERE id=?",
             (*fields.values(), db.now_iso(), person_id),
         )
@@ -616,18 +617,18 @@ async def people_save(request: Request, x_local_token: str | None = Header(None)
         if exists:
             person_id = exists["id"]
             db.run(
-                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?,"
+                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?, gender=?,"
                 " person_type=?, department=?, position=?, is_active=?, updated_at=? WHERE id=?",
                 (fields["full_name"], fields["nickname"], fields["class_room"],
-                 fields["guardian_phone"], fields["person_type"], fields["department"],
+                 fields["guardian_phone"], fields["gender"], fields["person_type"], fields["department"],
                  fields["position"], fields["is_active"], db.now_iso(), person_id),
             )
         else:
             person_id = db.new_id()
             db.run(
                 "INSERT INTO students (id, student_code, full_name, nickname, class_room,"
-                " guardian_phone, person_type, department, position, is_active, created_at,"
-                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                " guardian_phone, gender, person_type, department, position, is_active, created_at,"
+                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (person_id, *fields.values(), db.now_iso(), db.now_iso()),
             )
             db.add_audit("เพิ่มบุคคลใหม่", person_id, fields["full_name"])
@@ -920,6 +921,7 @@ async def people_import(request: Request, x_local_token: str | None = Header(Non
             (row.get("nickname") or None),
             (row.get("class_room") or None),
             (row.get("guardian_phone") or None),
+            row.get("gender") if row.get("gender") in ("male", "female", "unspecified") else "unspecified",
             "staff" if row.get("person_type") == "staff" else "student",
             (row.get("department") or None),
             (row.get("position") or None),
@@ -927,7 +929,7 @@ async def people_import(request: Request, x_local_token: str | None = Header(Non
         exists = db.one("SELECT id FROM students WHERE student_code = ?", (code,))
         if exists:
             db.run(
-                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?,"
+                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?, gender=?,"
                 " person_type=?, department=?, position=?, is_active=1, updated_at=? WHERE id=?",
                 (*values, db.now_iso(), exists["id"]),
             )
@@ -935,8 +937,8 @@ async def people_import(request: Request, x_local_token: str | None = Header(Non
         else:
             db.run(
                 "INSERT INTO students (id, student_code, full_name, nickname, class_room,"
-                " guardian_phone, person_type, department, position, is_active, created_at,"
-                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,1,?,?)",
+                " guardian_phone, gender, person_type, department, position, is_active, created_at,"
+                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)",
                 (db.new_id(), code, *values, db.now_iso(), db.now_iso()),
             )
             added += 1

@@ -24,6 +24,7 @@ type Row = {
   department: string | null;
   position: string | null;
   guardian_phone: string | null;
+  gender: string | null;
   person_type: PersonType;
 };
 
@@ -59,7 +60,17 @@ const HEADER_MAP: Record<string, keyof Row> = {
   เบอร์ผู้ปกครอง: "guardian_phone",
   phone: "guardian_phone",
   guardian_phone: "guardian_phone",
+  เพศ: "gender",
+  gender: "gender",
+  sex: "gender",
 };
+
+function normaliseGender(value?: string | null) {
+  const text = (value ?? "").trim().toLowerCase();
+  if (["ชาย", "ช", "male", "m"].includes(text)) return "male";
+  if (["หญิง", "ญ", "female", "f"].includes(text)) return "female";
+  return "unspecified";
+}
 
 function normaliseHeader(value: string): keyof Row | null {
   const key = value.trim().toLowerCase().replace(/\s+/g, "");
@@ -139,6 +150,7 @@ function toRows(grid: string[][], personType: PersonType) {
       department: personType === "staff" ? (record.department ?? null) : null,
       position: personType === "staff" ? (record.position ?? null) : null,
       guardian_phone: record.guardian_phone ?? null,
+      gender: personType === "student" ? normaliseGender(record.gender) : null,
       person_type: personType,
     });
   }
@@ -226,7 +238,7 @@ export function ImportPeopleDialog({
           <DialogDescription>
             ไฟล์ต้องมีหัวคอลัมน์บรรทัดแรก อย่างน้อย “รหัส” และ “ชื่อ-นามสกุล”
             {personType === "student"
-              ? " เพิ่มคอลัมน์ ชั้น/ห้อง, ชื่อเล่น, เบอร์ผู้ปกครอง ได้"
+              ? " เพิ่มคอลัมน์ ชั้น/ห้อง, เพศ (ชาย/หญิง), ชื่อเล่น, เบอร์ผู้ปกครอง ได้"
               : " เพิ่มคอลัมน์ ฝ่าย/แผนก, ตำแหน่ง, ชื่อเล่น, เบอร์โทร ได้"}
           </DialogDescription>
         </DialogHeader>
