@@ -92,7 +92,7 @@ export function TablePager({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-sm text-muted-foreground print:hidden">
       <span>
-        ทั้งหมด {total.toLocaleString("th-TH")} รายการ • หน้า {page} จาก {pageCount}
+        ทั้งหมด {total.toLocaleString("th-TH-u-ca-buddhist-nu-latn")} รายการ • หน้า {page} จาก {pageCount}
       </span>
       <div className="flex gap-2">
         <Button

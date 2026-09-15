@@ -100,11 +100,11 @@ function shiftDays(days: number) {
 
 function timeText(value?: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return new Date(value).toLocaleTimeString("th-TH-u-ca-buddhist-nu-latn", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function dateText(value: string) {
-  return new Date(value).toLocaleDateString("th-TH", {
+  return new Date(value).toLocaleDateString("th-TH-u-ca-buddhist-nu-latn", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -114,7 +114,7 @@ function dateText(value: string) {
 function formatThaiDate(value: string) {
   const d = new Date(`${value}T00:00:00`);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("th-TH", {
+  return d.toLocaleDateString("th-TH-u-ca-buddhist-nu-latn", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -261,7 +261,7 @@ function AttendancePage() {
     setDeleting(true);
     try {
       const result = await requestDelete({ mode: "range", from, to });
-      toast.success(`ลบประวัติแล้ว ${(result.deleted ?? 0).toLocaleString("th-TH")} รายการ`);
+      toast.success(`ลบประวัติแล้ว ${(result.deleted ?? 0).toLocaleString("th-TH-u-ca-buddhist-nu-latn")} รายการ`);
       setConfirmClearRange(false);
       await refreshRows();
     } catch (e) {
@@ -413,7 +413,7 @@ function AttendancePage() {
         map.get(day) ??
         {
           day,
-          label: new Date(day).toLocaleDateString("th-TH", { day: "2-digit", month: "short" }),
+          label: new Date(day).toLocaleDateString("th-TH-u-ca-buddhist-nu-latn", { day: "2-digit", month: "short" }),
           in: 0,
           out: 0,
         };
@@ -491,7 +491,7 @@ function AttendancePage() {
         "เครื่อง",
       ],
       filtered.map((r) => [
-        new Date(r.scanned_at).toLocaleString("th-TH", { hour12: false }),
+        new Date(r.scanned_at).toLocaleString("th-TH-u-ca-buddhist-nu-latn", { hour12: false }),
         r.students?.student_code ?? "",
         r.students?.full_name ?? "",
         r.students ? personTypeLabel(r.students.person_type) : "",
@@ -535,7 +535,7 @@ function AttendancePage() {
               : personType === "student"
                 ? "เฉพาะนักเรียน"
                 : "เฉพาะบุคลากร"}{" "}
-            • ออกรายงานเมื่อ {new Date().toLocaleString("th-TH", { hour12: false })}
+            • ออกรายงานเมื่อ {new Date().toLocaleString("th-TH-u-ca-buddhist-nu-latn", { hour12: false })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
@@ -631,7 +631,7 @@ function AttendancePage() {
           label="เวลาเฉลี่ย"
           value={stats.avgMinutes != null ? durationText(stats.avgMinutes) : "-"}
           icon={ScanFace}
-          hint={`สแกนทั้งหมด ${stats.scans.toLocaleString("th-TH")} ครั้ง`}
+          hint={`สแกนทั้งหมด ${stats.scans.toLocaleString("th-TH-u-ca-buddhist-nu-latn")} ครั้ง`}
         />
       </div>
 
@@ -922,7 +922,7 @@ function AttendancePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>ลบประวัติทั้งช่วงวันที่?</AlertDialogTitle>
             <AlertDialogDescription>
-              จะลบประวัติการสแกนทั้งหมด {filtered.length.toLocaleString("th-TH")} รายการ
+              จะลบประวัติการสแกนทั้งหมด {filtered.length.toLocaleString("th-TH-u-ca-buddhist-nu-latn")} รายการ
               ตั้งแต่ {dateText(from)} ถึง {dateText(to)} รวมถึงรูปสแกนที่บันทึกไว้
               ลบแล้วไม่สามารถกู้คืนได้ แนะนำให้ดาวน์โหลดไฟล์เก็บไว้ก่อน
             </AlertDialogDescription>

@@ -138,7 +138,7 @@ function ClassReportPage() {
       </header>
 
       <Card>
-        <CardHeader><CardTitle>สรุปประจำวันที่ {new Date(`${date}T12:00:00`).toLocaleDateString("th-TH", { dateStyle: "long" })}</CardTitle><CardDescription>“ลา” เตรียมไว้ในรายงานและจะแสดง 0 จนกว่าจะบันทึกข้อมูลการลา</CardDescription></CardHeader>
+        <CardHeader><CardTitle>สรุปประจำวันที่ {new Date(`${date}T12:00:00`).toLocaleDateString("th-TH-u-ca-buddhist-nu-latn", { dateStyle: "long" })}</CardTitle><CardDescription>“ลา” เตรียมไว้ในรายงานและจะแสดง 0 จนกว่าจะบันทึกข้อมูลการลา</CardDescription></CardHeader>
         <CardContent className="p-0"><div className="overflow-x-auto"><Table>
           <TableHeader><TableRow><TableHead rowSpan={2}>ชั้น/ห้อง</TableHead><TableHead colSpan={3} className="text-center">นักเรียน</TableHead><TableHead colSpan={3} className="bg-emerald-500/10 text-center">มาเรียน</TableHead><TableHead rowSpan={2} className="bg-amber-500/10 text-center">สาย</TableHead><TableHead rowSpan={2} className="text-center">ลา</TableHead><TableHead rowSpan={2} className="bg-red-500/10 text-center">ขาด</TableHead><TableHead rowSpan={2} className="text-center">% เข้าเรียน</TableHead></TableRow>
           <TableRow><TableHead className="text-center">ช</TableHead><TableHead className="text-center">ญ</TableHead><TableHead className="text-center">รวม</TableHead><TableHead className="bg-emerald-500/10 text-center">ช</TableHead><TableHead className="bg-emerald-500/10 text-center">ญ</TableHead><TableHead className="bg-emerald-500/10 text-center">รวม</TableHead></TableRow></TableHeader>

@@ -35,7 +35,7 @@ export const Route = createFileRoute("/admin/audit")({
 });
 
 function whenText(value: string) {
-  return new Date(value).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(value).toLocaleString("th-TH-u-ca-buddhist-nu-latn", { dateStyle: "medium", timeStyle: "short" });
 }
 
 function AuditPage() {

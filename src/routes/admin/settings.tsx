@@ -829,7 +829,7 @@ function SettingsPage() {
                     <span className="text-xs text-muted-foreground">
                       สำรองครั้งล่าสุด:{" "}
                       {form.backup_last_at
-                        ? new Date(form.backup_last_at).toLocaleString("th-TH")
+                        ? new Date(form.backup_last_at).toLocaleString("th-TH-u-ca-buddhist-nu-latn")
                         : "ยังไม่เคยสำรอง"}
                     </span>
                   </div>
@@ -987,7 +987,7 @@ function SettingsPage() {
                     <p className="mt-2 text-xs text-muted-foreground">
                       เชื่อมต่อล่าสุด:{" "}
                       {d.last_seen_at
-                        ? new Date(d.last_seen_at).toLocaleString("th-TH", { hour12: false })
+                        ? new Date(d.last_seen_at).toLocaleString("th-TH-u-ca-buddhist-nu-latn", { hour12: false })
                         : "ยังไม่เคย"}
                     </p>
                   </div>

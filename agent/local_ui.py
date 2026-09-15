@@ -231,7 +231,7 @@ async function loadRecent() {
     } else { $('newsBox').style.display = 'none'; }
     $('list').innerHTML = (display.show_recent ? (data.items || []) : []).map((i) => `
       <div class="item"><img src="${i.snapshot_url || i.avatar_url || ''}" alt="" />
-        <div><b>${i.name}</b><span>${i.detail || ''} • ${new Date(i.scanned_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div><b>${i.name}</b><span>${i.detail || ''} • ${new Date(i.scanned_at).toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn',{hour:'2-digit',minute:'2-digit'})}</span></div>
         <div class="tag ${i.direction === 'out' ? 'out' : ''}">${i.direction === 'out' ? 'ออก' : 'เข้า'}</div></div>`).join('')
       || '<div style="color:#94a3b8;font-size:.9rem">ยังไม่มีการสแกนวันนี้</div>';
   } catch (e) {}
@@ -248,8 +248,8 @@ async function loadStats() {
 function wake() { $('saver').className = 'saver'; }
 function clock() {
   const now = new Date();
-  $('clock').textContent = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  $('date').textContent = now.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('clock').textContent = now.toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit' });
+  $('date').textContent = now.toLocaleDateString('th-TH-u-ca-buddhist-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 loadBrand(); startCamera(); loadRecent(); loadStats(); clock();
 setInterval(tick, 900); setInterval(loadRecent, 15000); setInterval(loadStats, 60000);

@@ -33,7 +33,7 @@ function startOfTodayISO() {
 }
 
 function timeText(value: string) {
-  return new Date(value).toLocaleTimeString("th-TH", {
+  return new Date(value).toLocaleTimeString("th-TH-u-ca-buddhist-nu-latn", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,

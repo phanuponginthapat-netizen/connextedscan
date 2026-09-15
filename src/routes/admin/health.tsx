@@ -59,7 +59,7 @@ export const Route = createFileRoute("/admin/health")({
 
 function whenText(value: string | null | undefined) {
   if (!value) return "—";
-  return new Date(value).toLocaleString("th-TH", {
+  return new Date(value).toLocaleString("th-TH-u-ca-buddhist-nu-latn", {
     dateStyle: "medium",
     timeStyle: "short",
   });
