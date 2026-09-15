@@ -12,6 +12,15 @@ set -euo pipefail
 CURRENT_STEP="startup"
 trap 'code=$?; echo "ERROR: Linux bundle failed during: $CURRENT_STEP (exit $code)" >&2; df -h . /tmp 2>/dev/null || true; exit $code' ERR
 
+# STANDALONE=1 builds the offline "จบในเครื่อง" edition: same package plus a
+# standalone.flag marker, so the program runs its own database and admin pages.
+STANDALONE="${STANDALONE:-0}"
+if [ "$STANDALONE" = "1" ]; then
+  ARCHIVE_NAME="FaceGate-Standalone-linux-x64.tar.gz"
+else
+  ARCHIVE_NAME="FaceGate-AllInOne-linux-x64.tar.gz"
+fi
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK="${TMPDIR:-/tmp}/facegate-work-linux"
 RUNTIME="$WORK/runtime"
@@ -71,12 +80,16 @@ APP="$WORK/packaged/FaceGate-linux-x64"
 CURRENT_STEP="copying offline runtime"
 [ -x "$APP/FaceGate" ] || { echo "Electron executable was not created: $APP/FaceGate" >&2; exit 1; }
 cp -r "$RUNTIME" "$APP/resources/runtime"
+if [ "$STANDALONE" = "1" ]; then
+  : > "$APP/resources/standalone.flag"
+  cp "$ROOT/bundle/STANDALONE-README.txt" "$APP/อ่านก่อน-ติดตั้ง.txt"
+fi
 cp "$ROOT/bundle/facegate-install.sh" "$APP/install.sh"
 chmod +x "$APP/install.sh"
 
 echo "[5/5] compressing"
 CURRENT_STEP="compressing final archive"
-tar czf "$OUT/FaceGate-AllInOne-linux-x64.tar.gz" -C "$WORK/packaged" "FaceGate-linux-x64"
-test -s "$OUT/FaceGate-AllInOne-linux-x64.tar.gz"
+tar czf "$OUT/$ARCHIVE_NAME" -C "$WORK/packaged" "FaceGate-linux-x64"
+test -s "$OUT/$ARCHIVE_NAME"
 CURRENT_STEP="complete"
-echo "done -> $OUT/FaceGate-AllInOne-linux-x64.tar.gz"
+echo "done -> $OUT/$ARCHIVE_NAME"

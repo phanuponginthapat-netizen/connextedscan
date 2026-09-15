@@ -20,6 +20,15 @@ const UPDATE_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_CLOUD_URL =
   "https://connextedscan.lovable.app";
 
+// Standalone build: the whole system (database, admin pages, kiosk screen) runs
+// on this PC. The builder drops resources/standalone.flag into the package, so
+// one code base serves both the cloud installs and the offline installs.
+const AGENT_PORT = process.env.FACEGATE_PORT || "8899";
+const LOCAL_URL = `http://127.0.0.1:${AGENT_PORT}`;
+const STANDALONE =
+  process.env.FACEGATE_STANDALONE === "1" ||
+  fs.existsSync(path.join(process.resourcesPath || path.join(__dirname, ".."), "standalone.flag"));
+
 // Let the kiosk page speak the moment it loads — no "enable sound" tap needed.
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 // Give the kiosk everything this PC has: no throttling, full GPU use.
@@ -233,7 +242,7 @@ function startAgent() {
   const deviceKey = (cfg.deviceKey || "").trim();
   const cloudUrl = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "");
 
-  if (!deviceKey) {
+  if (!deviceKey && !STANDALONE) {
     agentStatus = {
       state: "configuration_required",
       message: "ยังไม่ได้ตั้งรหัสเครื่อง",
@@ -291,10 +300,16 @@ function startAgent() {
   const modelDir = path.join(runtimeDir, "models");
   const env = {
     ...process.env,
-    FACEGATE_DEVICE_KEY: deviceKey,
-    FACEGATE_CLOUD_URL: cloudUrl,
+    FACEGATE_DEVICE_KEY: STANDALONE ? "local" : deviceKey,
+    FACEGATE_CLOUD_URL: STANDALONE ? `${LOCAL_URL}/local` : cloudUrl,
     PYTHONUNBUFFERED: "1",
   };
+  if (STANDALONE) {
+    env.FACEGATE_STANDALONE = "1";
+    // Keep every school's data next to the program folder is NOT wanted: user
+    // data survives reinstalling the program.
+    env.FACEGATE_DATA_DIR = path.join(app.getPath("userData"), "data");
+  }
   env.PYTHONPATH = [
     fs.existsSync(sitePath) ? sitePath : null,
     agentDir,
@@ -429,7 +444,9 @@ function openKiosk() {
   }
 
   const cfg = loadConfig();
-  const url = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "") + "/kiosk";
+  const url = STANDALONE
+    ? `${LOCAL_URL}/kiosk`
+    : (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "") + "/kiosk";
 
   kioskWindow = new BrowserWindow({
     fullscreen: true,
@@ -494,6 +511,28 @@ function openKiosk() {
   });
 }
 
+/** Standalone build: the admin pages served by the program itself. */
+let adminWindow = null;
+function openLocalAdmin() {
+  if (adminWindow && !adminWindow.isDestroyed()) {
+    adminWindow.focus();
+    return;
+  }
+  adminWindow = new BrowserWindow({
+    width: 1180,
+    height: 820,
+    title: "FaceGate — หลังบ้านในเครื่อง",
+    backgroundColor: "#f4f7ff",
+    autoHideMenuBar: true,
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  });
+  adminWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, done) => done(true));
+  adminWindow.loadURL(`${LOCAL_URL}/admin`);
+  adminWindow.on("closed", () => {
+    adminWindow = null;
+  });
+}
+
 function openSettings() {
   if (settingsWindow) {
     settingsWindow.focus();
@@ -527,6 +566,7 @@ function openSettings() {
  * simply reloads the kiosk window.
  */
 async function checkForUpdates({ initial = false } = {}) {
+  if (STANDALONE) return; // offline install: nothing to fetch
   const cfg = loadConfig();
   const cloudUrl = (cfg.cloudUrl || DEFAULT_CLOUD_URL).replace(/\/$/, "");
   const bundledAgentDir = path
@@ -603,8 +643,12 @@ app.whenReady().then(async () => {
   globalShortcut.register("CommandOrControl+Shift+S", openSettings);
   globalShortcut.register("F10", openSettings);
 
+  if (STANDALONE) {
+    globalShortcut.register("F9", openLocalAdmin);
+  }
+
   const cfg = loadConfig();
-  if (!cfg.deviceKey || !cfg.deviceKey.trim()) {
+  if (!STANDALONE && (!cfg.deviceKey || !cfg.deviceKey.trim())) {
     openSettings();
   } else {
     // Start the engine first: waiting for the update check used to delay the

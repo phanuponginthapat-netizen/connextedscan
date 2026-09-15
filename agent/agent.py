@@ -32,8 +32,16 @@ import power
 from face_engine import Face, FaceEngine
 from pydantic import BaseModel
 
-CLOUD_URL = os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.app")
-DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "")
+# Standalone build: everything (database, admin pages, kiosk screen) lives on
+# this PC, so the "cloud" the agent talks to is its own local API.
+STANDALONE = os.environ.get("FACEGATE_STANDALONE", "") in ("1", "true", "on", "yes")
+PORT_ENV = int(os.environ.get("FACEGATE_PORT", "8899"))
+CLOUD_URL = (
+    f"http://127.0.0.1:{PORT_ENV}/local"
+    if STANDALONE
+    else os.environ.get("FACEGATE_CLOUD_URL", "https://connextedscan.lovable.app")
+)
+DEVICE_KEY = os.environ.get("FACEGATE_DEVICE_KEY", "local") if STANDALONE else os.environ.get("FACEGATE_DEVICE_KEY", "")
 SYNC_SECONDS = int(os.environ.get("FACEGATE_SYNC_SECONDS", "30"))
 PORT = int(os.environ.get("FACEGATE_PORT", "8899"))
 AGENT_VERSION = "1.5.0"
@@ -64,6 +72,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if STANDALONE:
+    import local_api
+    import local_ui
+    from fastapi.responses import HTMLResponse, RedirectResponse
+
+    app.include_router(local_api.router, prefix="/local")
+
+    @app.get("/kiosk")
+    def kiosk_screen():  # offline kiosk screen
+        return HTMLResponse(local_ui.KIOSK_HTML)
+
+    @app.get("/admin")
+    def admin_screen():  # offline admin pages
+        return HTMLResponse(local_ui.ADMIN_HTML)
+
+    @app.get("/")
+    def home_screen():
+        return RedirectResponse("/kiosk")
+
 
 # ArcFace. det_size kept small so an Intel Atom can keep up.
 # The models are loaded in the background so the kiosk page can connect to the
@@ -705,6 +733,8 @@ def self_update_once() -> bool:
 def update_loop() -> None:
     while True:
         time.sleep(3600)
+        if STANDALONE:
+            continue
         try:
             if self_update_once():
                 print("[agent] มีเวอร์ชันใหม่ กรุณาปิดและเปิดโปรแกรมอีกครั้ง")
@@ -1214,8 +1244,28 @@ def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
 if __name__ == "__main__":
     import uvicorn
 
-    if not DEVICE_KEY:
+    if not DEVICE_KEY and not STANDALONE:
         raise SystemExit("ตั้งค่า FACEGATE_DEVICE_KEY ก่อนเริ่มโปรแกรม (ดูรหัสได้ในหน้าตั้งค่าระบบ)")
+    if STANDALONE:
+        import local_api
+
+        def embed_photo(jpeg: bytes) -> dict:
+            """Turn a registration photo into an ArcFace embedding (local admin)."""
+            arr = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+            if arr is None:
+                raise ValueError("อ่านไฟล์ภาพไม่ได้")
+            face = embed_image(arr)
+            if face is None:
+                raise ValueError("ไม่พบใบหน้าในภาพนี้ กรุณาถ่ายใหม่ให้เห็นหน้าชัดเจน")
+            return {
+                "embedding": normalise(np.asarray(face.normed_embedding, dtype=np.float32)).tolist(),
+                "geometry": geometry_features(face),
+                "quality": round(min(1.0, laplacian_sharpness(arr) / 200.0), 3),
+            }
+
+        local_api.set_embedder(embed_photo)
+        print(f"[agent] standalone mode — data in {local_api.db.DATA_DIR}")
+
     load_cache()
     door.start()
     threading.Thread(target=sync_loop, daemon=True).start()

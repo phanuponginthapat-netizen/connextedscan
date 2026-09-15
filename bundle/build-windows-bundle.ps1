@@ -12,7 +12,10 @@
 # Run on Windows with PowerShell 5+ and Node.js 22+:
 #   powershell -ExecutionPolicy Bypass -File bundle\build-windows-bundle.ps1
 
+param([switch]$Standalone)
+
 $ErrorActionPreference = "Stop"
+$archiveName = if ($Standalone) { "FaceGate-Standalone-windows-x64.zip" } else { "FaceGate-AllInOne-windows-x64.zip" }
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $work = Join-Path $env:TEMP "facegate-work-win"
 $runtime = Join-Path $work "runtime"
@@ -94,12 +97,16 @@ Pop-Location
 $appDir = Join-Path $work "packaged\FaceGate-win32-x64"
 if (-not (Test-Path (Join-Path $appDir "FaceGate.exe"))) { throw "Electron executable was not created" }
 Copy-Item $runtime (Join-Path $appDir "resources\runtime") -Recurse -Force
+if ($Standalone) {
+    New-Item -ItemType File -Force -Path (Join-Path $appDir "resources\standalone.flag") | Out-Null
+    Copy-Item (Join-Path $root "bundle\STANDALONE-README.txt") (Join-Path $appDir "อ่านก่อน-ติดตั้ง.txt") -Force
+}
 Copy-Item (Join-Path $root "electron\install.ps1") $appDir -Force
 Get-ChildItem (Join-Path $root "electron") -Filter "*FaceGate.bat" | Copy-Item -Destination $appDir -Force
 
 # ---------- 5. zip ----------
 Write-Host "[5/5] compressing" -ForegroundColor Yellow
-$zip = Join-Path $out "FaceGate-AllInOne-windows-x64.zip"
+$zip = Join-Path $out $archiveName
 Remove-Item $zip -Force -ErrorAction SilentlyContinue
 $sevenZip = Get-Command 7z -ErrorAction SilentlyContinue
 if ($sevenZip) {

@@ -190,6 +190,25 @@ CMS_GROUPS.push(
         default: "1.5.0",
       },
       {
+        key: "download.standalone_windows_url",
+        label: "ลิงก์ไฟล์รุ่นจบในเครื่อง (Windows)",
+        type: "url",
+        default: "",
+        help: "ไฟล์ FaceGate-Standalone-windows-x64.zip ใช้งานได้ครบโดยไม่ต้องต่ออินเทอร์เน็ตและไม่ต้องพึ่งระบบกลาง",
+      },
+      {
+        key: "download.standalone_linux_url",
+        label: "ลิงก์ไฟล์รุ่นจบในเครื่อง (Linux)",
+        type: "url",
+        default: "",
+        help: "ไฟล์ FaceGate-Standalone-linux-x64.tar.gz ใช้งานได้ครบในเครื่องเดียว",
+      },
+      {
+        key: "download.standalone_version",
+        label: "เวอร์ชันรุ่นจบในเครื่อง",
+        default: "1.6.0",
+      },
+      {
         key: "download.apk_url",
         label: "ลิงก์ไฟล์ APK สำหรับแท็บเล็ต",
         type: "url",

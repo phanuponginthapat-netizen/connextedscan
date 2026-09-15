@@ -44,7 +44,18 @@ const files: Record<string, { body: string; type: string; download?: string }> =
 };
 
 /** Files the FaceGate desktop program keeps up to date automatically. */
-const AGENT_FILES = ["agent.py", "face_engine.py", "door.py", "power.py", "requirements.txt"];
+const AGENT_FILES = [
+  "agent.py",
+  "face_engine.py",
+  "door.py",
+  "power.py",
+  // standalone (offline) edition: local database, local API and local screens
+  "localdb.py",
+  "local_rules.py",
+  "local_api.py",
+  "local_ui.py",
+  "requirements.txt",
+];
 
 const UPDATE_README = `FaceGate — ไฟล์อัปเดตโปรแกรม
 ================================

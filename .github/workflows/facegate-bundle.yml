@@ -33,6 +33,16 @@ jobs:
           name: FaceGate-AllInOne-windows-x64
           path: bundle/dist/FaceGate-AllInOne-windows-x64.zip
           retention-days: 14
+      - name: Build standalone (offline, no central server)
+        shell: pwsh
+        env:
+          CI: "false"
+        run: powershell -ExecutionPolicy Bypass -File bundle/build-windows-bundle.ps1 -Standalone
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceGate-Standalone-windows-x64
+          path: bundle/dist/FaceGate-Standalone-windows-x64.zip
+          retention-days: 14
 
   linux:
     runs-on: ubuntu-latest
@@ -57,6 +67,16 @@ jobs:
         with:
           name: FaceGate-AllInOne-linux-x64
           path: bundle/dist/FaceGate-AllInOne-linux-x64.tar.gz
+          retention-days: 14
+      - name: Build standalone (offline, no central server)
+        env:
+          CI: "false"
+          STANDALONE: "1"
+        run: bash bundle/build-linux-bundle.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceGate-Standalone-linux-x64
+          path: bundle/dist/FaceGate-Standalone-linux-x64.tar.gz
           retention-days: 14
 
   release:
@@ -87,9 +107,16 @@ jobs:
             - Windows: `FaceGate-AllInOne-windows-x64.zip` → แตกไฟล์ → ดับเบิลคลิก `ติดตั้ง-FaceGate.bat`
             - Linux: `FaceGate-AllInOne-linux-x64.tar.gz` → แตกไฟล์ → `bash install.sh`
 
+            รุ่นจบในเครื่อง (Standalone — ไม่ต้องต่ออินเทอร์เน็ต ไม่ต้องพึ่งระบบกลาง):
+
+            - Windows: `FaceGate-Standalone-windows-x64.zip`
+            - Linux: `FaceGate-Standalone-linux-x64.tar.gz`
+
             ลิงก์ดาวน์โหลดล่าสุดแบบถาวร:
             `https://github.com/${{ github.repository }}/releases/latest/download/FaceGate-AllInOne-windows-x64.zip`
             `https://github.com/${{ github.repository }}/releases/latest/download/FaceGate-AllInOne-linux-x64.tar.gz`
+            `https://github.com/${{ github.repository }}/releases/latest/download/FaceGate-Standalone-windows-x64.zip`
+            `https://github.com/${{ github.repository }}/releases/latest/download/FaceGate-Standalone-linux-x64.tar.gz`
           files: release/*
           draft: false
           prerelease: false
