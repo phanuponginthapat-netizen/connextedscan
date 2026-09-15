@@ -819,7 +819,7 @@ function stopLive() { if (window.__liveTimer) { clearInterval(window.__liveTimer
 async function renderLive(view) {
   stopLive();
   view.innerHTML = `<div class="card"><h3>กล้องสดจากตู้สแกน</h3>
-      <p class="sub">ภาพอัปเดตทุก ~2 วินาที ไม่มีการบันทึกวิดีโอลงเครื่อง
+      <p class="sub">ภาพเคลื่อนไหวต่อเนื่องเหมือนกล้องวงจรปิด ไม่มีการบันทึกวิดีโอลงเครื่อง
         เปิดหน้านี้จากเครื่องอื่นในวง LAN ได้ โดยไม่ต้องใช้อินเทอร์เน็ต</p>
       <div id="liveGrid" class="grid"></div></div>
     <div class="card"><h3>สแกนล่าสุด</h3><div id="liveRecent"></div></div>`;
@@ -827,20 +827,37 @@ async function renderLive(view) {
   window.__liveTimer = setInterval(() => {
     if (!document.getElementById('liveGrid')) return stopLive();
     tickLive();
-  }, 2000);
+  }, 5000);
+}
+function streamUrl(id) {
+  return '/local/api/local/live/stream?device=' + encodeURIComponent(id) +
+    '&token=' + encodeURIComponent(TOKEN);
 }
 async function tickLive() {
   let d;
   try { d = await api('/api/local/live'); } catch (e) { return; }
   const grid = document.getElementById('liveGrid');
   if (!grid) return;
-  grid.innerHTML = (d.frames || []).length
-    ? d.frames.map((f) => `<figure class="card" style="margin:0">
-        <img src="${f.image}" alt="" style="width:100%;border-radius:12px" />
-        <figcaption class="sub"><b>${esc(f.device_name)}</b>
-          <span class="pill ${f.online ? 'good' : 'bad'}">${f.online ? 'สด' : 'ภาพค้าง'}</span><br />
-          ${esc(f.status || 'กำลังรอผู้ใช้งาน')} • ${timeText(f.at)}</figcaption></figure>`).join('')
-    : '<p class="sub">ยังไม่มีภาพจากตู้สแกน — เปิดหน้าจอสแกนที่เครื่องตู้ และเปิด “ภาพสด” ในตั้งค่าระบบ</p>';
+  // Only rebuild the grid when the set of kiosks changes, otherwise the
+  // moving picture would restart on every refresh.
+  const ids = (d.frames || []).map((f) => f.device_id).join(',');
+  if (grid.dataset.ids !== ids) {
+    grid.dataset.ids = ids;
+    grid.innerHTML = (d.frames || []).length
+      ? d.frames.map((f) => `<figure class="card" style="margin:0">
+          <img src="${streamUrl(f.device_id)}" alt=""
+            style="width:100%;border-radius:12px;background:#0b1424;aspect-ratio:4/3;object-fit:cover" />
+          <figcaption class="sub" id="liveCap_${f.device_id}"></figcaption></figure>`).join('')
+      : '<p class="sub">ยังไม่มีภาพจากตู้สแกน — เปิดหน้าจอสแกนที่เครื่องตู้ และเปิด “ภาพสด” ในตั้งค่าระบบ</p>';
+  }
+  (d.frames || []).forEach((f) => {
+    const cap = document.getElementById('liveCap_' + f.device_id);
+    if (cap) {
+      cap.innerHTML = `<b>${esc(f.device_name)}</b>
+        <span class="pill ${f.online ? 'good' : 'bad'}">${f.online ? 'สด' : 'ภาพค้าง'}</span><br />
+        ${esc(f.status || 'กำลังรอผู้ใช้งาน')} • ${timeText(f.at)}`;
+    }
+  });
   const recent = document.getElementById('liveRecent');
   if (recent) {
     recent.innerHTML = `<table><thead><tr><th>เวลา</th><th>ชื่อ</th><th>ชั้น</th><th>ทิศทาง</th>

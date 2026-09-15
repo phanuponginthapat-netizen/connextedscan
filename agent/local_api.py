@@ -13,6 +13,7 @@ Nothing here talks to the internet. One PC = one school.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import json
@@ -24,7 +25,8 @@ import zipfile
 from typing import Any, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, Response,
+                               StreamingResponse)
 from starlette.concurrency import run_in_threadpool
 
 import localdb as db
@@ -1210,11 +1212,30 @@ def kiosk_content(request: Request, x_device_key: str | None = Header(None)):
 # Kept in memory only: the last small preview frame each kiosk sent, so the
 # admin can watch the queue over the school LAN without storing video.
 LIVE_FRAMES: dict[str, dict] = {}
+# While someone watches the live page we ask kiosks for many more frames per
+# second, so the picture moves like a CCTV feed instead of a slideshow.
+LIVE_WATCH: dict[str, float] = {}
+
+
+def live_watched(device_id: str) -> bool:
+    now = time.time()
+    return any(seen > now - 6 for key, seen in LIVE_WATCH.items()
+               if key in ("*", device_id))
+
+
+def frame_jpeg(frame: dict) -> bytes | None:
+    raw = str(frame.get("image") or "")
+    if raw.startswith("data:") and "," in raw:
+        raw = raw.split(",", 1)[1]
+    try:
+        return base64.b64decode(raw)
+    except Exception:
+        return None
 
 
 @router.post("/api/public/kiosk/live")
 async def kiosk_live_frame(request: Request, x_device_key: str | None = Header(None)):
-    """A kiosk posts a small preview image every couple of seconds."""
+    """A kiosk posts a small preview image; faster while someone is watching."""
     device = resolve_device(request, x_device_key)
     body = await request.json()
     image = str(body.get("image") or "")
@@ -1229,18 +1250,21 @@ async def kiosk_live_frame(request: Request, x_device_key: str | None = Header(N
         "status": str(body.get("status") or "")[:160],
         "faces": int(body.get("faces") or 0),
         "at": db.now_iso(),
+        "seq": int(time.time() * 1000),
     }
     if len(LIVE_FRAMES) > 24:
         oldest = sorted(LIVE_FRAMES.items(), key=lambda kv: kv[1]["at"])[0][0]
         LIVE_FRAMES.pop(oldest, None)
-    return {"ok": True}
+    watched = live_watched(device["id"])
+    return {"ok": True, "watch": watched, "interval_ms": 120 if watched else 2000}
 
 
 @router.get("/api/local/live")
 def live_frames(x_local_token: str | None = Header(None)):
     require_admin(x_local_token)
     frames = [
-        {**frame, "online": seen_recently(frame.get("at"), 15)}
+        {**{k: v for k, v in frame.items() if k != "image"},
+         "online": seen_recently(frame.get("at"), 15)}
         for frame in sorted(LIVE_FRAMES.values(), key=lambda f: f["device_name"])
     ]
     recent = db.query(
@@ -1253,6 +1277,42 @@ def live_frames(x_local_token: str | None = Header(None)):
         "recent": recent,
         "enabled": bool(db.get_settings().get("live_view_enabled", True)),
     }
+
+
+@router.get("/api/local/live/stream")
+async def live_stream(device: str, token: str = "",
+                      x_local_token: str | None = Header(None)):
+    """Continuous moving picture of one kiosk, like a CCTV/RTSP view.
+
+    An image tag cannot send headers, so the admin token may arrive in the
+    query string. Frames pass straight through; nothing is written to disk.
+    """
+    require_admin(token or x_local_token)
+    boundary = "facegateframe"
+
+    async def frames():
+        last_seq, idle = 0, 0
+        while True:
+            LIVE_WATCH[device or "*"] = time.time()
+            frame = LIVE_FRAMES.get(device)
+            data = frame_jpeg(frame) if frame else None
+            if frame and data and frame.get("seq", 0) != last_seq:
+                last_seq, idle = frame.get("seq", 0), 0
+                yield (b"--" + boundary.encode() + b"\r\n"
+                       b"Content-Type: image/jpeg\r\n"
+                       b"Content-Length: " + str(len(data)).encode() + b"\r\n\r\n"
+                       + data + b"\r\n")
+            else:
+                idle += 1
+                if idle > 3000:
+                    break
+            await asyncio.sleep(0.06)
+
+    return StreamingResponse(
+        frames(),
+        media_type=f"multipart/x-mixed-replace; boundary={boundary}",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
 
 
 # ------------------------------------------------- admin: certificate & logs

@@ -192,24 +192,35 @@ function frame() {
 }
 // Live view: a small preview frame for the admin page, sent from the kiosk so
 // staff can watch the queue over the school LAN. No video is stored.
-function previewFrame() {
+function previewFrame(wide) {
   const v = $('cam'); if (!v.videoWidth) return null;
+  const w = wide ? 480 : 320;
   const c = document.createElement('canvas');
-  c.width = 320; c.height = Math.round(320 * v.videoHeight / v.videoWidth);
+  c.width = w; c.height = Math.round(w * v.videoHeight / v.videoWidth);
   c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.5);
+  return c.toDataURL('image/jpeg', wide ? 0.6 : 0.5);
 }
+// While staff are watching the live page the server asks for many more frames
+// per second, so the admin sees smooth motion instead of a slideshow.
+let previewDelay = 2000, previewSending = false;
 async function sendPreview() {
-  if (display.live_view === false) return;
-  const image = previewFrame(); if (!image) return;
+  if (display.live_view === false || previewSending) return;
+  const image = previewFrame(previewDelay < 500); if (!image) return;
+  previewSending = true;
   try {
-    await fetch('/local/api/public/kiosk/live', {
+    const res = await fetch('/local/api/public/kiosk/live', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ image, status: lastStatusText }),
     });
-  } catch (e) {}
+    const d = await res.json();
+    previewDelay = Math.min(Math.max(Number(d.interval_ms) || 2000, 100), 5000);
+  } catch (e) { previewDelay = 2000; }
+  previewSending = false;
 }
-setInterval(sendPreview, 2000);
+async function previewLoop() {
+  for (;;) { await sendPreview(); await new Promise((r) => setTimeout(r, previewDelay)); }
+}
+previewLoop();
 
 async function tick() {
   if (busy || Date.now() < pausedUntil) return;
