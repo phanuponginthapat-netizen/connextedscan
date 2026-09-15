@@ -1159,6 +1159,31 @@ def cleanup(x_local_token: str | None = Header(None)):
     return {"removed_photos": removed_photos, "removed_logs": (old_logs or {}).get("n", 0)}
 
 
+# --------------------------------------------------------------------- voice
+
+
+@router.post("/api/public/kiosk/tts")
+async def kiosk_tts(request: Request):
+    """Speaks a sentence with the PC's own offline voice (no internet)."""
+    body = await request.json()
+    text = str(body.get("text") or "").strip()[:300]
+    if not text:
+        return json_error(400, "ไม่มีข้อความให้อ่าน")
+    audio = local_voice.synthesize(text)
+    if not audio:
+        return json_error(503, "เครื่องนี้ยังไม่มีเสียงพูดที่ใช้ได้")
+    return Response(
+        content=audio,
+        media_type="audio/wav",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.get("/api/public/kiosk/voice-status")
+def kiosk_voice_status():
+    return {"engine_available": local_voice.available()}
+
+
 # ------------------------------------------------------------------- screens
 
 
@@ -1166,6 +1191,7 @@ def cleanup(x_local_token: str | None = Header(None)):
 @router.get("/health")
 def local_health():
     return {"standalone": True, "data_dir": db.DATA_DIR, "admin_configured": db.admin_configured()}
+
 
 
 def json_error(status: int, detail: str) -> JSONResponse:
