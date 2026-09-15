@@ -204,6 +204,38 @@ export type Database = {
         }
         Relationships: []
       }
+      kiosk_live_frames: {
+        Row: {
+          device_id: string
+          device_name: string
+          image: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          device_name?: string
+          image: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          device_name?: string
+          image?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_live_frames_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
           channel: string

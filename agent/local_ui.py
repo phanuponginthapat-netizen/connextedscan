@@ -111,7 +111,8 @@ async function startCamera() {
   try { $('cam').srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }); }
   catch (e) { say('ไม่พบกล้อง กรุณาตรวจสายกล้องแล้วเปิดโปรแกรมใหม่', 'bad'); }
 }
-function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); }
+var lastStatusText = '';
+function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); lastStatusText = text || ''; }
 let audioReady = false, thaiVoice = null, browserVoiceOk = false;
 const clipCache = new Map();
 
@@ -189,6 +190,27 @@ function frame() {
   c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.82).split(',')[1];
 }
+// Live view: a small preview frame for the admin page, sent from the kiosk so
+// staff can watch the queue over the school LAN. No video is stored.
+function previewFrame() {
+  const v = $('cam'); if (!v.videoWidth) return null;
+  const c = document.createElement('canvas');
+  c.width = 320; c.height = Math.round(320 * v.videoHeight / v.videoWidth);
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.5);
+}
+async function sendPreview() {
+  if (display.live_view === false) return;
+  const image = previewFrame(); if (!image) return;
+  try {
+    await fetch('/local/api/public/kiosk/live', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ image, status: lastStatusText }),
+    });
+  } catch (e) {}
+}
+setInterval(sendPreview, 2000);
+
 async function tick() {
   if (busy || Date.now() < pausedUntil) return;
   const image = frame(); if (!image) return;
@@ -231,7 +253,7 @@ async function loadRecent() {
     } else { $('newsBox').style.display = 'none'; }
     $('list').innerHTML = (display.show_recent ? (data.items || []) : []).map((i) => `
       <div class="item"><img src="${i.snapshot_url || i.avatar_url || ''}" alt="" />
-        <div><b>${i.name}</b><span>${i.detail || ''} • ${new Date(i.scanned_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div><b>${i.name}</b><span>${i.detail || ''} • ${new Date(i.scanned_at).toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn',{hour:'2-digit',minute:'2-digit'})}</span></div>
         <div class="tag ${i.direction === 'out' ? 'out' : ''}">${i.direction === 'out' ? 'ออก' : 'เข้า'}</div></div>`).join('')
       || '<div style="color:#94a3b8;font-size:.9rem">ยังไม่มีการสแกนวันนี้</div>';
   } catch (e) {}
@@ -248,8 +270,8 @@ async function loadStats() {
 function wake() { $('saver').className = 'saver'; }
 function clock() {
   const now = new Date();
-  $('clock').textContent = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  $('date').textContent = now.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('clock').textContent = now.toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit' });
+  $('date').textContent = now.toLocaleDateString('th-TH-u-ca-buddhist-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 loadBrand(); startCamera(); loadRecent(); loadStats(); clock();
 setInterval(tick, 900); setInterval(loadRecent, 15000); setInterval(loadStats, 60000);

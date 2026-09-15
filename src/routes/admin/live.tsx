@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { LogIn, LogOut, MonitorPlay } from "lucide-react";
+import { Camera, LogIn, LogOut, MonitorPlay } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCms } from "@/lib/cms-client";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ function startOfTodayISO() {
 }
 
 function timeText(value: string) {
-  return new Date(value).toLocaleTimeString("th-TH", {
+  return new Date(value).toLocaleTimeString("th-TH-u-ca-buddhist-nu-latn", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -61,6 +61,20 @@ function LivePage() {
     placeholderData: (prev) => prev,
   });
 
+  const { data: frames } = useQuery({
+    queryKey: ["live-cameras"],
+    queryFn: async () => {
+      const { data: rows } = await supabase
+        .from("kiosk_live_frames")
+        .select("device_id, device_name, image, status, updated_at")
+        .order("device_name");
+      return rows ?? [];
+    },
+    refetchInterval: 2000,
+    placeholderData: (prev) => prev,
+  });
+
+  const cameras = frames ?? [];
   const rows = data ?? [];
   const checkIn = rows.filter((r) => r.direction === "in").length;
   const checkOut = rows.filter((r) => r.direction === "out").length;
@@ -88,6 +102,39 @@ function LivePage() {
           </Badge>
         </div>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <Camera className="size-5 text-primary" /> ภาพสดจากตู้สแกน
+        </h2>
+        {cameras.length === 0 ? (
+          <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+            ยังไม่มีภาพสด — เปิดหน้าจอสแกนที่เครื่องตู้ แล้วภาพจะขึ้นที่นี่ภายในไม่กี่วินาที
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {cameras.map((cam) => {
+              const fresh = Date.now() - new Date(cam.updated_at).getTime() < 15000;
+              return (
+                <Card key={cam.device_id} className="overflow-hidden">
+                  <img src={cam.image} alt={`ภาพสดจาก ${cam.device_name}`} className="w-full" />
+                  <CardContent className="space-y-1 p-3">
+                    <p className="flex items-center gap-2 font-semibold">
+                      {cam.device_name || "ตู้สแกน"}
+                      <Badge variant={fresh ? "default" : "secondary"}>
+                        {fresh ? "สด" : "ภาพค้าง"}
+                      </Badge>
+                    </p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {cam.status || "กำลังรอผู้ใช้งาน"} • {timeText(cam.updated_at)}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {rows.length === 0 ? (
         <p className="py-20 text-center text-lg text-muted-foreground">ยังไม่มีการสแกนวันนี้</p>

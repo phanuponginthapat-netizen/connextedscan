@@ -204,7 +204,7 @@ export async function notifyAll(
 };
 
 const thaiTime = (iso: string) =>
-  new Intl.DateTimeFormat("th-TH", {
+  new Intl.DateTimeFormat("th-TH-u-ca-buddhist-nu-latn", {
     timeZone: "Asia/Bangkok",
     hour: "2-digit",
     minute: "2-digit",

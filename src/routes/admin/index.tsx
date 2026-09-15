@@ -49,7 +49,7 @@ function startOfTodayISO() {
 }
 
 function timeText(value: string) {
-  return new Date(value).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return new Date(value).toLocaleTimeString("th-TH-u-ca-buddhist-nu-latn", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function Dashboard() {
@@ -184,7 +184,7 @@ function Dashboard() {
         </p>
         <h1 className="font-display text-2xl font-semibold">ภาพรวมวันนี้</h1>
         <p className="text-sm text-muted-foreground">
-          {new Date().toLocaleDateString("th-TH", {
+          {new Date().toLocaleDateString("th-TH-u-ca-buddhist-nu-latn", {
             weekday: "long",
             day: "numeric",
             month: "long",

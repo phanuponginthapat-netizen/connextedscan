@@ -280,7 +280,7 @@ function Kiosk() {
           detail: item.detail,
           role: item.role ?? "",
           direction: item.direction,
-          time: new Date(item.scanned_at).toLocaleTimeString("th-TH", {
+          time: new Date(item.scanned_at).toLocaleTimeString("th-TH-u-ca-buddhist-nu-latn", {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
@@ -940,7 +940,7 @@ function Kiosk() {
               <p className="text-sm uppercase tracking-[0.35em] text-white/50">สถิติวันนี้</p>
               <p className="mt-2 text-3xl font-semibold">{todayStats?.school_name || t("brand.name")}</p>
               <p className="mt-1 text-base text-white/60">
-                {new Date().toLocaleDateString("th-TH", { dateStyle: "full" })}
+                {new Date().toLocaleDateString("th-TH-u-ca-buddhist-nu-latn", { dateStyle: "full" })}
               </p>
             </div>
             <div className="grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">

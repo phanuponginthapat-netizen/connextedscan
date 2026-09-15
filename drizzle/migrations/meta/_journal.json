@@ -148,6 +148,13 @@
       "when": 1789452118064,
       "tag": "0020_add_student_gender",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789454420257,
+      "tag": "0021_create_kiosk_live_frames",
+      "breakpoints": true
     }
   ]
 }

@@ -113,7 +113,7 @@ function PowerPage() {
       }
       const device = devices?.[0];
       if (device?.last_seen_at) {
-        setLastSeen(new Date(device.last_seen_at).toLocaleString("th-TH"));
+        setLastSeen(new Date(device.last_seen_at).toLocaleString("th-TH-u-ca-buddhist-nu-latn"));
       }
     })();
   }, []);

@@ -256,7 +256,7 @@ function CertificatePage() {
 
             <p className="text-center text-xs text-muted-foreground">
               ข้อมูลจากระบบบันทึกเวลาด้วยใบหน้า FaceGate • ออกเมื่อ{" "}
-              {new Date().toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" })}
+              {new Date().toLocaleString("th-TH-u-ca-buddhist-nu-latn", { dateStyle: "medium", timeStyle: "short" })}
             </p>
           </CardContent>
         </Card>

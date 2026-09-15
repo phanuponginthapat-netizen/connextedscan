@@ -101,7 +101,7 @@ function TabletScanner() {
   useEffect(() => {
     const tick = () =>
       setClock(
-        new Intl.DateTimeFormat("th-TH", {
+        new Intl.DateTimeFormat("th-TH-u-ca-buddhist-nu-latn", {
           timeZone: "Asia/Bangkok",
           hour: "2-digit",
           minute: "2-digit",
@@ -389,7 +389,7 @@ function TabletScanner() {
                     {item.direction === "in" ? "เข้า" : "ออก"}
                   </p>
                   <p className="tabular-nums text-white/60">
-                    {new Intl.DateTimeFormat("th-TH", {
+                    {new Intl.DateTimeFormat("th-TH-u-ca-buddhist-nu-latn", {
                       timeZone: "Asia/Bangkok",
                       hour: "2-digit",
                       minute: "2-digit",

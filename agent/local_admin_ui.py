@@ -36,6 +36,7 @@ ADMIN_HTML = r"""<!doctype html>
   .card h3 { margin:0 0 12px; font-size:1.02rem; }
   .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
   .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
   label { display:block; font-size:.8rem; font-weight:700; color:#475569; margin-bottom:4px; }
   input, select, textarea { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:12px;
     font:inherit; background:#fff; }
@@ -113,6 +114,7 @@ const TABS = [
   ['settings', '⚙️ ตั้งค่าระบบ', 'ตั้งค่าระบบ', 'เวลาเข้า-ออก การจำใบหน้า เสียงพูด'],
   ['device', '🚪 ประตู / พลังงาน', 'ประตูอัจฉริยะและพลังงาน', 'ทดสอบไม้กั้นและสั่งปิด-เปิดเครื่อง'],
   ['devices', '🖥️ ตู้สแกนในวง LAN', 'ตู้สแกนในวง LAN', 'เพิ่มตู้สแกนหลายเครื่องที่ใช้ข้อมูลชุดเดียวกัน'],
+  ['live', '📹 กล้องสด', 'กล้องสดจากตู้สแกน', 'ดูภาพสดขณะนักเรียนเข้ามาสแกน'],
   ['health', '❤️ สุขภาพระบบ', 'สุขภาพระบบ', 'พื้นที่ว่าง ขนาดข้อมูล และการล้างข้อมูลเก่า'],
   ['backup', '💾 สำรองข้อมูล', 'สำรองและกู้คืนข้อมูล', 'ไฟล์เดียวย้ายเครื่องได้ทั้งระบบ'],
   ['audit', '🧾 บันทึกการใช้งาน', 'บันทึกการใช้งาน', 'ใครแก้ไขอะไร เมื่อไร'],
@@ -126,7 +128,7 @@ async function api(path, options = {}) {
   return res.json();
 }
 const esc = (v) => String(v ?? '').replace(/[<>&"']/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
-const timeText = (v) => new Date(v).toLocaleString('th-TH');
+const timeText = (v) => new Date(v).toLocaleString('th-TH-u-ca-buddhist-nu-latn');
 
 async function boot() {
   const status = await (await fetch('/local/api/local/auth/status')).json();
@@ -173,7 +175,7 @@ async function render() {
   const map = { overview: renderOverview, people: renderPeople, import: renderImport, enroll: renderEnroll,
     history: renderHistory, report: renderReport, class_report: renderClassReport, certificate: renderCertificate, visitors: renderVisitors,
     content: renderContent, settings: renderSettings, device: renderDevice, devices: renderDevices,
-    health: renderHealth,
+    live: renderLive, health: renderHealth,
     backup: renderBackup, audit: renderAudit };
   try { await (map[TAB] || renderOverview)(view); }
   catch (e) { view.innerHTML = `<div class="card msg bad">${esc(e.message)}</div>`; }
@@ -519,7 +521,7 @@ async function makeCert() {
 async function renderVisitors(view) {
   const d = await api('/api/local/visitors');
   const shots = (rows) => rows.map((r) => `<figure><img src="${r.snapshot_url || ''}" alt="" />
-    <figcaption class="sub">${new Date(r.created_at).toLocaleString('th-TH')}<br />${esc(r.kind || r.direction || '')}</figcaption></figure>`).join('')
+    <figcaption class="sub">${new Date(r.created_at).toLocaleString('th-TH-u-ca-buddhist-nu-latn')}<br />${esc(r.kind || r.direction || '')}</figcaption></figure>`).join('')
     || '<p class="sub">ยังไม่มีข้อมูล</p>';
   view.innerHTML = `<div class="card"><h3>ผู้มาติดต่อ (ไม่ได้ลงทะเบียน)</h3><div class="faces">${shots(d.visitors)}</div></div>
     <div class="card"><h3>การแจ้งเตือนความปลอดภัย</h3><div class="faces">${shots(d.alerts)}</div></div>`;
@@ -597,7 +599,8 @@ const FLAGS = [
   ['visitor_mode', 'บันทึกภาพผู้ไม่ลงทะเบียน'],
   ['kiosk_show_recent', 'แสดงรายการล่าสุด'], ['kiosk_mirror', 'กลับภาพกล้องเหมือนกระจก'],
   ['kiosk_show_clock', 'แสดงเวลา'], ['kiosk_news_enabled', 'เปิดข้อความข่าววิ่ง'],
-  ['voice_enabled', 'เปิดเสียงพูด'], ['door_enabled', 'เปิดใช้ประตูอัจฉริยะ'],
+  ['voice_enabled', 'เปิดเสียงพูด'], ['live_view_enabled', 'ส่งภาพสดให้หน้ากล้องสด'],
+  ['door_enabled', 'เปิดใช้ประตูอัจฉริยะ'],
   ['door_hold_power', 'จ่ายไฟเซอร์โวค้างไว้'], ['door_invert_servo', 'สลับทิศการหมุน'],
   ['door_buzzer_enabled', 'เสียงเตือนที่ประตู'], ['door_use_relay', 'ใช้กลอนไฟฟ้า (รีเลย์)'],
   ['power_saving_enabled', 'เปิดโหมดประหยัดพลังงาน'],
@@ -696,7 +699,7 @@ async function renderDevices(view) {
   const address = (d.addresses || [])[0] || `http://<ไอพีเครื่องนี้>:${d.lan_port}`;
   view.innerHTML = `<div class="card"><h3>เปิดให้ตู้สแกนอื่นเชื่อมต่อ</h3>
       <p><label><input id="d_lan" type="checkbox" ${d.lan_enabled ? 'checked' : ''} />
-        เปิดโหมดวง LAN (เครื่องนี้เป็นเครื่องแม่เก็บข้อมูลทั้งหมด)</label></p>
+        เปิดให้เครื่องอื่นในวง LAN เข้าถึง (เปิดหลังบ้าน/รายงาน/กล้องสดผ่านเว็บ และเพิ่มตู้สแกนลูก)</label></p>
       <div class="row"><div><label>พอร์ต</label><input id="d_port" type="number" value="${d.lan_port}" /></div>
         <button class="btn" onclick="saveLan()">บันทึก</button></div>
       <p class="sub">ที่อยู่ของเครื่องแม่: <b>${esc(address)}</b><br />
@@ -737,7 +740,10 @@ async function renderDevices(view) {
       <p class="sub">1) ติดตั้งชุดโปรแกรม FaceGate ตัวเดียวกันบนเครื่องลูก<br />
       2) เปิดโปรแกรม แล้วเลือกโหมด “ตู้สแกนลูก”<br />
       3) กรอกที่อยู่เครื่องแม่ <b>${esc(address)}</b> และรหัสเชื่อมต่อของตู้นั้น<br />
-      4) ประวัติทั้งหมดจะรวมอยู่ที่เครื่องแม่ และกันสแกนซ้ำข้ามตู้ให้อัตโนมัติ</p></div>`;
+      4) ประวัติทั้งหมดจะรวมอยู่ที่เครื่องแม่ และกันสแกนซ้ำข้ามตู้ให้อัตโนมัติ</p>
+      <p class="sub"><b>เปิดหลังบ้าน/รายงานผ่านเว็บในวง LAN:</b> จากคอมพิวเตอร์หรือมือถือเครื่องใดก็ได้ในวงเดียวกัน
+      เปิดเบราว์เซอร์ไปที่ <b>${esc(address)}/admin</b> แล้วเข้าสู่ระบบด้วยรหัสผู้ดูแล
+      (หน้าจอสแกนของตู้นี้อยู่ที่ ${esc(address)}/kiosk)</p></div>`;
 }
 async function saveLan() {
   await api('/api/local/settings', { method: 'POST', body: JSON.stringify({
@@ -767,6 +773,45 @@ async function delDevice(id) {
   render();
 }
 function copyKey(key) { navigator.clipboard.writeText(key); alert('คัดลอกรหัสแล้ว'); }
+
+/* --------------------------------------------------------- live camera */
+function stopLive() { if (window.__liveTimer) { clearInterval(window.__liveTimer); window.__liveTimer = null; } }
+async function renderLive(view) {
+  stopLive();
+  view.innerHTML = `<div class="card"><h3>กล้องสดจากตู้สแกน</h3>
+      <p class="sub">ภาพอัปเดตทุก ~2 วินาที ไม่มีการบันทึกวิดีโอลงเครื่อง
+        เปิดหน้านี้จากเครื่องอื่นในวง LAN ได้ โดยไม่ต้องใช้อินเทอร์เน็ต</p>
+      <div id="liveGrid" class="grid"></div></div>
+    <div class="card"><h3>สแกนล่าสุด</h3><div id="liveRecent"></div></div>`;
+  await tickLive();
+  window.__liveTimer = setInterval(() => {
+    if (!document.getElementById('liveGrid')) return stopLive();
+    tickLive();
+  }, 2000);
+}
+async function tickLive() {
+  let d;
+  try { d = await api('/api/local/live'); } catch (e) { return; }
+  const grid = document.getElementById('liveGrid');
+  if (!grid) return;
+  grid.innerHTML = (d.frames || []).length
+    ? d.frames.map((f) => `<figure class="card" style="margin:0">
+        <img src="${f.image}" alt="" style="width:100%;border-radius:12px" />
+        <figcaption class="sub"><b>${esc(f.device_name)}</b>
+          <span class="pill ${f.online ? 'good' : 'bad'}">${f.online ? 'สด' : 'ภาพค้าง'}</span><br />
+          ${esc(f.status || 'กำลังรอผู้ใช้งาน')} • ${timeText(f.at)}</figcaption></figure>`).join('')
+    : '<p class="sub">ยังไม่มีภาพจากตู้สแกน — เปิดหน้าจอสแกนที่เครื่องตู้ และเปิด “ภาพสด” ในตั้งค่าระบบ</p>';
+  const recent = document.getElementById('liveRecent');
+  if (recent) {
+    recent.innerHTML = `<table><thead><tr><th>เวลา</th><th>ชื่อ</th><th>ชั้น</th><th>ทิศทาง</th>
+      <th>ตู้สแกน</th><th>สถานะ</th></tr></thead><tbody>
+      ${(d.recent || []).map((r) => `<tr><td>${timeText(r.scanned_at)}</td>
+        <td>${esc(r.full_name || 'ไม่ทราบชื่อ')}</td><td>${esc(r.class_room || '')}</td>
+        <td>${r.direction === 'out' ? 'ออก' : 'เข้า'}</td>
+        <td>${esc(r.device_name || 'ตู้สแกนเครื่องแม่')}</td>
+        <td>${esc(r.status)}</td></tr>`).join('')}</tbody></table>`;
+  }
+}
 
 /* ------------------------------------------------------------------ health */
 async function renderHealth(view) {
