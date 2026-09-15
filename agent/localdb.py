@@ -111,6 +111,43 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "power_off_workdays_only": True,
 }
 
+# Look-and-feel and wording of the kiosk screen and the printed reports — the
+# offline twin of the cloud CMS.
+DEFAULT_CONTENT: dict[str, Any] = {
+    "brand_name": "FaceGate",
+    "kiosk_title": "สแกนใบหน้าเข้า-ออกโรงเรียน",
+    "kiosk_subtitle": "กรุณามองกล้องในกรอบวงรี",
+    "kiosk_footer": "ระบบบันทึกเวลาด้วยใบหน้า",
+    "logo_path": None,
+    "theme_primary": "#1d6fe0",
+    "theme_accent": "#0ea5e9",
+    "theme_ink": "#132a4f",
+    "report_title": "รายงานการเข้า-ออกโรงเรียน",
+    "report_footer": "รายงานนี้ออกโดยระบบบันทึกเวลาด้วยใบหน้า",
+    "signer_line": "ลงชื่อผู้รับรองรายงาน",
+    "certificate_title": "ใบรับรองเวลาเรียน",
+}
+
+
+def get_content() -> dict[str, Any]:
+    stored = kv_get("content", {}) or {}
+    merged = dict(DEFAULT_CONTENT)
+    if isinstance(stored, dict):
+        merged.update({k: v for k, v in stored.items() if k in DEFAULT_CONTENT})
+    return merged
+
+
+def save_content(patch: dict[str, Any]) -> dict[str, Any]:
+    stored = kv_get("content", {}) or {}
+    if not isinstance(stored, dict):
+        stored = {}
+    for key, value in patch.items():
+        if key in DEFAULT_CONTENT:
+            stored[key] = value
+    kv_set("content", stored)
+    return get_content()
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS students (
   id TEXT PRIMARY KEY,

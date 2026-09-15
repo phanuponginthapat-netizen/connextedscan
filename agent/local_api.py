@@ -892,7 +892,210 @@ async def restore(request: Request, x_local_token: str | None = Header(None)):
     return {"ok": True, "restart_required": True}
 
 
+
+# ------------------------------------------------------- admin: bulk import
+
+
+@router.post("/api/local/people/import")
+async def people_import(request: Request, x_local_token: str | None = Header(None)):
+    """Adds or updates many people at once (name + class + code in one go)."""
+    require_admin(x_local_token)
+    body = await request.json()
+    rows = body.get("rows") if isinstance(body, dict) else None
+    if not isinstance(rows, list) or not rows:
+        raise HTTPException(status_code=400, detail="ไม่พบรายชื่อที่จะนำเข้า")
+
+    added = updated = skipped = 0
+    errors: list[str] = []
+    for index, row in enumerate(rows[:5000], start=1):
+        code = str((row or {}).get("student_code") or "").strip()
+        name = str((row or {}).get("full_name") or "").strip()
+        if not code or not name:
+            skipped += 1
+            if len(errors) < 10:
+                errors.append(f"บรรทัดที่ {index}: ไม่มีรหัสหรือชื่อ")
+            continue
+        values = (
+            name,
+            (row.get("nickname") or None),
+            (row.get("class_room") or None),
+            (row.get("guardian_phone") or None),
+            "staff" if row.get("person_type") == "staff" else "student",
+            (row.get("department") or None),
+            (row.get("position") or None),
+        )
+        exists = db.one("SELECT id FROM students WHERE student_code = ?", (code,))
+        if exists:
+            db.run(
+                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?,"
+                " person_type=?, department=?, position=?, is_active=1, updated_at=? WHERE id=?",
+                (*values, db.now_iso(), exists["id"]),
+            )
+            updated += 1
+        else:
+            db.run(
+                "INSERT INTO students (id, student_code, full_name, nickname, class_room,"
+                " guardian_phone, person_type, department, position, is_active, created_at,"
+                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,1,?,?)",
+                (db.new_id(), code, *values, db.now_iso(), db.now_iso()),
+            )
+            added += 1
+
+    db.add_audit("นำเข้ารายชื่อ", "import", f"เพิ่ม {added} แก้ไข {updated} ข้าม {skipped}")
+    return {"added": added, "updated": updated, "skipped": skipped, "errors": errors}
+
+
+@router.get("/api/local/classes")
+def class_list(x_local_token: str | None = Header(None)):
+    """Distinct class/department values, for the filter dropdowns."""
+    require_admin(x_local_token)
+    rows = db.query(
+        "SELECT DISTINCT IFNULL(NULLIF(class_room,''), NULLIF(department,'')) AS name"
+        " FROM students WHERE is_active = 1 ORDER BY name"
+    )
+    return {"items": [r["name"] for r in rows if r["name"]]}
+
+
+# ---------------------------------------------------- admin: look and feel
+
+
+@router.get("/api/local/content")
+def content_get(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    content = db.get_content()
+    return {"content": {**content, "logo_url": media_url(content.get("logo_path"))}}
+
+
+@router.post("/api/local/content")
+async def content_post(request: Request, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    body = await request.json()
+    logo = body.pop("logo_image", None) if isinstance(body, dict) else None
+    if logo:
+        data = decode_jpeg(logo)
+        if data:
+            body["logo_path"] = save_jpeg(db.AVATAR_DIR, "brand-logo.jpg", data)
+    content = db.save_content(body if isinstance(body, dict) else {})
+    db.add_audit("แก้ไขเนื้อหาและธีม", "content")
+    return {"content": {**content, "logo_url": media_url(content.get("logo_path"))}}
+
+
+@router.get("/api/public/kiosk/content")
+def kiosk_content():
+    """Branding the offline kiosk screen reads on every refresh."""
+    content = db.get_content()
+    settings = db.get_settings()
+    return {**content, "logo_url": media_url(content.get("logo_path")),
+            "school_name": settings.get("school_name")}
+
+
+# ------------------------------------------------- admin: certificate & logs
+
+
+@router.get("/api/local/certificate")
+def certificate(person_id: str, x_local_token: str | None = Header(None), start: str = "",
+                end: str = ""):
+    require_admin(x_local_token)
+    person = person_row(person_id)
+    if not person:
+        raise HTTPException(status_code=404, detail="ไม่พบบุคคลนี้")
+    start = start or rules.bangkok_date_iso()
+    end = end or rules.bangkok_date_iso()
+    settings = db.get_settings()
+    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
+        settings.get("late_grace_minutes") or 0
+    )
+    rows = db.query(
+        "SELECT date(scanned_at, '+7 hours') AS day, scanned_at FROM attendance_logs"
+        " WHERE student_id = ? AND status = 'ok' AND direction = 'in'"
+        " AND date(scanned_at, '+7 hours') BETWEEN ? AND ? ORDER BY scanned_at",
+        (person_id, start, end),
+    )
+    seen: dict[str, bool] = {}
+    for row in rows:
+        if row["day"] in seen:
+            continue
+        hour = (int(row["scanned_at"][11:13]) + 7) % 24
+        minute = int(row["scanned_at"][14:16])
+        seen[row["day"]] = hour * 60 + minute > late_limit
+
+    work_days = rules.parse_work_days(settings.get("work_days"))
+    import datetime as _dt
+
+    d0 = _dt.date.fromisoformat(start)
+    d1 = _dt.date.fromisoformat(end)
+    working = 0
+    day = d0
+    while day <= d1:
+        if not settings.get("block_non_work_days") or ((day.weekday() + 1) % 7) in work_days:
+            working += 1
+        day += _dt.timedelta(days=1)
+
+    present = len(seen)
+    late = sum(1 for v in seen.values() if v)
+    return {
+        "person": dict(person),
+        "start": start,
+        "end": end,
+        "working_days": working,
+        "present": present,
+        "late": late,
+        "on_time": present - late,
+        "absent": max(working - present, 0),
+        "percent": round(present / working * 100, 1) if working else 0,
+        "content": db.get_content(),
+    }
+
+
+@router.get("/api/local/visitors")
+def visitors_list(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    rows = db.query(
+        "SELECT id, direction, snapshot_path, created_at FROM visitor_logs"
+        " ORDER BY created_at DESC LIMIT 200"
+    )
+    alerts = db.query(
+        "SELECT id, kind, detail, snapshot_path, created_at FROM security_alerts"
+        " ORDER BY created_at DESC LIMIT 200"
+    )
+    return {
+        "visitors": [{**r, "snapshot_url": media_url(r["snapshot_path"])} for r in rows],
+        "alerts": [{**r, "snapshot_url": media_url(r["snapshot_path"])} for r in alerts],
+    }
+
+
+@router.post("/api/local/cleanup")
+def cleanup(x_local_token: str | None = Header(None)):
+    """Deletes old scan photos and old scan history, per the retention settings."""
+    require_admin(x_local_token)
+    settings = db.get_settings()
+    photo_days = int(settings.get("snapshot_retention_days") or 90)
+    log_days = int(settings.get("retention_days") or 365)
+
+    old_shots = db.query(
+        "SELECT id, snapshot_path FROM attendance_logs WHERE snapshot_path IS NOT NULL"
+        f" AND scanned_at < datetime('now', '-{photo_days} days')"
+    )
+    removed_photos = 0
+    for row in old_shots:
+        try:
+            os.remove(os.path.join(db.DATA_DIR, row["snapshot_path"]))
+        except OSError:
+            pass
+        db.run("UPDATE attendance_logs SET snapshot_path = NULL WHERE id = ?", (row["id"],))
+        removed_photos += 1
+
+    old_logs = db.one(
+        "SELECT COUNT(*) AS n FROM attendance_logs"
+        f" WHERE scanned_at < datetime('now', '-{log_days} days')"
+    )
+    db.run(f"DELETE FROM attendance_logs WHERE scanned_at < datetime('now', '-{log_days} days')")
+    db.add_audit("ล้างข้อมูลเก่า", "cleanup", f"รูป {removed_photos} ประวัติ {(old_logs or {}).get('n', 0)}")
+    return {"removed_photos": removed_photos, "removed_logs": (old_logs or {}).get("n", 0)}
+
+
 # ------------------------------------------------------------------- screens
+
 
 
 @router.get("/health")
