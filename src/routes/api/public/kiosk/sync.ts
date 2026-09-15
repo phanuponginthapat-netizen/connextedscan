@@ -20,15 +20,31 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
         let known: Record<string, string> = {};
         let agentVersion: string | null = null;
         let platform: string | null = null;
+        let health: {
+          disk_free_mb?: number | null;
+          camera_ok?: boolean | null;
+          door_ok?: boolean | null;
+          health_note?: string | null;
+        } = {};
         try {
           const body = (await request.json()) as {
             known?: Record<string, string>;
             agent_version?: string;
             platform?: string;
+            disk_free_mb?: number;
+            camera_ok?: boolean;
+            door_ok?: boolean;
+            health_note?: string;
           } | null;
           if (body?.known && typeof body.known === "object") known = body.known;
           if (typeof body?.agent_version === "string") agentVersion = body.agent_version.slice(0, 40);
           if (typeof body?.platform === "string") platform = body.platform.slice(0, 80);
+          if (typeof body?.disk_free_mb === "number")
+            health.disk_free_mb = Math.max(0, Math.round(body.disk_free_mb));
+          if (typeof body?.camera_ok === "boolean") health.camera_ok = body.camera_ok;
+          if (typeof body?.door_ok === "boolean") health.door_ok = body.door_ok;
+          if (typeof body?.health_note === "string")
+            health.health_note = body.health_note.slice(0, 300);
         } catch {
           known = {};
         }
@@ -37,12 +53,13 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Record which program version each kiosk is running (system health page).
-        if (agentVersion || platform) {
+        if (agentVersion || platform || Object.keys(health).length > 0) {
           await supabaseAdmin
             .from("devices")
             .update({
               ...(agentVersion ? { agent_version: agentVersion } : {}),
               ...(platform ? { platform } : {}),
+              ...health,
             })
             .eq("id", device.id);
         }
