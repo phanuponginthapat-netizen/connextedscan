@@ -626,12 +626,14 @@ async function renderSettings(view) {
        <button class="btn ghost" onclick="changePw()">เปลี่ยนรหัสผู้ดูแล</button></p>
     <div id="s_msg"></div></div>
     <div class="card"><h3>เสียงพูดภาษาไทย</h3>
-      <div id="voice_state" class="msg">กำลังตรวจเสียงในเครื่อง…</div>
-      <p><button class="btn" onclick="installVoice()">ติดตั้งเสียงพูดไทย (ดาวน์โหลดครั้งเดียว)</button>
+      <div id="voice_state" class="msg">กำลังตรวจเสียงพูด…</div>
+      <p><button class="btn" onclick="prepareVoice()">เตรียมเสียงไทยไว้ใช้ตอนไม่มีเน็ต</button>
          <button class="btn ghost" onclick="testVoice()">ทดสอบเสียงพูด</button>
-         <button class="btn ghost" onclick="clearVoiceCache()">ล้างเสียงที่จำไว้</button></p>
-      <p class="hint">ดาวน์โหลดเสียงไทยประมาณ 80 MB ครั้งเดียว (ต้องมีอินเทอร์เน็ตเฉพาะตอนติดตั้ง)
-         หลังจากนั้นระบบพูดไทยได้เองแบบออฟไลน์ทั้งหมด</p>
+         <button class="btn ghost" onclick="clearVoiceCache()">ล้างเสียงที่บันทึกไว้</button></p>
+      <p class="hint">ระบบใช้เสียงพูดไทยแบบเดียวกับระบบออนไลน์ และเก็บทุกประโยคไว้ในเครื่อง
+         กดปุ่มเตรียมเสียงหนึ่งครั้งตอนที่ยังต่อเน็ตได้ (จะบันทึกชื่อนักเรียนทุกคนไว้ล่วงหน้า)
+         หลังจากนั้นตู้สแกนพูดไทยได้แม้ไม่มีอินเทอร์เน็ต
+         ถ้าเพิ่มรายชื่อนักเรียนใหม่ ให้กดเตรียมเสียงอีกครั้ง</p>
       <div id="voice_msg"></div></div>`;
   loadVoiceStatus();
 }
@@ -640,31 +642,44 @@ async function loadVoiceStatus() {
   try {
     const s = await api('/api/local/voice/status');
     box.className = 'msg ' + (s.thai_ready ? 'good' : 'bad');
-    box.textContent = s.message + (s.thai_ready ? ' • เสียงที่จำไว้ ' + (s.cached_clips || 0) + ' ประโยค' : '');
+    box.textContent = s.message + ' • บันทึกไว้แล้ว ' + (s.cached_clips || 0) + ' ประโยค';
   } catch (e) { box.className = 'msg bad'; box.textContent = 'ตรวจสถานะเสียงไม่ได้'; }
 }
-async function installVoice() {
-  const box = $('#voice_msg'); box.className = 'msg'; box.textContent = 'กำลังดาวน์โหลดเสียงพูดไทย… อาจใช้เวลา 2-10 นาที';
+async function prepareVoice() {
+  const box = $('#voice_msg'); box.className = 'msg';
+  box.textContent = 'กำลังเตรียมเสียงไทยของทุกชื่อ… อาจใช้เวลาหลายนาที กรุณาอย่าปิดหน้านี้';
   try {
-    const r = await api('/api/local/voice/install', { method: 'POST' });
-    box.className = 'msg ' + (r.installed ? 'good' : 'bad');
-    box.textContent = r.installed
-      ? 'ติดตั้งเสียงพูดไทยเรียบร้อย กดทดสอบเสียงพูดได้เลย'
-      : 'ติดตั้งไม่สำเร็จ: ' + (r.error || 'กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่');
-  } catch (e) { box.className = 'msg bad'; box.textContent = 'ติดตั้งไม่สำเร็จ กรุณาลองอีกครั้ง'; }
+    const r = await api('/api/local/voice/prepare', { method: 'POST' });
+    const done = (r.downloaded || 0) + (r.already || 0);
+    box.className = 'msg ' + (done > 0 ? 'good' : 'bad');
+    box.textContent = done > 0
+      ? 'เตรียมเสียงไทยแล้ว ' + done + ' / ' + (r.total || 0) + ' ประโยค' +
+        (r.failed ? ' (ยังไม่ได้ ' + r.failed + ' ประโยค ลองอีกครั้งเมื่อเน็ตเสถียร)' : '')
+      : 'เตรียมเสียงไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่';
+  } catch (e) { box.className = 'msg bad'; box.textContent = 'เตรียมเสียงไม่สำเร็จ กรุณาลองอีกครั้ง'; }
   loadVoiceStatus();
 }
 async function clearVoiceCache() {
   const box = $('#voice_msg');
   try {
     const r = await api('/api/local/voice/clear-cache', { method: 'POST' });
-    box.className = 'msg good'; box.textContent = 'ล้างเสียงที่จำไว้แล้ว ' + (r.removed || 0) + ' ประโยค';
+    box.className = 'msg good'; box.textContent = 'ล้างเสียงที่บันทึกไว้แล้ว ' + (r.removed || 0) + ' ประโยค';
   } catch (e) { box.className = 'msg bad'; box.textContent = 'ล้างไม่สำเร็จ'; }
   loadVoiceStatus();
 }
 async function testVoice() {
   const box = $('#voice_msg'); box.className = 'msg'; box.textContent = 'กำลังทดสอบเสียง…';
   const text = 'ทดสอบเสียง สแกนสำเร็จ ยินดีต้อนรับ';
+  try {
+    const res = await fetch('/local/api/public/kiosk/tts', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error('no engine');
+    await new Audio(URL.createObjectURL(await res.blob())).play();
+    box.className = 'msg good'; box.textContent = 'เสียงพูดไทยพร้อมใช้งาน';
+    return;
+  } catch (e) {}
   const voices = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
   const thai = voices.find((v) => (v.lang || '').toLowerCase().startsWith('th'));
   if (thai) {
@@ -673,18 +688,8 @@ async function testVoice() {
     box.className = 'msg good'; box.textContent = 'ใช้เสียงไทยในเครื่อง (' + thai.name + ') เรียบร้อย';
     return;
   }
-  try {
-    const res = await fetch('/local/api/public/kiosk/tts', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error('no engine');
-    await new Audio(URL.createObjectURL(await res.blob())).play();
-    box.className = 'msg good'; box.textContent = 'ระบบพูดไทยเองได้ เสียงพร้อมใช้งาน';
-  } catch (e) {
-    box.className = 'msg bad';
-    box.textContent = 'ยังไม่มีเสียงไทยในเครื่องนี้ กดปุ่ม "ติดตั้งเสียงพูดไทย" หนึ่งครั้ง (หรือติดตั้งเสียงไทยของ Windows: ตั้งค่า > เวลาและภาษา > ภาษา > ไทย > ตัวเลือก > เสียงพูด)';
-  }
+  box.className = 'msg bad';
+  box.textContent = 'ยังไม่มีเสียงไทย กดปุ่ม "เตรียมเสียงไทยไว้ใช้ตอนไม่มีเน็ต" ตอนที่ต่อเน็ตได้หนึ่งครั้ง';
 }
 
 async function saveSettings() {
