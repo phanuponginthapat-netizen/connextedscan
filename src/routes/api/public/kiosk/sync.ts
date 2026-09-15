@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/public/kiosk/sync")({
         let known: Record<string, string> = {};
         let agentVersion: string | null = null;
         let platform: string | null = null;
-        let health: {
+        const health: {
           disk_free_mb?: number | null;
           camera_ok?: boolean | null;
           door_ok?: boolean | null;
