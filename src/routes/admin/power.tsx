@@ -328,6 +328,83 @@ function PowerPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
+            <Wifi className="size-4 text-primary" /> ปลุกเครื่องจากระยะไกล (Wake-on-LAN / WAN)
+          </CardTitle>
+          <CardDescription>
+            ใช้ได้กับเครื่องที่ “พักเครื่อง” ไว้ (หรือปิดเครื่องแบบเปิด Wake-on-LAN ใน BIOS)
+            ต้องมีคอมพิวเตอร์อีกเครื่องที่ลงโปรแกรม FaceGate และเปิดอยู่ในเครือข่ายเดียวกันเป็นตัวส่งสัญญาณปลุก
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="wake-mac">หมายเลขเครื่องตู้สแกน (MAC Address)</Label>
+              <Input
+                id="wake-mac"
+                placeholder="1A:2B:3C:4D:5E:6F"
+                value={wake.wake_mac}
+                onChange={(e) => setWake((prev) => ({ ...prev, wake_mac: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                ดูได้ที่เครื่องตู้สแกน: เปิด Command Prompt แล้วพิมพ์ getmac
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="wake-port">พอร์ต</Label>
+              <Input
+                id="wake-port"
+                type="number"
+                value={wake.wake_port}
+                onChange={(e) =>
+                  setWake((prev) => ({ ...prev, wake_port: Number(e.target.value) }))
+                }
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="wake-broadcast">ปลายทางสัญญาณปลุก</Label>
+            <Input
+              id="wake-broadcast"
+              value={wake.wake_broadcast}
+              onChange={(e) => setWake((prev) => ({ ...prev, wake_broadcast: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              ปล่อยไว้เป็น 255.255.255.255 ถ้าปลุกกันภายในโรงเรียน
+              หรือใส่ที่อยู่อินเทอร์เน็ตของเราเตอร์ถ้าจะปลุกจากนอกโรงเรียน
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={savingWake} onClick={() => void saveWake()}>
+              {savingWake ? "กำลังบันทึก..." : "บันทึกหมายเลขเครื่อง"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={sending !== null}
+              onClick={() => void sendCommand("wake")}
+            >
+              <Wifi className="size-4" /> ปลุกเครื่องเดี๋ยวนี้
+            </Button>
+          </div>
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">สิ่งที่ต้องตั้งครั้งเดียว</p>
+            <ol className="list-decimal space-y-1 pl-5">
+              <li>ใน BIOS ของเครื่องตู้สแกน เปิด “Wake on LAN” หรือ “Power On By PCI-E”</li>
+              <li>
+                ใน Windows: Device Manager → การ์ดแลน → Power Management → ติ๊ก “Allow this device to
+                wake the computer”
+              </li>
+              <li>
+                ปลุกจากนอกโรงเรียน (Wake-on-WAN): ให้ผู้ดูแลเน็ตตั้ง Port Forward พอร์ตนี้ (UDP)
+                ในเราเตอร์ไปที่ตู้สแกน และควรใช้สาย LAN ไม่ใช้ Wi‑Fi
+              </li>
+            </ol>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
             <Cpu className="size-4 text-primary" /> การเปิดเครื่องตอนเช้า
           </CardTitle>
           <CardDescription>
