@@ -99,6 +99,7 @@ state: dict[str, Any] = {
     "last_sync": None,
     "last_activity": time.time(),
     "power": {},
+    "camera_ok": None,
 }
 lock = threading.Lock()
 outbox_lock = threading.Lock()
@@ -381,6 +382,36 @@ def crop_face_jpeg(bgr: np.ndarray, face, margin: float = 0.35) -> str | None:
     return base64.b64encode(buf).decode() if ok else None
 
 
+def device_health() -> dict:
+    """Free disk space, camera and door status, reported on every sync so the
+    school sees a problem on the health page before it stops the kiosk."""
+    info: dict[str, Any] = {}
+    try:
+        import shutil
+
+        usage = shutil.disk_usage(BASE_DIR if "BASE_DIR" in globals() else ".")
+        info["disk_free_mb"] = int(usage.free / (1024 * 1024))
+    except Exception:
+        pass
+    cam = state.get("camera_ok")
+    if isinstance(cam, bool):
+        info["camera_ok"] = cam
+    try:
+        door_state = door.status()
+        info["door_ok"] = bool(door_state.get("connected")) if door_state.get("enabled") else True
+    except Exception:
+        info["door_ok"] = False
+    notes = []
+    if info.get("disk_free_mb") is not None and info["disk_free_mb"] < 1024:
+        notes.append("พื้นที่ดิสก์เหลือน้อย")
+    if info.get("camera_ok") is False:
+        notes.append("กล้องไม่ตอบสนอง")
+    if info.get("door_ok") is False:
+        notes.append("ไม่พบ micro:bit ประตู")
+    info["health_note"] = " • ".join(notes)
+    return info
+
+
 def sync_once() -> None:
     with lock:
         known = {fid: f.get("version") or "" for fid, f in state["faces"].items()}
@@ -392,6 +423,7 @@ def sync_once() -> None:
             "known": known,
             "agent_version": AGENT_VERSION,
             "platform": f"{platform.system()} {platform.release()}".strip(),
+            **device_health(),
         },
         timeout=30,
     )
