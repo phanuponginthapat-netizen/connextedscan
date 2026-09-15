@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { createStaffAccount, getSignupOpen } from "@/lib/signup.functions";
+import { createStaffAccount } from "@/lib/signup.functions";
 import { toast } from "sonner";
 import { ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,15 +36,15 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const createAccount = useServerFn(createStaffAccount);
-  const signupStatus = useServerFn(getSignupOpen);
-  // Whether the "create account" tab is offered is cosmetic: if the check
-  // fails (offline, stale bundle after a deploy) the sign-in form must still
-  // render instead of the page blanking out on an error boundary.
+  // Whether the "create account" tab is offered is cosmetic: read it straight
+  // from the database in the browser so a stale/failing RPC endpoint can never
+  // blank the sign-in page.
   const { data: signup } = useQuery({
     queryKey: ["signup-open"],
     queryFn: async () => {
       try {
-        return await signupStatus();
+        const { data } = await supabase.rpc("is_signup_open");
+        return { open: Boolean(data) };
       } catch (error) {
         console.warn("[auth] signup status unavailable", error);
         return { open: false };
@@ -54,6 +54,7 @@ function AuthPage() {
     retry: false,
     throwOnError: false,
   });
+
   const signupOpen = signup?.open ?? false;
 
 
