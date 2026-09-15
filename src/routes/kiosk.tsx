@@ -804,12 +804,7 @@ function Kiosk() {
 
       {/* Scrolling announcement bar, configured in Settings > หน้าจอตู้สแกน */}
       {display.news_enabled && display.news_text.trim() !== "" && (
-        <footer className="mt-3 shrink-0 overflow-hidden rounded-full border bg-card/80 px-5 py-2 shadow-panel backdrop-blur">
-          <div className="facegate-marquee flex w-max gap-16 whitespace-nowrap text-sm font-medium">
-            <span>{display.news_text}</span>
-            <span aria-hidden="true">{display.news_text}</span>
-          </div>
-        </footer>
+        <NewsMarquee text={display.news_text.trim()} />
       )}
 
       {/* Boot screen: wait until camera, FaceGate and voice are all ready */}
