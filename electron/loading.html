@@ -57,8 +57,22 @@
         animation: spin 0.9s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-      #msg { color: #b7c9e2; font-size: 15px; min-height: 22px; transition: color 0.3s ease; }
+      #msg { color: #b7c9e2; font-size: 15px; min-height: 22px; transition: color 0.3s ease; text-align: center; padding: 0 24px; }
       .warn { color: #fbbf24 !important; }
+      .bad { color: #fca5a5 !important; }
+      #detail {
+        display: none; max-width: 640px; margin-top: -8px; padding: 12px 16px;
+        border-radius: 12px; background: rgba(148,163,184,0.12); color: #9db2cd;
+        font-size: 12.5px; line-height: 1.6; word-break: break-all; text-align: left;
+      }
+      #actions { display: none; gap: 10px; flex-wrap: wrap; justify-content: center; }
+      button {
+        font: inherit; font-size: 14px; padding: 10px 18px; border-radius: 999px;
+        border: 1px solid rgba(148,163,184,0.4); background: rgba(255,255,255,0.06);
+        color: #e8eef6; cursor: pointer;
+      }
+      button.primary { background: linear-gradient(135deg,#2563eb,#1d4ed8); border-color: transparent; }
+      button:hover { filter: brightness(1.15); }
     </style>
   </head>
   <body>
@@ -67,22 +81,86 @@
     <div class="sub">ระบบสแกนใบหน้าเข้า–ออกโรงเรียน</div>
     <div class="spinner" id="spinner"></div>
     <div id="msg">กำลังเปิดระบบ…</div>
+    <div id="detail"></div>
+    <div id="actions">
+      <button class="primary" id="btnRetry">เปิดตัวประมวลผลใหม่</button>
+      <button id="btnLog">ดูบันทึกปัญหา</button>
+      <button id="btnSettings">หน้าตั้งค่า</button>
+    </div>
     <script>
       let seconds = 0;
+      let standalone = false;
       const msg = document.getElementById("msg");
+      const detail = document.getElementById("detail");
+      const actions = document.getElementById("actions");
       const spinner = document.getElementById("spinner");
-      setInterval(() => {
-        seconds += 1;
-        if (seconds === 8) {
-          msg.textContent = "กำลังรอการเชื่อมต่ออินเทอร์เน็ต…";
-        } else if (seconds === 20) {
-          msg.textContent = "ยังเชื่อมต่อไม่ได้ — ตรวจสอบสายแลน / Wi-Fi ของเครื่องตู้";
-          msg.className = "warn";
-        } else if (seconds > 20 && seconds % 10 === 0) {
-          msg.textContent = "ยังเชื่อมต่อไม่ได้ — ระบบจะลองใหม่เรื่อย ๆ อัตโนมัติ (" + seconds + " วินาที)";
+      const api = window.electronAPI || {};
+
+      function showTrouble(text, extra) {
+        msg.textContent = text;
+        msg.className = "bad";
+        spinner.style.display = "none";
+        actions.style.display = "flex";
+        if (extra) {
+          detail.textContent = extra;
+          detail.style.display = "block";
         }
-      }, 1000);
+      }
+
+      api.getConfig?.().then((cfg) => { standalone = Boolean(cfg && cfg.standalone); }).catch(() => {});
+
+      // Ask the program itself what is happening instead of guessing — a stuck
+      // loading screen almost always means the local engine did not start.
+      async function poll() {
+        seconds += 1;
+        let s = null;
+        try { s = await api.getAgentStatus?.(); } catch (e) {}
+        if (s && s.state === "python_missing") {
+          showTrouble(s.message || "ไม่พบโปรแกรม Python ในเครื่องนี้", s.lastError || "");
+          return;
+        }
+        if (s && s.state === "configuration_required") {
+          showTrouble("ยังไม่ได้ตั้งรหัสเครื่อง — กดปุ่ม “หน้าตั้งค่า” เพื่อกรอก", "");
+          return;
+        }
+        if (s && s.state === "running") {
+          msg.textContent = "พร้อมใช้งาน กำลังเปิดหน้าสแกน…";
+          msg.className = "";
+          return;
+        }
+        if (seconds === 10) {
+          msg.textContent = standalone ? "กำลังเปิดตัวประมวลผลใบหน้าในเครื่อง…" : "กำลังรอการเชื่อมต่ออินเทอร์เน็ต…";
+        } else if (seconds === 45) {
+          const lines = [];
+          if (s && s.message) lines.push("สถานะ: " + s.message);
+          if (s && s.lastError) lines.push("รายละเอียด: " + s.lastError);
+          if (s && s.python) lines.push("Python: " + s.python);
+          if (s && s.logPath) lines.push("บันทึก: " + s.logPath);
+          showTrouble(
+            standalone
+              ? "ตัวประมวลผลใบหน้ายังไม่เริ่มทำงาน จึงเปิดหน้าสแกนไม่ได้"
+              : "ยังเชื่อมต่อไม่ได้ — ตรวจสอบสายแลน / Wi-Fi ของเครื่องตู้",
+            lines.join("\n"),
+          );
+        }
+      }
+      setInterval(poll, 1000);
+      poll();
+
+      document.getElementById("btnRetry").onclick = async () => {
+        seconds = 0;
+        actions.style.display = "none";
+        detail.style.display = "none";
+        spinner.style.display = "block";
+        msg.className = "";
+        msg.textContent = "กำลังเปิดตัวประมวลผลใหม่…";
+        try { await api.restartAgent?.(); } catch (e) {}
+      };
+      document.getElementById("btnLog").onclick = () => api.openAgentLog?.();
+      document.getElementById("btnSettings").onclick = () => api.openSettings?.();
+
       window.addEventListener("offline", () => {
+        if (standalone) return; // the local install does not need internet
         msg.textContent = "ไม่มีอินเทอร์เน็ต — รอการเชื่อมต่อ";
         msg.className = "warn";
       });

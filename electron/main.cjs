@@ -513,25 +513,36 @@ function openKiosk() {
   kioskWindow.webContents.session.setPermissionRequestHandler((_wc, _perm, done) => done(true));
   kioskWindow.webContents.setBackgroundThrottling?.(false);
 
-  // Branded loading screen instead of a blank window while the cloud page
+  // Branded loading screen instead of a blank window while the local engine
   // (or the network) is still coming up.
   kioskWindow.loadFile(path.join(__dirname, "loading.html"));
   kioskWindow.once("ready-to-show", () => {
     if (kioskWindow) kioskWindow.show();
   });
-  setTimeout(() => {
-    if (kioskWindow) kioskWindow.loadURL(url);
-  }, 800);
+
+  // A standalone install serves the kiosk page from its own local engine, so
+  // opening the address before the engine answers only produces a failed load
+  // and another spin of the loading screen. Wait for /health instead, and let
+  // the loading page report what is wrong while we wait.
+  let openTimer = null;
+  const openWhenReady = async () => {
+    if (!kioskWindow || kioskWindow.isDestroyed()) return;
+    if (STANDALONE && !(await probeAgentHealth())) {
+      openTimer = setTimeout(openWhenReady, 1500);
+      return;
+    }
+    if (kioskWindow && !kioskWindow.isDestroyed()) kioskWindow.loadURL(url);
+  };
+  openTimer = setTimeout(openWhenReady, 800);
 
   // Retry when the kiosk PC boots before the network is ready — keep the
   // branded screen visible between attempts instead of an error page.
   const retryLater = (reason) => {
-    if (!kioskWindow) return;
+    if (!kioskWindow || kioskWindow.isDestroyed()) return;
     console.warn(`[kiosk] load problem (${reason}) — retrying`);
     kioskWindow.loadFile(path.join(__dirname, "loading.html"));
-    setTimeout(() => {
-      if (kioskWindow) kioskWindow.loadURL(url);
-    }, 5000);
+    if (openTimer) clearTimeout(openTimer);
+    openTimer = setTimeout(openWhenReady, 4000);
   };
 
   kioskWindow.webContents.on("did-fail-load", (_e, code, description) =>
@@ -548,6 +559,8 @@ function openKiosk() {
   });
 
   kioskWindow.on("closed", () => {
+    if (openTimer) clearTimeout(openTimer);
+    openTimer = null;
     kioskWindow = null;
   });
 }
