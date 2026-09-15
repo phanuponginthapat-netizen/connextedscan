@@ -67,16 +67,6 @@ foreach ($name in @("det_500m.onnx", "w600k_mbf.onnx")) {
     Copy-Item $found.FullName (Join-Path $modelDir $name) -Force
 }
 
-# ---------- 3b. Thai offline voice ----------
-Write-Host "[3b/5] Thai offline voice (piper)" -ForegroundColor Yellow
-$voiceDir = Join-Path $runtime "voices"
-New-Item -ItemType Directory -Force -Path $voiceDir | Out-Null
-$piperZip = Join-Path $work "piper.zip"
-Invoke-WebRequest -Uri "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip" -OutFile $piperZip
-Expand-Archive $piperZip -DestinationPath $voiceDir -Force
-Invoke-WebRequest -Uri "https://huggingface.co/rhasspy/piper-voices/resolve/main/th/th_TH/tsync2/medium/th_TH-tsync2-medium.onnx?download=true" -OutFile (Join-Path $voiceDir "th_TH-tsync2-medium.onnx")
-Invoke-WebRequest -Uri "https://huggingface.co/rhasspy/piper-voices/resolve/main/th/th_TH/tsync2/medium/th_TH-tsync2-medium.onnx.json?download=true" -OutFile (Join-Path $voiceDir "th_TH-tsync2-medium.onnx.json")
-
 # ---------- 4. Electron shell ----------
 Write-Host "[4/5] Electron shell" -ForegroundColor Yellow
 Push-Location $root
