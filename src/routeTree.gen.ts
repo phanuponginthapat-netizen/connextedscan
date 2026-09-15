@@ -17,6 +17,7 @@ import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as TabletRouteImport } from './routes/tablet'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminDoorRouteImport } from './routes/admin/door'
 import { Route as AdminHealthRouteImport } from './routes/admin/health'
@@ -86,6 +87,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAttendanceRoute = AdminAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminCmsRoute = AdminCmsRouteImport.update({
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -334,6 +342,7 @@ export interface FileRoutesById {
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
   '/admin/attendance': typeof AdminAttendanceRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -376,6 +385,7 @@ export interface FileRouteTypes {
     | '/kiosk'
     | '/tablet'
     | '/admin/attendance'
+    | '/admin/audit'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/kiosk'
     | '/tablet'
     | '/admin/attendance'
+    | '/admin/audit'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/kiosk'
     | '/tablet'
     | '/admin/attendance'
+    | '/admin/audit'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -570,6 +582,13 @@ declare module '@tanstack/react-router' {
       path: '/attendance'
       fullPath: '/admin/attendance'
       preLoaderRoute: typeof AdminAttendanceRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/cms': {
@@ -787,6 +806,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
+  AdminAuditRoute: typeof AdminAuditRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminDoorRoute: typeof AdminDoorRoute
   AdminHealthRoute: typeof AdminHealthRoute
@@ -805,6 +825,7 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
+  AdminAuditRoute: AdminAuditRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminDoorRoute: AdminDoorRoute,
   AdminHealthRoute: AdminHealthRoute,
