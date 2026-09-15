@@ -795,6 +795,7 @@ def attendance_list(x_local_token: str | None = Header(None), start: str = "", e
     like = f"%{q.strip()}%"
     rows = db.query(
         "SELECT l.id, l.scanned_at, l.direction, l.status, l.confidence, l.snapshot_path,"
+        " l.device_name,"
         " s.full_name, s.student_code, s.class_room, s.person_type FROM attendance_logs l"
         " LEFT JOIN students s ON s.id = l.student_id"
         " WHERE l.status NOT IN ('duplicate','out_of_window')"
@@ -943,6 +944,65 @@ async def settings_post(request: Request, x_local_token: str | None = Header(Non
     settings = db.save_settings(body if isinstance(body, dict) else {})
     db.add_audit("แก้ไขการตั้งค่าระบบ", "settings")
     return {"settings": settings}
+
+
+@router.get("/api/local/devices")
+def devices_list(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    settings = db.get_settings()
+    now = time.time()
+    items = []
+    for device in db.list_devices():
+        online = False
+        if device.get("last_seen"):
+            try:
+                seen = time.mktime(time.strptime(device["last_seen"][:19], "%Y-%m-%dT%H:%M:%S"))
+                online = (now - time.mktime(time.gmtime()) + seen) > -120 and (
+                    time.mktime(time.gmtime()) - seen) < 120
+            except Exception:  # noqa: BLE001
+                online = False
+        items.append({**device, "online": online})
+    port = int(settings.get("lan_port") or 8899)
+    return {
+        "items": items,
+        "lan_enabled": bool(settings.get("lan_enabled")),
+        "lan_port": port,
+        "addresses": [f"http://{addr}:{port}" for addr in lan_addresses()],
+        "hub": dict(db.HUB_DEVICE),
+    }
+
+
+@router.post("/api/local/devices")
+async def devices_save(request: Request, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    body = await request.json()
+    device_id = body.get("id")
+    if device_id:
+        db.update_device(str(device_id), body)
+        db.add_audit("แก้ไขตู้สแกนในวง LAN", str(device_id), str(body.get("name") or ""))
+        return {"id": device_id}
+    name = str(body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="กรุณาตั้งชื่อตู้สแกน")
+    device = db.create_device(name, str(body.get("direction") or "auto"), body.get("location"))
+    db.add_audit("เพิ่มตู้สแกนในวง LAN", device.get("id"), name)
+    return {"device": device}
+
+
+@router.post("/api/local/devices/{device_id}/key")
+def devices_rotate(device_id: str, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    key = db.rotate_device_key(device_id)
+    db.add_audit("เปลี่ยนรหัสเชื่อมต่อตู้สแกน", device_id)
+    return {"device_key": key}
+
+
+@router.delete("/api/local/devices/{device_id}")
+def devices_delete(device_id: str, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    db.delete_device(device_id)
+    db.add_audit("ลบตู้สแกนในวง LAN", device_id)
+    return {"ok": True}
 
 
 @router.post("/api/local/door/command")
@@ -1125,12 +1185,18 @@ async def content_post(request: Request, x_local_token: str | None = Header(None
 
 
 @router.get("/api/public/kiosk/content")
-def kiosk_content():
+def kiosk_content(request: Request, x_device_key: str | None = Header(None)):
     """Branding the offline kiosk screen reads on every refresh."""
     content = db.get_content()
     settings = db.get_settings()
+    try:
+        device = resolve_device(request, x_device_key)
+    except HTTPException:
+        device = dict(db.HUB_DEVICE)
     return {**content, "logo_url": media_url(content.get("logo_path")),
-            "school_name": settings.get("school_name")}
+            "school_name": settings.get("school_name"),
+            "device_name": device["name"],
+            "device_direction": device.get("direction") or "auto"}
 
 
 # ------------------------------------------------- admin: certificate & logs
