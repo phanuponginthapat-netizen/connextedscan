@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin/certificate")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: CertificatePage;
+  component: CertificatePage,
 });
 
 function todayISO() {
@@ -138,7 +138,9 @@ function CertificatePage() {
     for (let time = start; time <= end; time += 86_400_000) {
       const d = new Date(time);
       const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(d);
-      const weekday = d.getUTCDay();
+      const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+        new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Bangkok", weekday: "short" }).format(d),
+      );
       dates.push(date);
       if (!settings?.block_non_work_days || workDays.includes(weekday)) workingDays += 1;
     }
