@@ -219,6 +219,14 @@ function resolvePython(runtimeDir, agentDir) {
   return null;
 }
 
+function resolveAgentDir() {
+  const bundled = path.join(__dirname, "..", "agent").replace("app.asar", "app.asar.unpacked");
+  const hasUpdate =
+    fs.existsSync(path.join(UPDATE_DIR, "agent.py")) &&
+    fs.existsSync(path.join(UPDATE_DIR, "face_engine.py"));
+  return hasUpdate ? UPDATE_DIR : bundled;
+}
+
 function startAgent() {
   stopAgent({ restart: true });
   const cfg = loadConfig();
