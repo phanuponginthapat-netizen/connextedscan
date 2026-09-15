@@ -134,6 +134,7 @@ function Kiosk() {
     pending?: { action?: string; at?: number } | null;
   } | null>(null);
   const [powerCountdown, setPowerCountdown] = useState(0);
+  const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
   const [camReady, setCamReady] = useState(false);
   const [booted, setBooted] = useState(false);
   const displayRef = useRef(display);
