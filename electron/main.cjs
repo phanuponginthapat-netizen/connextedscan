@@ -93,7 +93,7 @@ function startHealthWatch() {
   healthTimer = setInterval(async () => {
     const ok = await probeAgentHealth();
     if (ok) {
-      if (agentStatus.state !== "running") {
+      if (agentStatus.state !== "running" && agentStatus.state !== "kiosk_missing") {
         agentStatus = {
           ...agentStatus,
           state: "running",
