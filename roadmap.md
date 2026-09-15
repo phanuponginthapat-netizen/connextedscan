@@ -22,3 +22,13 @@
 - [ ] LINE delivery: needs `LINE_CHANNEL_ACCESS_TOKEN` secret from the school's LINE Official Account.
 - [ ] Weekly report cron schedule: same cron secret dependency as below.
 - [ ] Automatic hourly schedule for cleanup/notify cron endpoints: needs the cron secret to be wired into a scheduled job. Manual buttons work today.
+
+## FaceGate Standalone (จบในเครื่อง)
+- [x] ฐานข้อมูลในเครื่อง (SQLite) + API ในเครื่อง + บัญชีผู้ดูแลของเครื่อง
+- [x] หน้าตู้สแกนและหน้าหลังบ้านออฟไลน์ (ดีไซน์ขาว-น้ำเงินเหมือนระบบหลัก)
+- [x] เนื้อหาและธีมในเครื่อง (ชื่อโรงเรียน โลโก้ สี ข้อความ)
+- [x] นำเข้ารายชื่อหลายคนพร้อมกัน (วางจาก Excel / ไฟล์ CSV)
+- [x] ตัวกรองรหัส/ชื่อ/ระดับชั้น + สถานะใบหน้า ในการลงทะเบียนใบหน้า (ทั้งสองระบบ)
+- [x] รายงาน ใบรับรองเวลาเรียน ผู้มาติดต่อ สุขภาพระบบ ล้างข้อมูลเก่า สำรอง/กู้คืน
+- [x] ตัวสร้างไฟล์ติดตั้ง Standalone (Windows/Linux) + ปล่อยขึ้น GitHub Release
+- [ ] รอผู้ใช้: รัน workflow แล้ววางลิงก์รุ่นจบในเครื่องในหลังบ้าน → ตั้งค่า → เนื้อหา
