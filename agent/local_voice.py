@@ -226,7 +226,7 @@ def _synth_winrt(text: str, out: str) -> bool:
         f"$stream = Wait-Rt $synth.SynthesizeTextToStreamAsync('{safe}')"
         " ([Windows.Media.SpeechSynthesis.SpeechSynthesisStream]);"
         "$reader = New-Object Windows.Storage.Streams.DataReader($stream);"
-        "[void](Wait-Rt $reader.LoadAsync([uint32]$stream.Size) ([uint32]);)"
+        "[void](Wait-Rt $reader.LoadAsync([uint32]$stream.Size) ([uint32]));"
         "$bytes = New-Object byte[] $stream.Size;"
         "$reader.ReadBytes($bytes);"
         f"[System.IO.File]::WriteAllBytes('{target}', $bytes);"
