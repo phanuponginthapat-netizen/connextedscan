@@ -67,6 +67,12 @@ function PowerPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [wake, setWake] = useState({
+    wake_mac: "",
+    wake_broadcast: "255.255.255.255",
+    wake_port: 9,
+  });
+  const [savingWake, setSavingWake] = useState(false);
 
   useEffect(() => {
     void (async () => {
