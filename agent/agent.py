@@ -116,6 +116,55 @@ if STANDALONE:
         return RedirectResponse("/kiosk")
 
 
+if SATELLITE:
+    # A satellite kiosk has no database of its own: it shows the same offline
+    # kiosk screen and forwards every data request to the hub PC on the LAN.
+    import local_ui
+    from fastapi import Request as _Request
+    from fastapi.responses import HTMLResponse, RedirectResponse, Response as _Response
+
+    @app.get("/kiosk")
+    def kiosk_screen_satellite():
+        return HTMLResponse(local_ui.KIOSK_HTML)
+
+    @app.get("/")
+    def home_screen_satellite():
+        return RedirectResponse("/kiosk")
+
+    @app.api_route("/local/{path:path}", methods=["GET", "POST", "DELETE"])
+    def hub_proxy(path: str, request: _Request):
+        url = f"{HUB_URL}/{path}"
+        try:
+            body = None
+            if request.method != "GET":
+                import asyncio
+
+                body = asyncio.run(_read_body(request))
+            res = requests.request(
+                request.method,
+                url,
+                headers={"x-device-key": DEVICE_KEY,
+                         "content-type": request.headers.get("content-type", "application/json")},
+                params=dict(request.query_params),
+                data=body,
+                timeout=30,
+            )
+            return _Response(
+                content=res.content,
+                status_code=res.status_code,
+                media_type=res.headers.get("content-type"),
+            )
+        except Exception as exc:  # noqa: BLE001
+            return _Response(
+                content=json.dumps({"detail": f"ติดต่อเครื่องแม่ไม่ได้: {exc}"}, ensure_ascii=False),
+                status_code=503,
+                media_type="application/json",
+            )
+
+    async def _read_body(request: _Request) -> bytes:
+        return await request.body()
+
+
 # ArcFace. det_size kept small so an Intel Atom can keep up.
 # The models are loaded in the background so the kiosk page can connect to the
 # program straight away instead of waiting for onnxruntime to warm up.
