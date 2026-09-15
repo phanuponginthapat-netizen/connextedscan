@@ -787,6 +787,69 @@ def report(x_local_token: str | None = Header(None), start: str = "", end: str =
             "top_late": [p for p in top_late if p["late"] > 0], "persons": list(per_person.values())}
 
 
+def _gender_counts():
+    return {"male": 0, "female": 0, "unspecified": 0, "all": 0}
+
+
+@router.get("/api/local/report/class")
+def class_report(x_local_token: str | None = Header(None), date: str = ""):
+    require_admin(x_local_token)
+    date = date or rules.bangkok_date_iso()
+    settings = db.get_settings()
+    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
+        settings.get("late_grace_minutes") or 0
+    )
+    people = db.query(
+        "SELECT id, student_code, full_name, IFNULL(NULLIF(class_room,''),'ไม่ระบุชั้น') AS class_room,"
+        " CASE WHEN gender IN ('male','female') THEN gender ELSE 'unspecified' END AS gender"
+        " FROM students WHERE is_active = 1 AND person_type = 'student'"
+        " ORDER BY class_room, full_name"
+    )
+    scans = db.query(
+        "SELECT student_id, MIN(scanned_at) AS scanned_at FROM attendance_logs"
+        " WHERE direction = 'in' AND status = 'ok' AND date(scanned_at, '+7 hours') = ?"
+        " GROUP BY student_id", (date,)
+    )
+    first_scan = {row["student_id"]: row["scanned_at"] for row in scans}
+    rooms = {}
+    absent_people = []
+    for person in people:
+        room = rooms.setdefault(person["class_room"], {
+            "class_room": person["class_room"], "total": {"gender": _gender_counts()},
+            "present": {"gender": _gender_counts()}, "late": {"gender": _gender_counts()},
+            "absent": {"gender": _gender_counts()},
+        })
+        gender = person["gender"]
+        for key in (gender, "all"):
+            room["total"]["gender"][key] += 1
+        scan = first_scan.get(person["id"])
+        bucket = "present" if scan else "absent"
+        for key in (gender, "all"):
+            room[bucket]["gender"][key] += 1
+        if scan:
+            hour = (int(scan[11:13]) + 7) % 24
+            minute = int(scan[14:16])
+            if hour * 60 + minute > late_limit:
+                for key in (gender, "all"):
+                    room["late"]["gender"][key] += 1
+        else:
+            absent_people.append({k: person[k] for k in
+                                  ("student_code", "full_name", "class_room", "gender")})
+
+    classes = sorted(rooms.values(), key=lambda item: item["class_room"])
+    totals = {name: {"gender": _gender_counts()} for name in ("total", "present", "late", "absent")}
+    for room in classes:
+        room["rate"] = round(room["present"]["gender"]["all"] * 100 / room["total"]["gender"]["all"])
+        for name in totals:
+            for gender in totals[name]["gender"]:
+                totals[name]["gender"][gender] += room[name]["gender"][gender]
+    total_count = totals["total"]["gender"]["all"]
+    totals["rate"] = round(totals["present"]["gender"]["all"] * 100 / total_count) if total_count else 0
+    content = db.get_content()
+    return {"date": date, "school_name": content.get("school_name") or "โรงเรียนของเรา",
+            "classes": classes, "totals": totals, "absent_people": absent_people}
+
+
 # ----------------------------------------------------------- admin: settings
 
 
