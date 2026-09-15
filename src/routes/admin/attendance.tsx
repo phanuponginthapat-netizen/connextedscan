@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { recordAudit } from "@/lib/audit.functions";
 import { useCms } from "@/lib/cms-client";
 import { personGroupLabel, personTypeLabel } from "@/components/people/people";
 import { StatCard, SortHeader, TablePager } from "@/components/reports/report-ui";
@@ -213,6 +214,8 @@ function AttendancePage() {
     staleTime: 60_000,
   });
 
+  const audit = useServerFn(recordAudit);
+
   async function refreshRows() {
     await queryClient.invalidateQueries({ queryKey: ["attendance"] });
   }
@@ -228,6 +231,13 @@ function AttendancePage() {
     });
     const result = (await response.json()) as { ok: boolean; error?: string; deleted?: number };
     if (!response.ok || !result.ok) throw new Error(result.error ?? "ลบไม่สำเร็จ");
+    void audit({
+      data: {
+        action: "ลบประวัติการสแกน",
+        target: payload.mode === "one" ? payload.id : `${payload.from} – ${payload.to}`,
+        detail: `ลบ ${result.deleted ?? 0} รายการ`,
+      },
+    });
     return result;
   }
 
