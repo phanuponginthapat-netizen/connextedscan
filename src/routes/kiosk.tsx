@@ -566,6 +566,26 @@ function Kiosk() {
     };
   }, [agentUrl]);
 
+  // Today's figures for the summary board shown once both scan windows close.
+  useEffect(() => {
+    let stopped = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/public/kiosk/today-stats");
+        const body = (await res.json()) as TodayStats;
+        if (!stopped) setTodayStats(body);
+      } catch {
+        // keep the last known numbers on a network hiccup
+      }
+    };
+    void load();
+    const timer = setInterval(() => void load(), 60_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, []);
+
   const sendPowerCommand = useCallback(
     async (command: string) => {
       try {
