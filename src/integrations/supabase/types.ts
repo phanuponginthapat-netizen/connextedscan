@@ -702,6 +702,7 @@ export type Database = {
           created_at: string
           department: string | null
           full_name: string
+          gender: string | null
           guardian_phone: string | null
           id: string
           is_active: boolean
@@ -717,6 +718,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           full_name: string
+          gender?: string | null
           guardian_phone?: string | null
           id?: string
           is_active?: boolean
@@ -732,6 +734,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           full_name?: string
+          gender?: string | null
           guardian_phone?: string | null
           id?: string
           is_active?: boolean

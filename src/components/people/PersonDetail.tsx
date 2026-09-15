@@ -210,7 +210,10 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
   useEffect(() => {
     if (!person) return;
     const rec = person as unknown as Record<string, string | null>;
-    setForm(Object.fromEntries(fields.map((f) => [f.key, rec[f.key] ?? ""])));
+    setForm({
+      ...Object.fromEntries(fields.map((f) => [f.key, rec[f.key] ?? ""])),
+      gender: rec["gender"] ?? "unspecified",
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [person?.id]);
 
@@ -286,6 +289,21 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
               />
             </div>
           ))}
+          {!isStaff && (
+            <div className="space-y-1.5">
+              <Label htmlFor="person-gender">เพศ</Label>
+              <select
+                id="person-gender"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                value={form["gender"] ?? "unspecified"}
+                onChange={(e) => setForm((s) => ({ ...s, gender: e.target.value }))}
+              >
+                <option value="male">ชาย</option>
+                <option value="female">หญิง</option>
+                <option value="unspecified">ไม่ระบุ</option>
+              </select>
+            </div>
+          )}
           <div className="flex items-center gap-3 pt-2">
             <Switch
               checked={person.is_active}
@@ -298,7 +316,10 @@ export function PersonDetail({ id, personType }: { id: string; personType: Perso
               disabled={savePerson.isPending}
               onClick={() =>
                 savePerson.mutate(
-                  Object.fromEntries(fields.map((f) => [f.key, form[f.key]?.trim() || null])),
+                  {
+                    ...Object.fromEntries(fields.map((f) => [f.key, form[f.key]?.trim() || null])),
+                    ...(!isStaff ? { gender: form["gender"] || "unspecified" } : {}),
+                  },
                 )
               }
             >

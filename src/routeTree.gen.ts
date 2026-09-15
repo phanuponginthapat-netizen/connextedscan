@@ -19,6 +19,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as AdminCertificateRouteImport } from './routes/admin/certificate'
+import { Route as AdminClassReportRouteImport } from './routes/admin/class-report'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminDoorRouteImport } from './routes/admin/door'
 import { Route as AdminHealthRouteImport } from './routes/admin/health'
@@ -98,6 +99,11 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
 const AdminCertificateRoute = AdminCertificateRouteImport.update({
   id: '/certificate',
   path: '/certificate',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminClassReportRoute = AdminClassReportRouteImport.update({
+  id: '/class-report',
+  path: '/class-report',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminCmsRoute = AdminCmsRouteImport.update({
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/certificate': typeof AdminCertificateRoute
+  '/admin/class-report': typeof AdminClassReportRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByTo {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/certificate': typeof AdminCertificateRoute
+  '/admin/class-report': typeof AdminClassReportRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/certificate': typeof AdminCertificateRoute
+  '/admin/class-report': typeof AdminClassReportRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/door': typeof AdminDoorRoute
   '/admin/health': typeof AdminHealthRoute
@@ -396,6 +405,7 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/audit'
     | '/admin/certificate'
+    | '/admin/class-report'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -437,6 +447,7 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/audit'
     | '/admin/certificate'
+    | '/admin/class-report'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -479,6 +490,7 @@ export interface FileRouteTypes {
     | '/admin/attendance'
     | '/admin/audit'
     | '/admin/certificate'
+    | '/admin/class-report'
     | '/admin/cms'
     | '/admin/door'
     | '/admin/health'
@@ -608,6 +620,13 @@ declare module '@tanstack/react-router' {
       path: '/certificate'
       fullPath: '/admin/certificate'
       preLoaderRoute: typeof AdminCertificateRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/class-report': {
+      id: '/admin/class-report'
+      path: '/class-report'
+      fullPath: '/admin/class-report'
+      preLoaderRoute: typeof AdminClassReportRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/cms': {
@@ -827,6 +846,7 @@ interface AdminRouteRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminCertificateRoute: typeof AdminCertificateRoute
+  AdminClassReportRoute: typeof AdminClassReportRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminDoorRoute: typeof AdminDoorRoute
   AdminHealthRoute: typeof AdminHealthRoute
@@ -847,6 +867,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminCertificateRoute: AdminCertificateRoute,
+  AdminClassReportRoute: AdminClassReportRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminDoorRoute: AdminDoorRoute,
   AdminHealthRoute: AdminHealthRoute,

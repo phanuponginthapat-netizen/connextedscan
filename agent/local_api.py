@@ -595,6 +595,7 @@ async def people_save(request: Request, x_local_token: str | None = Header(None)
         "nickname": (body.get("nickname") or None),
         "class_room": (body.get("class_room") or None),
         "guardian_phone": (body.get("guardian_phone") or None),
+        "gender": body.get("gender") if body.get("gender") in ("male", "female", "unspecified") else "unspecified",
         "person_type": "staff" if body.get("person_type") == "staff" else "student",
         "department": (body.get("department") or None),
         "position": (body.get("position") or None),
@@ -606,7 +607,7 @@ async def people_save(request: Request, x_local_token: str | None = Header(None)
     if person_id:
         db.run(
             "UPDATE students SET student_code=?, full_name=?, nickname=?, class_room=?,"
-            " guardian_phone=?, person_type=?, department=?, position=?, is_active=?, updated_at=?"
+            " guardian_phone=?, gender=?, person_type=?, department=?, position=?, is_active=?, updated_at=?"
             " WHERE id=?",
             (*fields.values(), db.now_iso(), person_id),
         )
@@ -616,18 +617,18 @@ async def people_save(request: Request, x_local_token: str | None = Header(None)
         if exists:
             person_id = exists["id"]
             db.run(
-                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?,"
+                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?, gender=?,"
                 " person_type=?, department=?, position=?, is_active=?, updated_at=? WHERE id=?",
                 (fields["full_name"], fields["nickname"], fields["class_room"],
-                 fields["guardian_phone"], fields["person_type"], fields["department"],
+                 fields["guardian_phone"], fields["gender"], fields["person_type"], fields["department"],
                  fields["position"], fields["is_active"], db.now_iso(), person_id),
             )
         else:
             person_id = db.new_id()
             db.run(
                 "INSERT INTO students (id, student_code, full_name, nickname, class_room,"
-                " guardian_phone, person_type, department, position, is_active, created_at,"
-                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                " guardian_phone, gender, person_type, department, position, is_active, created_at,"
+                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (person_id, *fields.values(), db.now_iso(), db.now_iso()),
             )
             db.add_audit("เพิ่มบุคคลใหม่", person_id, fields["full_name"])
@@ -786,6 +787,69 @@ def report(x_local_token: str | None = Header(None), start: str = "", end: str =
             "top_late": [p for p in top_late if p["late"] > 0], "persons": list(per_person.values())}
 
 
+def _gender_counts():
+    return {"male": 0, "female": 0, "unspecified": 0, "all": 0}
+
+
+@router.get("/api/local/report/class")
+def class_report(x_local_token: str | None = Header(None), date: str = ""):
+    require_admin(x_local_token)
+    date = date or rules.bangkok_date_iso()
+    settings = db.get_settings()
+    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
+        settings.get("late_grace_minutes") or 0
+    )
+    people = db.query(
+        "SELECT id, student_code, full_name, IFNULL(NULLIF(class_room,''),'ไม่ระบุชั้น') AS class_room,"
+        " CASE WHEN gender IN ('male','female') THEN gender ELSE 'unspecified' END AS gender"
+        " FROM students WHERE is_active = 1 AND person_type = 'student'"
+        " ORDER BY class_room, full_name"
+    )
+    scans = db.query(
+        "SELECT student_id, MIN(scanned_at) AS scanned_at FROM attendance_logs"
+        " WHERE direction = 'in' AND status = 'ok' AND date(scanned_at, '+7 hours') = ?"
+        " GROUP BY student_id", (date,)
+    )
+    first_scan = {row["student_id"]: row["scanned_at"] for row in scans}
+    rooms = {}
+    absent_people = []
+    for person in people:
+        room = rooms.setdefault(person["class_room"], {
+            "class_room": person["class_room"], "total": _gender_counts(),
+            "present": _gender_counts(), "late": _gender_counts(),
+            "absent": _gender_counts(),
+        })
+        gender = person["gender"]
+        for key in (gender, "all"):
+            room["total"][key] += 1
+        scan = first_scan.get(person["id"])
+        bucket = "present" if scan else "absent"
+        for key in (gender, "all"):
+            room[bucket][key] += 1
+        if scan:
+            hour = (int(scan[11:13]) + 7) % 24
+            minute = int(scan[14:16])
+            if hour * 60 + minute > late_limit:
+                for key in (gender, "all"):
+                    room["late"][key] += 1
+        else:
+            absent_people.append({k: person[k] for k in
+                                  ("student_code", "full_name", "class_room", "gender")})
+
+    classes = sorted(rooms.values(), key=lambda item: item["class_room"])
+    totals = {name: _gender_counts() for name in ("total", "present", "late", "absent")}
+    for room in classes:
+        room["rate"] = round(room["present"]["all"] * 100 / room["total"]["all"])
+        for name in totals:
+            for gender in totals[name]:
+                totals[name][gender] += room[name][gender]
+    total_count = totals["total"]["all"]
+    totals["rate"] = round(totals["present"]["all"] * 100 / total_count) if total_count else 0
+    content = db.get_content()
+    return {"date": date, "school_name": content.get("school_name") or "โรงเรียนของเรา",
+            "classes": classes, "totals": totals, "absent_people": absent_people}
+
+
 # ----------------------------------------------------------- admin: settings
 
 
@@ -920,6 +984,7 @@ async def people_import(request: Request, x_local_token: str | None = Header(Non
             (row.get("nickname") or None),
             (row.get("class_room") or None),
             (row.get("guardian_phone") or None),
+            row.get("gender") if row.get("gender") in ("male", "female", "unspecified") else "unspecified",
             "staff" if row.get("person_type") == "staff" else "student",
             (row.get("department") or None),
             (row.get("position") or None),
@@ -927,7 +992,7 @@ async def people_import(request: Request, x_local_token: str | None = Header(Non
         exists = db.one("SELECT id FROM students WHERE student_code = ?", (code,))
         if exists:
             db.run(
-                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?,"
+                "UPDATE students SET full_name=?, nickname=?, class_room=?, guardian_phone=?, gender=?,"
                 " person_type=?, department=?, position=?, is_active=1, updated_at=? WHERE id=?",
                 (*values, db.now_iso(), exists["id"]),
             )
@@ -935,8 +1000,8 @@ async def people_import(request: Request, x_local_token: str | None = Header(Non
         else:
             db.run(
                 "INSERT INTO students (id, student_code, full_name, nickname, class_room,"
-                " guardian_phone, person_type, department, position, is_active, created_at,"
-                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,1,?,?)",
+                " guardian_phone, gender, person_type, department, position, is_active, created_at,"
+                " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?)",
                 (db.new_id(), code, *values, db.now_iso(), db.now_iso()),
             )
             added += 1

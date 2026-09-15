@@ -141,6 +141,13 @@
       "when": 1789440811631,
       "tag": "0019_audit_logs_weekly_report_device_health",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789452118064,
+      "tag": "0020_add_student_gender",
+      "breakpoints": true
     }
   ]
 }

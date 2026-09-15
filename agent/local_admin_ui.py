@@ -106,6 +106,7 @@ const TABS = [
   ['enroll', '🙂 ลงทะเบียนใบหน้า', 'ลงทะเบียนใบหน้า', 'ค้นหาด้วยรหัส ชื่อ หรือระดับชั้น แล้วถ่ายภาพ'],
   ['history', '🕒 ประวัติการสแกน', 'ประวัติการสแกน', 'ดูย้อนหลัง ส่งออก CSV และลบรายการ'],
   ['report', '📈 รายงาน', 'รายงานสรุป', 'สรุปรายวันและอันดับมาสาย'],
+  ['class_report', '📋 รายงานการมาโรงเรียน', 'รายงานการมาโรงเรียน', 'สรุปตามชั้นและรายชื่อผู้ขาด'],
   ['certificate', '📜 ใบรับรองเวลาเรียน', 'ใบรับรองเวลาเรียน', 'เลือกคนและช่วงวัน แล้วสั่งพิมพ์'],
   ['visitors', '🚶 ผู้มาติดต่อ / แจ้งเตือน', 'ผู้มาติดต่อและการแจ้งเตือน', 'ภาพผู้ไม่ลงทะเบียนและเหตุการณ์ผิดปกติ'],
   ['content', '🎨 เนื้อหาและธีม', 'เนื้อหาและธีม', 'ชื่อโรงเรียน โลโก้ สี และข้อความบนหน้าจอ'],
@@ -169,7 +170,7 @@ async function render() {
   const view = $('#view');
   view.innerHTML = '<div class="card">กำลังโหลด…</div>';
   const map = { overview: renderOverview, people: renderPeople, import: renderImport, enroll: renderEnroll,
-    history: renderHistory, report: renderReport, certificate: renderCertificate, visitors: renderVisitors,
+    history: renderHistory, report: renderReport, class_report: renderClassReport, certificate: renderCertificate, visitors: renderVisitors,
     content: renderContent, settings: renderSettings, device: renderDevice, health: renderHealth,
     backup: renderBackup, audit: renderAudit };
   try { await (map[TAB] || renderOverview)(view); }
@@ -213,6 +214,7 @@ async function renderPeople(view) {
       <div><label>ชื่อ-นามสกุล *</label><input id="f_name" /></div>
       <div><label>ชื่อเล่น</label><input id="f_nick" /></div>
       <div><label>ระดับชั้น / ห้อง</label><input id="f_class" /></div>
+      <div><label>เพศ</label><select id="f_gender"><option value="unspecified">ไม่ระบุ</option><option value="male">ชาย</option><option value="female">หญิง</option></select></div>
       <div><label>เบอร์ผู้ปกครอง</label><input id="f_phone" /></div>
       <div><label>ประเภท</label><select id="f_type">
         <option value="student">นักเรียน</option><option value="staff">บุคลากร</option></select></div>
@@ -228,9 +230,10 @@ async function renderPeople(view) {
       </select></div>
       <button class="btn ghost" onclick="applyFilter()">ค้นหา</button></div>
       <p class="sub">พบ ${rows.length} รายชื่อ</p>
-      <table><thead><tr><th>ชื่อ</th><th>รหัส</th><th>ชั้น/แผนก</th><th>ใบหน้า</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th>ชื่อ</th><th>รหัส</th><th>ชั้น/แผนก</th><th>เพศ</th><th>ใบหน้า</th><th></th></tr></thead><tbody>
       ${rows.map((p) => `<tr><td>${esc(p.full_name)}</td><td>${esc(p.student_code)}</td>
         <td>${esc(p.class_room || p.department || '-')}</td>
+        <td>${p.gender === 'male' ? 'ชาย' : p.gender === 'female' ? 'หญิง' : 'ไม่ระบุ'}</td>
         <td><span class="pill ${p.faces ? 'good' : 'bad'}">${p.faces}</span></td>
         <td style="white-space:nowrap"><button class="btn ghost sm" onclick='editPerson(${JSON.stringify(p)})'>แก้ไข</button>
         <button class="btn danger sm" onclick="delPerson('${p.id}')">ลบ</button></td></tr>`).join('')}
@@ -240,15 +243,16 @@ function applyFilter() { window.__q = $('#q').value; window.__cls = $('#cls').va
 function editPerson(p) {
   $('#f_id').value = p.id; $('#f_code').value = p.student_code; $('#f_name').value = p.full_name;
   $('#f_nick').value = p.nickname || ''; $('#f_class').value = p.class_room || '';
-  $('#f_phone').value = p.guardian_phone || ''; $('#f_type').value = p.person_type || 'student';
+  $('#f_phone').value = p.guardian_phone || ''; $('#f_gender').value = p.gender || 'unspecified';
+  $('#f_type').value = p.person_type || 'student';
   window.scrollTo(0, 0);
 }
-function clearPerson() { ['f_id','f_code','f_name','f_nick','f_class','f_phone'].forEach((id) => $('#' + id).value = ''); }
+function clearPerson() { ['f_id','f_code','f_name','f_nick','f_class','f_phone'].forEach((id) => $('#' + id).value = ''); $('#f_gender').value = 'unspecified'; }
 async function savePerson() {
   await api('/api/local/people', { method: 'POST', body: JSON.stringify({
     id: $('#f_id').value || null, student_code: $('#f_code').value, full_name: $('#f_name').value,
     nickname: $('#f_nick').value, class_room: $('#f_class').value,
-    guardian_phone: $('#f_phone').value, person_type: $('#f_type').value }) });
+    guardian_phone: $('#f_phone').value, gender: $('#f_gender').value, person_type: $('#f_type').value }) });
   clearPerson(); render();
 }
 async function delPerson(id) {
@@ -261,13 +265,13 @@ async function renderImport(view) {
   view.innerHTML = `
     <div class="card"><h3>นำเข้ารายชื่อหลายคนพร้อมกัน</h3>
       <p class="sub">คัดลอกจาก Excel แล้ววางลงช่องนี้ได้เลย (คั่นด้วย Tab หรือคอมมา) หนึ่งบรรทัดหนึ่งคน<br />
-      ลำดับคอลัมน์: <b>รหัส, ชื่อ-นามสกุล, ระดับชั้น, ชื่อเล่น (ไม่ใส่ก็ได้), เบอร์ผู้ปกครอง (ไม่ใส่ก็ได้)</b><br />
+      ลำดับคอลัมน์: <b>รหัส, ชื่อ-นามสกุล, ระดับชั้น, เพศ, ชื่อเล่น (ไม่ใส่ก็ได้), เบอร์ผู้ปกครอง (ไม่ใส่ก็ได้)</b><br />
       ถ้ามีหัวตาราง เช่น รหัส/ชื่อ/ชั้น ระบบจะข้ามให้เอง และรหัสที่มีอยู่แล้วจะถูกอัปเดตทับ</p>
       <div class="row"><div><label>เลือกไฟล์ CSV</label><input type="file" accept=".csv,.txt" onchange="loadCsv(this)" /></div>
         <div><label>ประเภท</label><select id="i_type">
           <option value="student">นักเรียน</option><option value="staff">บุคลากร</option></select></div></div>
       <p><label>วางข้อมูลที่นี่</label>
-      <textarea id="i_text" placeholder="10001&#9;สมชาย ใจดี&#9;ป.1/1&#10;10002&#9;สมหญิง รักเรียน&#9;ป.1/1"></textarea></p>
+      <textarea id="i_text" placeholder="10001&#9;สมชาย ใจดี&#9;ป.1/1&#9;ชาย&#10;10002&#9;สมหญิง รักเรียน&#9;ป.1/1&#9;หญิง"></textarea></p>
       <p><button class="btn" onclick="doImport()">ตรวจและนำเข้า</button>
          <button class="btn ghost" onclick="$('#i_text').value=''">ล้าง</button></p>
       <div id="i_msg"></div></div>`;
@@ -283,10 +287,12 @@ function parseRows(text, personType) {
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
     const cells = line.split(/\t|,|;/).map((c) => c.trim().replace(/^"|"$/g, ''));
-    const [code, name, cls, nick, phone] = cells;
+    const [code, name, cls, genderText, nick, phone] = cells;
     if (!code || !name) continue;
     if (/รหัส|code/i.test(code) && /ชื่อ|name/i.test(name)) continue; // header row
-    rows.push({ student_code: code, full_name: name, class_room: cls || null,
+    const gender = ['ชาย','ช','male','m'].includes((genderText || '').toLowerCase()) ? 'male'
+      : ['หญิง','ญ','female','f'].includes((genderText || '').toLowerCase()) ? 'female' : 'unspecified';
+    rows.push({ student_code: code, full_name: name, class_room: cls || null, gender,
       nickname: nick || null, guardian_phone: phone || null, person_type: personType });
   }
   return rows;
@@ -432,6 +438,33 @@ async function renderReport(view) {
       ${d.top_late.map((p) => `<tr><td>${esc(p.name || '')}</td><td>${esc(p.class_room || '')}</td>
         <td>${p.late}</td><td>${p.present}</td></tr>`).join('') || '<tr><td colspan="4">ไม่มีคนมาสายในช่วงนี้</td></tr>'}
     </tbody></table></div>`;
+}
+
+async function renderClassReport(view) {
+  const date = window.__crd || new Date().toISOString().slice(0, 10);
+  const d = await api(`/api/local/report/class?date=${date}`);
+  window.__classReport = d;
+  const g = (x, k) => x[k] || 0;
+  view.innerHTML = `<div class="card"><div class="row noprint">
+    <div><label>วันที่รายงาน</label><input id="cr_date" type="date" value="${d.date}" /></div>
+    <button class="btn ghost" onclick="window.__crd=$('#cr_date').value;render()">ดูรายงาน</button>
+    <button class="btn ghost" onclick="classCsv()">ส่งออก CSV</button>
+    <button class="btn ghost" onclick="window.print()">พิมพ์</button></div>
+    <h2>${esc(d.school_name)} • รายงานการมาโรงเรียน</h2><p class="sub">ประจำวันที่ ${esc(d.date)} • รวม ${d.classes.length} ห้องเรียน</p>
+    <div style="overflow:auto"><table><thead><tr><th rowspan="2">ชั้น</th><th colspan="3">นักเรียน</th><th colspan="3">มาเรียน</th><th colspan="3">สาย</th><th colspan="3">ขาด</th><th rowspan="2">% เข้าเรียน</th></tr>
+    <tr><th>ช</th><th>ญ</th><th>รวม</th><th>ช</th><th>ญ</th><th>รวม</th><th>ช</th><th>ญ</th><th>รวม</th><th>ช</th><th>ญ</th><th>รวม</th></tr></thead><tbody>
+    ${d.classes.map((x) => `<tr><td><b>${esc(x.class_room)}</b></td><td>${g(x.total,'male')}</td><td>${g(x.total,'female')}</td><td><b>${x.total.all}</b></td><td>${g(x.present,'male')}</td><td>${g(x.present,'female')}</td><td><b>${x.present.all}</b></td><td>${g(x.late,'male')}</td><td>${g(x.late,'female')}</td><td>${x.late.all}</td><td>${g(x.absent,'male')}</td><td>${g(x.absent,'female')}</td><td><b>${x.absent.all}</b></td><td><span class="pill ${x.rate >= 80 ? 'good' : 'bad'}">${x.rate}%</span></td></tr>`).join('')}
+    <tr><td><b>รวมทั้งหมด</b></td><td>${g(d.totals.total,'male')}</td><td>${g(d.totals.total,'female')}</td><td><b>${d.totals.total.all}</b></td><td>${g(d.totals.present,'male')}</td><td>${g(d.totals.present,'female')}</td><td><b>${d.totals.present.all}</b></td><td>${g(d.totals.late,'male')}</td><td>${g(d.totals.late,'female')}</td><td>${d.totals.late.all}</td><td>${g(d.totals.absent,'male')}</td><td>${g(d.totals.absent,'female')}</td><td><b>${d.totals.absent.all}</b></td><td><b>${d.totals.rate}%</b></td></tr>
+    </tbody></table></div>${d.totals.total.unspecified ? `<p class="sub">มีนักเรียนไม่ระบุเพศ ${d.totals.total.unspecified} คน (รวมอยู่ในยอดรวม)</p>` : ''}</div>
+    <div class="card"><h3>รายชื่อนักเรียนที่ขาด <span class="pill bad">${d.absent_people.length} คน</span></h3>
+      ${d.absent_people.length ? `<table><thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>ชั้น</th><th>เพศ</th></tr></thead><tbody>${d.absent_people.map((p) => `<tr><td>${esc(p.student_code)}</td><td>${esc(p.full_name)}</td><td>${esc(p.class_room)}</td><td>${p.gender === 'male' ? 'ชาย' : p.gender === 'female' ? 'หญิง' : 'ไม่ระบุ'}</td></tr>`).join('')}</tbody></table>` : '<p class="msg good">ไม่มีนักเรียนขาดในวันนี้</p>'}</div>`;
+}
+function classCsv() {
+  const d = window.__classReport; if (!d) return;
+  const lines = d.classes.map((x) => [x.class_room,x.total.all,x.present.all,x.late.all,x.absent.all,x.rate].join(','));
+  const absent = d.absent_people.map((p) => [p.student_code,p.full_name,p.class_room,p.gender].join(','));
+  const blob = new Blob(['\ufeffชั้น,นักเรียนทั้งหมด,มาเรียน,สาย,ขาด,% เข้าเรียน\n'+lines.join('\n')+'\n\nรายชื่อผู้ขาด\nรหัส,ชื่อ,ชั้น,เพศ\n'+absent.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`รายงานการมาโรงเรียน-${d.date}.csv`; a.click();
 }
 
 /* ------------------------------------------------------------- certificate */

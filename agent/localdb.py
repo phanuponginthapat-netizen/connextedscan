@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS students (
   nickname TEXT,
   class_room TEXT,
   guardian_phone TEXT,
+  gender TEXT,
   person_type TEXT NOT NULL DEFAULT 'student',
   department TEXT,
   position TEXT,
@@ -229,6 +230,9 @@ def connect() -> sqlite3.Connection:
             _conn.execute("PRAGMA journal_mode=WAL")
             _conn.execute("PRAGMA busy_timeout=5000")
             _conn.executescript(SCHEMA)
+            columns = {row[1] for row in _conn.execute("PRAGMA table_info(students)").fetchall()}
+            if "gender" not in columns:
+                _conn.execute("ALTER TABLE students ADD COLUMN gender TEXT")
             _conn.commit()
         return _conn
 
@@ -349,7 +353,7 @@ def face_dict(row: dict) -> dict:
 
 def list_active_people() -> list[dict]:
     return query(
-        "SELECT id, student_code, full_name, nickname, class_room, person_type, department,"
+        "SELECT id, student_code, full_name, nickname, class_room, gender, person_type, department,"
         " position, avatar_path, is_active FROM students WHERE is_active = 1 ORDER BY full_name"
     )
 
