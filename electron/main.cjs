@@ -66,13 +66,14 @@ let agentStatus = {
  * Asking it directly from the main process is far more reliable than guessing
  * from the log lines Python happens to print.
  */
-function probeAgentHealth() {
+function probeLocalPath(pathname = "/health") {
   return new Promise((resolve) => {
     const req = http.get(
-      { host: "127.0.0.1", port: 8899, path: "/health", timeout: 2500 },
+      { host: "127.0.0.1", port: Number(AGENT_PORT), path: pathname, timeout: 2500 },
       (res) => {
         res.resume();
-        resolve(res.statusCode === 200);
+        const status = res.statusCode || 0;
+        resolve(status >= 200 && status < 400);
       },
     );
     req.on("timeout", () => {
@@ -83,12 +84,16 @@ function probeAgentHealth() {
   });
 }
 
+function probeAgentHealth() {
+  return probeLocalPath("/health");
+}
+
 function startHealthWatch() {
   if (healthTimer) return;
   healthTimer = setInterval(async () => {
     const ok = await probeAgentHealth();
     if (ok) {
-      if (agentStatus.state !== "running") {
+      if (agentStatus.state !== "running" && agentStatus.state !== "kiosk_missing") {
         agentStatus = {
           ...agentStatus,
           state: "running",
@@ -268,6 +273,7 @@ function resolvePython(runtimeDir, agentDir) {
 function resolveAgentDir() {
   const bundled = path.join(__dirname, "..", "agent").replace("app.asar", "app.asar.unpacked");
   const hasUpdate =
+    !STANDALONE &&
     fs.existsSync(path.join(UPDATE_DIR, "agent.py")) &&
     fs.existsSync(path.join(UPDATE_DIR, "face_engine.py"));
   return hasUpdate ? UPDATE_DIR : bundled;
@@ -295,6 +301,7 @@ function startAgent() {
     .replace("app.asar", "app.asar.unpacked");
   // Prefer the auto-updated copy in user data when it is complete.
   const hasUpdate =
+    !STANDALONE &&
     fs.existsSync(path.join(UPDATE_DIR, "agent.py")) &&
     fs.existsSync(path.join(UPDATE_DIR, "face_engine.py"));
   const agentDir = hasUpdate ? UPDATE_DIR : bundledAgentDir;
@@ -525,13 +532,37 @@ function openKiosk() {
   // and another spin of the loading screen. Wait for /health instead, and let
   // the loading page report what is wrong while we wait.
   let openTimer = null;
+  let kioskNavigationInProgress = false;
   const openWhenReady = async () => {
-    if (!kioskWindow || kioskWindow.isDestroyed()) return;
-    if (STANDALONE && !(await probeAgentHealth())) {
-      openTimer = setTimeout(openWhenReady, 1500);
-      return;
+    if (!kioskWindow || kioskWindow.isDestroyed() || kioskNavigationInProgress) return;
+    if (STANDALONE) {
+      if (!(await probeAgentHealth())) {
+        openTimer = setTimeout(openWhenReady, 1500);
+        return;
+      }
+      if (!(await probeLocalPath("/kiosk"))) {
+        agentStatus = {
+          ...agentStatus,
+          state: "kiosk_missing",
+          message: "ชุดโปรแกรมในเครื่องไม่ครบ จึงไม่พบหน้าสแกน",
+          lastError: `${LOCAL_URL}/kiosk returned Not Found. Reinstall the latest FaceGate Standalone bundle.`,
+        };
+        openTimer = setTimeout(openWhenReady, 5000);
+        return;
+      }
     }
-    if (kioskWindow && !kioskWindow.isDestroyed()) kioskWindow.loadURL(url);
+    if (kioskWindow && !kioskWindow.isDestroyed()) {
+      kioskNavigationInProgress = true;
+      try {
+        await kioskWindow.loadURL(url);
+      } catch (err) {
+        // did-fail-load owns the visible retry state. Swallow the matching
+        // rejected promise so it cannot start a second navigation loop.
+        console.warn(`[kiosk] navigation failed: ${err?.message || err}`);
+      } finally {
+        kioskNavigationInProgress = false;
+      }
+    }
   };
   openTimer = setTimeout(openWhenReady, 800);
 
@@ -540,14 +571,19 @@ function openKiosk() {
   const retryLater = (reason) => {
     if (!kioskWindow || kioskWindow.isDestroyed()) return;
     console.warn(`[kiosk] load problem (${reason}) — retrying`);
-    kioskWindow.loadFile(path.join(__dirname, "loading.html"));
     if (openTimer) clearTimeout(openTimer);
-    openTimer = setTimeout(openWhenReady, 4000);
+    void kioskWindow.loadFile(path.join(__dirname, "loading.html")).finally(() => {
+      kioskNavigationInProgress = false;
+      openTimer = setTimeout(openWhenReady, 4000);
+    });
   };
 
-  kioskWindow.webContents.on("did-fail-load", (_e, code, description) =>
-    retryLater(`${code} ${description}`),
-  );
+  kioskWindow.webContents.on("did-fail-load", (_e, code, description, validatedUrl, isMainFrame) => {
+    // Chromium reports ERR_ABORTED while we intentionally replace the loading
+    // page. Retrying that event creates a visible Loading/Not Found loop.
+    if (!isMainFrame || code === -3 || String(validatedUrl || "").startsWith("file://")) return;
+    retryLater(`${code} ${description}`);
+  });
 
   // A server error page (403/404/500) still "loads", so it used to leave a
   // blank window. Treat it as a failure and keep the branded screen instead.

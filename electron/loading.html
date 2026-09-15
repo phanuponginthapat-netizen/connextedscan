@@ -123,6 +123,13 @@
           showTrouble("ยังไม่ได้ตั้งรหัสเครื่อง — กดปุ่ม “หน้าตั้งค่า” เพื่อกรอก", "");
           return;
         }
+        if (s && s.state === "kiosk_missing") {
+          showTrouble(
+            s.message || "ชุดโปรแกรมในเครื่องไม่ครบ จึงไม่พบหน้าสแกน",
+            (s.lastError || "") + "\nกรุณาติดตั้ง FaceGate Standalone รุ่นล่าสุดทับชุดเดิม",
+          );
+          return;
+        }
         if (s && s.state === "running") {
           msg.textContent = "พร้อมใช้งาน กำลังเปิดหน้าสแกน…";
           msg.className = "";
