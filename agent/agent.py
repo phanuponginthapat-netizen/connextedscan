@@ -1316,6 +1316,8 @@ if __name__ == "__main__":
 
     if not DEVICE_KEY and not STANDALONE:
         raise SystemExit("ตั้งค่า FACEGATE_DEVICE_KEY ก่อนเริ่มโปรแกรม (ดูรหัสได้ในหน้าตั้งค่าระบบ)")
+    if SATELLITE:
+        print(f"[agent] LAN kiosk mode — hub: {HUB_URL}")
     if STANDALONE:
         import local_api
 
@@ -1354,4 +1356,19 @@ if __name__ == "__main__":
 
     threading.Thread(target=warm_engine, daemon=True).start()
 
-    uvicorn.run(app, host="127.0.0.1", port=PORT)
+    # LAN mode: the hub PC has to answer other kiosks, so it listens on the
+    # network card. Otherwise the program stays private to this PC.
+    host = "127.0.0.1"
+    if os.environ.get("FACEGATE_BIND"):
+        host = os.environ["FACEGATE_BIND"]
+    elif STANDALONE:
+        try:
+            import local_api
+
+            if local_api.db.get_settings().get("lan_enabled"):
+                host = "0.0.0.0"  # noqa: S104 — school LAN only
+                print(f"[agent] LAN hub mode — kiosks connect to http://<this-pc-ip>:{PORT}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] LAN setting check failed: {exc}")
+
+    uvicorn.run(app, host=host, port=PORT)
