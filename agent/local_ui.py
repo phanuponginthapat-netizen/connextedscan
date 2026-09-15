@@ -111,6 +111,7 @@ async function startCamera() {
   try { $('cam').srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }); }
   catch (e) { say('ไม่พบกล้อง กรุณาตรวจสายกล้องแล้วเปิดโปรแกรมใหม่', 'bad'); }
 }
+var lastStatusText = '';
 function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); lastStatusText = text || ''; }
 let audioReady = false, thaiVoice = null, browserVoiceOk = false;
 const clipCache = new Map();
@@ -191,7 +192,6 @@ function frame() {
 }
 // Live view: a small preview frame for the admin page, sent from the kiosk so
 // staff can watch the queue over the school LAN. No video is stored.
-let lastStatusText = '';
 function previewFrame() {
   const v = $('cam'); if (!v.videoWidth) return null;
   const c = document.createElement('canvas');
