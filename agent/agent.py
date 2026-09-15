@@ -861,6 +861,41 @@ class ScanRequest(BaseModel):
     image: str
 
 
+_live = {"at": 0.0}
+
+
+def push_live_frame(image: str) -> None:
+    """Send a small preview picture so staff can watch the queue remotely."""
+    if SATELLITE or STANDALONE:
+        return
+    with lock:
+        if not state["settings"].get("live_view_enabled", True):
+            return
+        status = str(state.get("last_status") or "")
+    now = time.time()
+    if now - _live["at"] < 2.0:
+        return
+    _live["at"] = now
+
+    def send() -> None:
+        try:
+            small = image
+            arr = cv2.imdecode(np.frombuffer(base64.b64decode(
+                image.split(",")[-1]), np.uint8), cv2.IMREAD_COLOR)
+            if arr is not None:
+                height = max(1, int(320 * arr.shape[0] / arr.shape[1]))
+                ok, buf = cv2.imencode(".jpg", cv2.resize(arr, (320, height)),
+                                       [int(cv2.IMWRITE_JPEG_QUALITY), 55])
+                if ok:
+                    small = base64.b64encode(buf).decode()
+            requests.post(f"{CLOUD_URL}/api/public/kiosk/live", headers=HEADERS,
+                          json={"image": small, "status": status}, timeout=10)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] live frame failed: {exc}")
+
+    threading.Thread(target=send, daemon=True).start()
+
+
 def detection_payload(dets: np.ndarray, kpss: np.ndarray, index: int, width: float, height: float):
     """Small visual payload for the kiosk overlay; recognition stays local."""
     x1, y1, x2, y2 = [float(value) for value in dets[index, :4]]
@@ -1047,6 +1082,7 @@ def detect_adaptive(bgr: np.ndarray, det_min: float) -> tuple[np.ndarray, np.nda
 
 @app.post("/scan")
 def scan(req: ScanRequest):
+    push_live_frame(req.image)
     return run_scan(req.image)
 
 
