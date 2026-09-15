@@ -1381,7 +1381,29 @@ async def kiosk_tts(request: Request):
 
 @router.get("/api/public/kiosk/voice-status")
 def kiosk_voice_status():
-    return {"engine_available": local_voice.available()}
+    return {"engine_available": local_voice.available(), **local_voice.status()}
+
+
+@router.get("/api/local/voice/status")
+def voice_status(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    return local_voice.status()
+
+
+@router.post("/api/local/voice/install")
+async def voice_install(x_local_token: str | None = Header(None)):
+    """Fetches the Thai voice once (needs internet only at this moment)."""
+    require_admin(x_local_token)
+    result = await run_in_threadpool(local_voice.install_thai_voice)
+    if result.get("installed"):
+        db.add_audit("ติดตั้งเสียงพูดไทย", "voice", result.get("engine") or "")
+    return result
+
+
+@router.post("/api/local/voice/clear-cache")
+def voice_clear_cache(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    return {"removed": local_voice.clear_cache(), **local_voice.status()}
 
 
 # ------------------------------------------------------------------- screens
