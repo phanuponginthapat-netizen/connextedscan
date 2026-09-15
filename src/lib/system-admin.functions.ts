@@ -68,6 +68,18 @@ export const sendTestNotification = createServerFn({ method: "POST" })
     return { line: result.line, email: result.email, blocked: result.blocked };
   });
 
+/** Builds and sends the attendance summary report immediately. */
+export const weeklyReportNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ days: z.number().int().min(1).max(90).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { sendAttendanceReport } = await import("@/lib/report.server");
+    return sendAttendanceReport(data.days ?? 7);
+  });
+
 /** Health snapshot of kiosk devices, data volumes and background jobs. */
 export const systemHealth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -77,12 +89,12 @@ export const systemHealth = createServerFn({ method: "POST" })
     const [devices, settings, lastScan, counts, alerts, notifications] = await Promise.all([
       supabase
         .from("devices")
-        .select("id, name, location, default_direction, is_active, last_seen_at, agent_version, platform")
+        .select("id, name, location, default_direction, is_active, last_seen_at, agent_version, platform, disk_free_mb, camera_ok, door_ok, health_note")
         .order("name"),
       supabase
         .from("settings")
         .select(
-          "device_offline_minutes, cleanup_enabled, cleanup_last_at, notify_last_at, backup_last_at, backup_enabled, snapshot_retention_days, log_retention_days, notify_email_enabled, notify_line_enabled",
+          "device_offline_minutes, cleanup_enabled, cleanup_last_at, notify_last_at, backup_last_at, backup_enabled, snapshot_retention_days, log_retention_days, notify_email_enabled, notify_line_enabled, weekly_report_enabled, weekly_report_last_at",
         )
         .eq("id", true)
         .maybeSingle(),
