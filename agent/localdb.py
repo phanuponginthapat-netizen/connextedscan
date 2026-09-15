@@ -219,6 +219,17 @@ CREATE TABLE IF NOT EXISTS kv (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS devices (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  device_key TEXT NOT NULL UNIQUE,
+  direction TEXT NOT NULL DEFAULT 'auto',
+  location TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  last_seen TEXT,
+  last_scan_at TEXT,
+  created_at TEXT NOT NULL
+);
 """
 
 
