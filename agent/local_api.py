@@ -465,14 +465,14 @@ def kiosk_recent():
         "voice_rate": settings.get("voice_rate", 1),
         "voice_volume": settings.get("voice_volume", 1),
     }
-    day_start = f"{rules.bangkok_date_iso()}T00:00:00"
+    today = rules.bangkok_date_iso()
     rows = db.query(
         "SELECT l.id, l.scanned_at, l.direction, l.snapshot_path, s.full_name, s.nickname,"
         " s.student_code, s.class_room, s.person_type, s.department, s.position, s.avatar_path"
         " FROM attendance_logs l LEFT JOIN students s ON s.id = l.student_id"
-        " WHERE l.status = 'ok' AND datetime(l.scanned_at, '+7 hours') >= ?"
+        " WHERE l.status = 'ok' AND date(l.scanned_at, '+7 hours') = ?"
         " ORDER BY l.scanned_at DESC LIMIT ?",
-        (day_start, limit),
+        (today, limit),
     )
     items = []
     for row in rows:
@@ -499,11 +499,10 @@ def kiosk_recent():
 def today_stats() -> dict:
     settings = db.get_settings()
     people = db.list_active_people()
-    day_start = f"{rules.bangkok_date_iso()}T00:00:00"
     rows = db.query(
         "SELECT student_id, direction, scanned_at FROM attendance_logs"
-        " WHERE status = 'ok' AND datetime(scanned_at, '+7 hours') >= ? ORDER BY scanned_at",
-        (day_start,),
+        " WHERE status = 'ok' AND date(scanned_at, '+7 hours') = ? ORDER BY scanned_at",
+        (rules.bangkok_date_iso(),),
     )
     late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
         settings.get("late_grace_minutes") or 0
