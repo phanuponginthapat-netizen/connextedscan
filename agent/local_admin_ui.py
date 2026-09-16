@@ -880,9 +880,49 @@ function snapshots(id) {
   window.__liveSnap = (window.__liveSnap || []).concat(timer);
   img.src = snapUrl(id);
 }
+/* ---------------- big single-camera view (like a CCTV monitor) ----------- */
+function openBig(id) {
+  const big = document.getElementById('liveBig');
+  if (!big) return;
+  big.style.display = 'block';
+  window.__liveBigId = id;
+  const nameEl = document.getElementById('liveBigName');
+  if (nameEl) nameEl.textContent = (window.__liveNames || {})[id] || 'กล้องตู้สแกน';
+  const img = document.getElementById('liveBigImg');
+  if (!img) return;
+  delete img.dataset.mode;
+  let got = false;
+  img.onload = () => { got = true; };
+  img.onerror = () => bigSnapshots();
+  img.src = streamUrl(id);
+  setTimeout(() => { if (!got && window.__liveBigId) bigSnapshots(); }, 4000);
+}
+function bigSnapshots() {
+  const img = document.getElementById('liveBigImg');
+  if (!img || img.dataset.mode === 'snap' || !window.__liveBigId) return;
+  img.dataset.mode = 'snap';
+  img.onerror = null;
+  if (window.__liveBigSnap) clearInterval(window.__liveBigSnap);
+  window.__liveBigSnap = setInterval(() => {
+    if (!window.__liveBigId) return clearInterval(window.__liveBigSnap);
+    img.src = snapUrl(window.__liveBigId);
+  }, 250);
+}
+function closeBig() {
+  const big = document.getElementById('liveBig');
+  if (big) big.style.display = 'none';
+  window.__liveBigId = null;
+  if (window.__liveBigSnap) { clearInterval(window.__liveBigSnap); window.__liveBigSnap = null; }
+  const img = document.getElementById('liveBigImg');
+  if (img) img.src = '';
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBig(); });
+
 async function tickLive() {
   let d;
   try { d = await api('/api/local/live'); } catch (e) { return; }
+  window.__liveNames = {};
+  (d.frames || []).forEach((f) => { window.__liveNames[f.device_id] = f.device_name; });
   const grid = document.getElementById('liveGrid');
   if (!grid) return;
   // Only rebuild the grid when the set of kiosks changes, otherwise the
