@@ -1265,11 +1265,27 @@ async def kiosk_live_frame(request: Request, x_device_key: str | None = Header(N
 @router.get("/api/local/live")
 def live_frames(x_local_token: str | None = Header(None)):
     require_admin(x_local_token)
+    # Watching this page is enough to ask the kiosks for many frames a second,
+    # even before a picture arrives, so the first view is already moving.
+    LIVE_WATCH["*"] = time.time()
     frames = [
         {**{k: v for k, v in frame.items() if k != "image"},
+         "has_image": bool(frame.get("image")),
          "online": seen_recently(frame.get("at"), 15)}
         for frame in sorted(LIVE_FRAMES.values(), key=lambda f: f["device_name"])
     ]
+    # Always list this PC and every registered kiosk, so staff see a panel with
+    # the reason instead of an empty page while a kiosk is still starting up.
+    known = {frame["device_id"] for frame in frames}
+    for device in [dict(db.HUB_DEVICE), *db.list_devices()]:
+        if device["id"] in known:
+            continue
+        frames.append({
+            "device_id": device["id"],
+            "device_name": device.get("name") or "ตู้สแกน",
+            "status": "", "faces": 0, "at": "", "seq": 0,
+            "has_image": False, "online": False,
+        })
     recent = db.query(
         "SELECT l.scanned_at, l.direction, l.status, l.device_name, s.full_name, s.class_room"
         " FROM attendance_logs l LEFT JOIN students s ON s.id = l.student_id"
@@ -1280,6 +1296,25 @@ def live_frames(x_local_token: str | None = Header(None)):
         "recent": recent,
         "enabled": bool(db.get_settings().get("live_view_enabled", True)),
     }
+
+
+@router.get("/api/local/live/frame")
+def live_frame_jpeg(device: str, token: str = "",
+                    x_local_token: str | None = Header(None)):
+    """One fresh picture of a kiosk.
+
+    Some browsers and phones refuse the continuous stream, so the live page
+    falls back to asking for single pictures very quickly instead. Nothing is
+    written to disk either way.
+    """
+    require_admin(token or x_local_token)
+    LIVE_WATCH[device or "*"] = time.time()
+    frame = LIVE_FRAMES.get(device)
+    data = frame_jpeg(frame) if frame else None
+    if not data:
+        raise HTTPException(status_code=404, detail="ยังไม่มีภาพจากตู้สแกนนี้")
+    return Response(content=data, media_type="image/jpeg",
+                    headers={"Cache-Control": "no-store"})
 
 
 @router.get("/api/local/live/stream")
