@@ -740,10 +740,12 @@ async function renderDevices(view) {
   view.innerHTML = `<div class="card"><h3>เปิดให้ตู้สแกนอื่นเชื่อมต่อ</h3>
       <p><label><input id="d_lan" type="checkbox" ${d.lan_enabled ? 'checked' : ''} />
         เปิดให้เครื่องอื่นในวง LAN เข้าถึง (เปิดหลังบ้าน/รายงาน/กล้องสดผ่านเว็บ และเพิ่มตู้สแกนลูก)</label></p>
-      <div class="row"><div><label>พอร์ต</label><input id="d_port" type="number" value="${d.lan_port}" /></div>
+      <div class="row"><div><label>พอร์ต (ระบบกำหนดให้)</label><input id="d_port" type="number" value="${d.lan_port}" readonly /></div>
         <button class="btn" onclick="saveLan()">บันทึก</button></div>
       <p class="sub">ที่อยู่ของเครื่องแม่: <b>${esc(address)}</b><br />
-      หลังเปิดหรือปิดโหมดนี้ ต้องปิดและเปิดโปรแกรมใหม่หนึ่งครั้ง<br />
+      เปิดหลังบ้านจากเครื่องอื่น: <b>${esc(address)}/admin</b><br />
+      หลังกดบันทึก ระบบจะเริ่มโปรแกรมใหม่ให้เองประมาณ 10-20 วินาที<br />
+      ครั้งแรกที่ Windows ถามเรื่องเครือข่าย ให้กด “Allow” (อนุญาต)<br />
       บนตู้สแกนลูก ให้กรอกที่อยู่นี้พร้อม “รหัสเชื่อมต่อ” ของตู้นั้น</p></div>
 
     <div class="card"><h3>เพิ่มตู้สแกน</h3>
@@ -786,9 +788,11 @@ async function renderDevices(view) {
       (หน้าจอสแกนของตู้นี้อยู่ที่ ${esc(address)}/kiosk)</p></div>`;
 }
 async function saveLan() {
-  await api('/api/local/settings', { method: 'POST', body: JSON.stringify({
-    lan_enabled: $('#d_lan').checked, lan_port: Number($('#d_port').value) || 8899 }) });
-  alert('บันทึกแล้ว — ปิดและเปิดโปรแกรมอีกครั้งเพื่อเริ่มใช้งาน');
+  const res = await api('/api/local/settings', { method: 'POST', body: JSON.stringify({
+    lan_enabled: $('#d_lan').checked }) });
+  alert(res && res.restarting
+    ? 'บันทึกแล้ว — ระบบกำลังเริ่มโปรแกรมใหม่ให้เอง รอประมาณ 10-20 วินาทีแล้วลองเปิดจากเครื่องอื่น'
+    : 'บันทึกแล้ว — ถ้ายังเปิดจากเครื่องอื่นไม่ได้ ให้ปิดและเปิดโปรแกรมอีกครั้ง');
   render();
 }
 async function addDevice() {
