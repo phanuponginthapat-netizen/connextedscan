@@ -298,6 +298,10 @@ async function loadStats() {
     $('vPresent').textContent = s.present; $('vLate').textContent = s.late;
     $('vAbsent').textContent = s.absent; $('vLeft').textContent = s.left;
     $('saver').className = 'saver' + (s.screensaver_mode === 'stats' && s.windows_closed ? ' show' : '');
+    // CCTV mode: the screen may rest, but the camera keeps watching and keeps
+    // feeding the live page, so make sure the video never pauses.
+    const v = $('cam');
+    if (v && v.paused) { try { await v.play(); } catch (e) {} }
   } catch (e) {}
 }
 function wake() { $('saver').className = 'saver'; }
