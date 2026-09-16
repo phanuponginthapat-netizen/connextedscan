@@ -351,7 +351,11 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
 
     direction = decision["direction"]
     direction_label = "เข้าโรงเรียน" if direction == "in" else "ออกจากโรงเรียน"
-    display_name = (student["nickname"] or "").strip() or student["full_name"]
+    # Speak the full name (first + last). Nickname is opt-in via {nickname}
+    # in the voice template — preferring it made the kiosk speak only a
+    # surname when the nickname column held one.
+    display_name = (student["full_name"] or "").strip() or (student["nickname"] or "").strip()
+    nickname = (student["nickname"] or "").strip()
 
     cooldown = int(settings.get("duplicate_cooldown_minutes") or 300)
     since = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - cooldown * 60))

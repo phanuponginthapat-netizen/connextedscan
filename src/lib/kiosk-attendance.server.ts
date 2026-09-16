@@ -158,7 +158,11 @@ export async function recordScan(input: RecordScanInput) {
     .order("scanned_at", { ascending: false })
     .limit(1);
 
-  const displayName = student.nickname?.trim() || student.full_name;
+  // Speak the full name (first + last). Nickname is opt-in via {nickname}
+  // in the voice template — preferring it by default caused the kiosk to
+  // speak only a surname when the nickname column held one.
+  const displayName = student.full_name || student.nickname?.trim() || "";
+  const nickname = student.nickname?.trim() || "";
   const directionLabel = direction === "in" ? "เข้าโรงเรียน" : "ออกจากโรงเรียน";
 
   // Signed URL of the profile photo, so the kiosk can show the face
