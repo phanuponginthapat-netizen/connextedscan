@@ -1403,6 +1403,10 @@ if __name__ == "__main__":
 
             if local_api.db.get_settings().get("lan_enabled"):
                 host = "0.0.0.0"  # noqa: S104 — school LAN only
+                # The address shown in the admin site must be the port we really
+                # listen on, otherwise staff type a port nothing answers on.
+                local_api.db.save_settings({"lan_port": PORT})
+                open_firewall(PORT)
                 print(f"[agent] LAN hub mode — kiosks connect to http://<this-pc-ip>:{PORT}")
         except Exception as exc:  # noqa: BLE001
             print(f"[agent] LAN setting check failed: {exc}")
