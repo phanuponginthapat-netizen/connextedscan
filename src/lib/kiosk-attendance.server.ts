@@ -158,7 +158,11 @@ export async function recordScan(input: RecordScanInput) {
     .order("scanned_at", { ascending: false })
     .limit(1);
 
-  const displayName = student.nickname?.trim() || student.full_name;
+  // Speak the full name (first + last). Nickname is opt-in via {nickname}
+  // in the voice template — preferring it by default caused the kiosk to
+  // speak only a surname when the nickname column held one.
+  const displayName = student.full_name || student.nickname?.trim() || "";
+  const nickname = student.nickname?.trim() || "";
   const directionLabel = direction === "in" ? "เข้าโรงเรียน" : "ออกจากโรงเรียน";
 
   // Signed URL of the profile photo, so the kiosk can show the face
@@ -200,6 +204,7 @@ export async function recordScan(input: RecordScanInput) {
       message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
       speak: (settings?.voice_duplicate_template ?? "สแกนซ้ำ {name} บันทึกเวลาไปแล้ว")
         .replace("{name}", displayName)
+        .replace("{nickname}", nickname)
         .replace("{direction}", directionLabel),
       next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
@@ -256,6 +261,7 @@ export async function recordScan(input: RecordScanInput) {
   const template = settings?.voice_template ?? "สแกนสำเร็จ {name} {direction}";
   const speak = template
     .replace("{name}", displayName)
+    .replace("{nickname}", nickname)
     .replace("{direction}", directionLabel)
     .replace("{code}", student.student_code)
     .replace("{class}", student.class_room ?? "");

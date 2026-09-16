@@ -330,12 +330,15 @@ def sentences_to_prepare() -> list[str]:
     )
     out: list[str] = [s for s in fixed if s.strip()]
     for person in people:
-        name = (person["nickname"] or person["full_name"] or "").strip()
+        # Spoken name matches the kiosk: full name first, nickname via {nickname}.
+        name = (person["full_name"] or "").strip() or (person["nickname"] or "").strip()
+        nick = (person["nickname"] or "").strip()
         if not name:
             continue
         for direction in ("เข้าโรงเรียน", "ออกโรงเรียน"):
             base = (
                 template.replace("{name}", name)
+                .replace("{nickname}", nick)
                 .replace("{direction}", direction)
                 .replace("{code}", person["student_code"] or "")
                 .replace("{class}", person["class_room"] or "")
@@ -343,7 +346,10 @@ def sentences_to_prepare() -> list[str]:
             out.append(base)
             if late:
                 out.append(f"{base} {late}".strip())
-        out.append(duplicate.replace("{name}", name).replace("{direction}", "เข้าโรงเรียน").strip())
+        out.append(
+            duplicate.replace("{name}", name).replace("{nickname}", nick)
+            .replace("{direction}", "เข้าโรงเรียน").strip()
+        )
 
     seen: list[str] = []
     for sentence in out:

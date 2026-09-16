@@ -351,7 +351,11 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
 
     direction = decision["direction"]
     direction_label = "เข้าโรงเรียน" if direction == "in" else "ออกจากโรงเรียน"
-    display_name = (student["nickname"] or "").strip() or student["full_name"]
+    # Speak the full name (first + last). Nickname is opt-in via {nickname}
+    # in the voice template — preferring it made the kiosk speak only a
+    # surname when the nickname column held one.
+    display_name = (student["full_name"] or "").strip() or (student["nickname"] or "").strip()
+    nickname = (student["nickname"] or "").strip()
 
     cooldown = int(settings.get("duplicate_cooldown_minutes") or 300)
     since = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - cooldown * 60))
@@ -374,7 +378,11 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "avatar_url": avatar_url,
             "snapshot_url": snapshot_url,
             "message": f"{student['full_name']} สแกนซ้ำ — บันทึกเวลา{direction_label}ไปแล้ว",
-            "speak": template.replace("{name}", display_name).replace("{direction}", direction_label),
+            "speak": (
+                template.replace("{name}", display_name)
+                .replace("{nickname}", nickname)
+                .replace("{direction}", direction_label)
+            ),
             "next_delay_seconds": delay,
         }
 
@@ -409,6 +417,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
     template = settings.get("voice_template") or "สแกนสำเร็จ {name} {direction}"
     speak = (
         template.replace("{name}", display_name)
+        .replace("{nickname}", nickname)
         .replace("{direction}", direction_label)
         .replace("{code}", student["student_code"] or "")
         .replace("{class}", student["class_room"] or "")
