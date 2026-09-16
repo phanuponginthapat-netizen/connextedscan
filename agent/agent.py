@@ -1346,6 +1346,33 @@ def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
     })
 
 
+def open_firewall(port: int) -> None:
+    """Best-effort: let other PCs on the school network reach this program.
+
+    Windows blocks incoming connections by default, which shows up as
+    "refused to connect" in the browser on a teacher's PC. Adding the rule
+    needs administrator rights; when it fails we simply carry on.
+    """
+    if os.name != "nt":
+        return
+    try:
+        import subprocess
+
+        name = f"FaceGate {port}"
+        subprocess.run(
+            ["netsh", "advfirewall", "firewall", "delete", "rule", f"name={name}"],
+            capture_output=True, timeout=15, check=False,
+        )
+        done = subprocess.run(
+            ["netsh", "advfirewall", "firewall", "add", "rule", f"name={name}",
+             "dir=in", "action=allow", "protocol=TCP", f"localport={port}",
+             "profile=private,domain"],
+            capture_output=True, timeout=15, check=False,
+        )
+        print(f"[agent] firewall rule for port {port}: {'ok' if done.returncode == 0 else 'skipped'}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"[agent] firewall rule skipped: {exc}")
+
 
 if __name__ == "__main__":
     import uvicorn
