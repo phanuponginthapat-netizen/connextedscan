@@ -969,7 +969,7 @@ async def settings_post(request: Request, x_local_token: str | None = Header(Non
         try:
             import power
 
-            restarting = power.run("restart_app", 0)
+            restarting = power.apply("restart_app", 0)
         except Exception:  # noqa: BLE001
             restarting = False
     return {"settings": settings, "restarting": restarting}
