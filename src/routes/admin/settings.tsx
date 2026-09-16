@@ -401,7 +401,7 @@ function SettingsPage() {
                       onChange={(e) => set({ voice_template: e.target.value })}
                     />
                     <p className="text-xs text-muted-foreground">
-                      ใช้ตัวแปร {"{name}"} แทนชื่อ และ {"{direction}"} แทนคำว่าเข้า/ออก
+                      ใช้ตัวแปร {"{name}"} แทนชื่อ-นามสกุล, {"{nickname}"} แทนชื่อเล่น และ {"{direction}"} แทนคำว่าเข้า/ออก
                     </p>
                   </div>
                   <div className="space-y-1.5">
