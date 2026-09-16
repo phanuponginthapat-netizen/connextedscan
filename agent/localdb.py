@@ -90,6 +90,9 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "kiosk_news_enabled": False,
     "kiosk_news_text": "",
     "screensaver_mode": "stats",
+    # CCTV mode: the camera keeps running while the screen rests, and the PC is
+    # never slept or powered off automatically (only the monitor is blanked).
+    "cctv_always_on": True,
     "door_enabled": True,
     "door_open_seconds": 5,
     "door_angle_down": 10,
