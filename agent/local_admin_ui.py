@@ -819,7 +819,11 @@ async function delDevice(id) {
 function copyKey(key) { navigator.clipboard.writeText(key); alert('คัดลอกรหัสแล้ว'); }
 
 /* --------------------------------------------------------- live camera */
-function stopLive() { if (window.__liveTimer) { clearInterval(window.__liveTimer); window.__liveTimer = null; } }
+function stopLive() {
+  if (window.__liveTimer) { clearInterval(window.__liveTimer); window.__liveTimer = null; }
+  (window.__liveSnap || []).forEach((t) => clearInterval(t));
+  window.__liveSnap = [];
+}
 async function renderLive(view) {
   stopLive();
   view.innerHTML = `<div class="card"><h3>กล้องสดจากตู้สแกน</h3>
@@ -837,6 +841,35 @@ function streamUrl(id) {
   return '/local/api/local/live/stream?device=' + encodeURIComponent(id) +
     '&token=' + encodeURIComponent(TOKEN);
 }
+function snapUrl(id) {
+  return '/local/api/local/live/frame?device=' + encodeURIComponent(id) +
+    '&token=' + encodeURIComponent(TOKEN) + '&t=' + Date.now();
+}
+// Show the moving picture the fast way (one long-running stream). If the
+// browser or the network blocks it, keep the picture alive by asking for fresh
+// single pictures several times a second instead — the view still moves.
+function startCamera(id) {
+  const img = document.getElementById('liveImg_' + id);
+  if (!img) return;
+  let gotFrame = false;
+  img.onload = () => { gotFrame = true; };
+  img.onerror = () => { snapshots(id); };
+  img.src = streamUrl(id);
+  setTimeout(() => { if (!gotFrame) snapshots(id); }, 4000);
+}
+function snapshots(id) {
+  const img = document.getElementById('liveImg_' + id);
+  if (!img || img.dataset.mode === 'snap') return;
+  img.dataset.mode = 'snap';
+  img.onerror = null;
+  const timer = setInterval(() => {
+    const el = document.getElementById('liveImg_' + id);
+    if (!el) { clearInterval(timer); return; }
+    el.src = snapUrl(id);
+  }, 250);
+  window.__liveSnap = (window.__liveSnap || []).concat(timer);
+  img.src = snapUrl(id);
+}
 async function tickLive() {
   let d;
   try { d = await api('/api/local/live'); } catch (e) { return; }
@@ -846,20 +879,32 @@ async function tickLive() {
   // moving picture would restart on every refresh.
   const ids = (d.frames || []).map((f) => f.device_id).join(',');
   if (grid.dataset.ids !== ids) {
+    stopLive();
     grid.dataset.ids = ids;
     grid.innerHTML = (d.frames || []).length
       ? d.frames.map((f) => `<figure class="card" style="margin:0">
-          <img src="${streamUrl(f.device_id)}" alt=""
+          <img id="liveImg_${f.device_id}" alt=""
             style="width:100%;border-radius:12px;background:#0b1424;aspect-ratio:4/3;object-fit:cover" />
           <figcaption class="sub" id="liveCap_${f.device_id}"></figcaption></figure>`).join('')
-      : '<p class="sub">ยังไม่มีภาพจากตู้สแกน — เปิดหน้าจอสแกนที่เครื่องตู้ และเปิด “ภาพสด” ในตั้งค่าระบบ</p>';
+      : '<p class="sub">ยังไม่มีตู้สแกน — เปิดหน้าจอสแกนที่เครื่องตู้ก่อน</p>';
+    (d.frames || []).forEach((f) => startCamera(f.device_id));
+    window.__liveTimer = setInterval(() => {
+      if (!document.getElementById('liveGrid')) return stopLive();
+      tickLive();
+    }, 5000);
+  }
+  if (d.enabled === false) {
+    const note = 'ปิด “ส่งภาพสดให้หน้ากล้องสด” อยู่ในหน้าตั้งค่าระบบ — เปิดก่อนจึงจะเห็นภาพ';
+    grid.insertAdjacentHTML('afterbegin', `<p class="sub">${note}</p>`);
   }
   (d.frames || []).forEach((f) => {
     const cap = document.getElementById('liveCap_' + f.device_id);
     if (cap) {
+      const state = f.online ? 'สด' : (f.has_image ? 'ภาพค้าง' : 'ยังไม่มีภาพ');
       cap.innerHTML = `<b>${esc(f.device_name)}</b>
-        <span class="pill ${f.online ? 'good' : 'bad'}">${f.online ? 'สด' : 'ภาพค้าง'}</span><br />
-        ${esc(f.status || 'กำลังรอผู้ใช้งาน')} • ${timeText(f.at)}`;
+        <span class="pill ${f.online ? 'good' : 'bad'}">${state}</span><br />
+        ${esc(f.status || (f.has_image ? 'กำลังรอผู้ใช้งาน' : 'รอเปิดหน้าจอสแกนที่ตู้นี้'))}
+        ${f.at ? ' • ' + timeText(f.at) : ''}`;
     }
   });
   const recent = document.getElementById('liveRecent');
