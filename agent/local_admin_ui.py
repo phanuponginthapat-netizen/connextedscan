@@ -831,7 +831,16 @@ async function renderLive(view) {
       <p class="sub">ภาพเคลื่อนไหวต่อเนื่องเหมือนกล้องวงจรปิด ไม่มีการบันทึกวิดีโอลงเครื่อง
         เปิดหน้านี้จากเครื่องอื่นในวง LAN ได้ โดยไม่ต้องใช้อินเทอร์เน็ต</p>
       <div id="liveGrid" class="grid"></div></div>
-    <div class="card"><h3>สแกนล่าสุด</h3><div id="liveRecent"></div></div>`;
+    <div class="card"><h3>สแกนล่าสุด</h3><div id="liveRecent"></div></div>
+    <div id="liveBig" style="display:none;position:fixed;inset:0;z-index:99;background:rgba(5,10,20,.92);
+        padding:24px;box-sizing:border-box" onclick="closeBig()">
+      <div style="max-width:1100px;margin:0 auto" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
+          <b id="liveBigName" style="color:#fff;font-size:18px"></b>
+          <button class="btn" onclick="closeBig()">✕ ปิด (กด Esc ก็ได้)</button></div>
+        <img id="liveBigImg" alt=""
+          style="width:100%;border-radius:14px;background:#0b1424;aspect-ratio:4/3;object-fit:contain" />
+        <p class="sub" id="liveBigCap" style="color:#cbd5e1"></p></div></div>`;
   await tickLive();
   window.__liveTimer = setInterval(() => {
     if (!document.getElementById('liveGrid')) return stopLive();
@@ -883,7 +892,8 @@ async function tickLive() {
     stopLive();
     grid.dataset.ids = ids;
     grid.innerHTML = (d.frames || []).length
-      ? d.frames.map((f) => `<figure class="card" style="margin:0">
+      ? d.frames.map((f) => `<figure class="card" style="margin:0;cursor:zoom-in"
+            title="คลิกเพื่อดูภาพใหญ่" onclick="openBig('${f.device_id}')">
           <img id="liveImg_${f.device_id}" alt=""
             style="width:100%;border-radius:12px;background:#0b1424;aspect-ratio:4/3;object-fit:cover" />
           <figcaption class="sub" id="liveCap_${f.device_id}"></figcaption></figure>`).join('')
