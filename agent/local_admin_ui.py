@@ -831,7 +831,16 @@ async function renderLive(view) {
       <p class="sub">ภาพเคลื่อนไหวต่อเนื่องเหมือนกล้องวงจรปิด ไม่มีการบันทึกวิดีโอลงเครื่อง
         เปิดหน้านี้จากเครื่องอื่นในวง LAN ได้ โดยไม่ต้องใช้อินเทอร์เน็ต</p>
       <div id="liveGrid" class="grid"></div></div>
-    <div class="card"><h3>สแกนล่าสุด</h3><div id="liveRecent"></div></div>`;
+    <div class="card"><h3>สแกนล่าสุด</h3><div id="liveRecent"></div></div>
+    <div id="liveBig" style="display:none;position:fixed;inset:0;z-index:99;background:rgba(5,10,20,.92);
+        padding:24px;box-sizing:border-box" onclick="closeBig()">
+      <div style="max-width:1100px;margin:0 auto" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
+          <b id="liveBigName" style="color:#fff;font-size:18px"></b>
+          <button class="btn" onclick="closeBig()">✕ ปิด (กด Esc ก็ได้)</button></div>
+        <img id="liveBigImg" alt=""
+          style="width:100%;border-radius:14px;background:#0b1424;aspect-ratio:4/3;object-fit:contain" />
+        <p class="sub" id="liveBigCap" style="color:#cbd5e1"></p></div></div>`;
   await tickLive();
   window.__liveTimer = setInterval(() => {
     if (!document.getElementById('liveGrid')) return stopLive();
@@ -871,9 +880,49 @@ function snapshots(id) {
   window.__liveSnap = (window.__liveSnap || []).concat(timer);
   img.src = snapUrl(id);
 }
+/* ---------------- big single-camera view (like a CCTV monitor) ----------- */
+function openBig(id) {
+  const big = document.getElementById('liveBig');
+  if (!big) return;
+  big.style.display = 'block';
+  window.__liveBigId = id;
+  const nameEl = document.getElementById('liveBigName');
+  if (nameEl) nameEl.textContent = (window.__liveNames || {})[id] || 'กล้องตู้สแกน';
+  const img = document.getElementById('liveBigImg');
+  if (!img) return;
+  delete img.dataset.mode;
+  let got = false;
+  img.onload = () => { got = true; };
+  img.onerror = () => bigSnapshots();
+  img.src = streamUrl(id);
+  setTimeout(() => { if (!got && window.__liveBigId) bigSnapshots(); }, 4000);
+}
+function bigSnapshots() {
+  const img = document.getElementById('liveBigImg');
+  if (!img || img.dataset.mode === 'snap' || !window.__liveBigId) return;
+  img.dataset.mode = 'snap';
+  img.onerror = null;
+  if (window.__liveBigSnap) clearInterval(window.__liveBigSnap);
+  window.__liveBigSnap = setInterval(() => {
+    if (!window.__liveBigId) return clearInterval(window.__liveBigSnap);
+    img.src = snapUrl(window.__liveBigId);
+  }, 250);
+}
+function closeBig() {
+  const big = document.getElementById('liveBig');
+  if (big) big.style.display = 'none';
+  window.__liveBigId = null;
+  if (window.__liveBigSnap) { clearInterval(window.__liveBigSnap); window.__liveBigSnap = null; }
+  const img = document.getElementById('liveBigImg');
+  if (img) img.src = '';
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBig(); });
+
 async function tickLive() {
   let d;
   try { d = await api('/api/local/live'); } catch (e) { return; }
+  window.__liveNames = {};
+  (d.frames || []).forEach((f) => { window.__liveNames[f.device_id] = f.device_name; });
   const grid = document.getElementById('liveGrid');
   if (!grid) return;
   // Only rebuild the grid when the set of kiosks changes, otherwise the
@@ -883,7 +932,8 @@ async function tickLive() {
     stopLive();
     grid.dataset.ids = ids;
     grid.innerHTML = (d.frames || []).length
-      ? d.frames.map((f) => `<figure class="card" style="margin:0">
+      ? d.frames.map((f) => `<figure class="card" style="margin:0;cursor:zoom-in"
+            title="คลิกเพื่อดูภาพใหญ่" onclick="openBig('${f.device_id}')">
           <img id="liveImg_${f.device_id}" alt=""
             style="width:100%;border-radius:12px;background:#0b1424;aspect-ratio:4/3;object-fit:cover" />
           <figcaption class="sub" id="liveCap_${f.device_id}"></figcaption></figure>`).join('')
