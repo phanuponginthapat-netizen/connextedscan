@@ -1419,23 +1419,27 @@ if __name__ == "__main__":
 
     threading.Thread(target=warm_engine, daemon=True).start()
 
-    # LAN mode: the hub PC has to answer other kiosks, so it listens on the
-    # network card. Otherwise the program stays private to this PC.
+    # The standalone PC always answers the school LAN so staff can open the
+    # reports from another computer without restarting anything. Access still
+    # needs an admin login, and satellites still need a device key.
     host = "127.0.0.1"
     if os.environ.get("FACEGATE_BIND"):
         host = os.environ["FACEGATE_BIND"]
-    elif STANDALONE:
+    elif STANDALONE or SATELLITE:
+        host = "0.0.0.0"  # noqa: S104 — school LAN only
         try:
-            import local_api
+            open_firewall(PORT)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[agent] opening the network port failed: {exc}")
+        if STANDALONE:
+            try:
+                import local_api
 
-            if local_api.db.get_settings().get("lan_enabled"):
-                host = "0.0.0.0"  # noqa: S104 — school LAN only
                 # The address shown in the admin site must be the port we really
                 # listen on, otherwise staff type a port nothing answers on.
                 local_api.db.save_settings({"lan_port": PORT})
-                open_firewall(PORT)
-                print(f"[agent] LAN hub mode — kiosks connect to http://<this-pc-ip>:{PORT}")
-        except Exception as exc:  # noqa: BLE001
-            print(f"[agent] LAN setting check failed: {exc}")
+            except Exception as exc:  # noqa: BLE001
+                print(f"[agent] saving the LAN port failed: {exc}")
+        print(f"[agent] LAN ready — open http://<this-pc-ip>:{PORT}/admin")
 
     uvicorn.run(app, host=host, port=PORT)

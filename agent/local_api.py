@@ -961,18 +961,9 @@ async def settings_post(request: Request, x_local_token: str | None = Header(Non
     before = db.get_settings()
     settings = db.save_settings(body if isinstance(body, dict) else {})
     db.add_audit("แก้ไขการตั้งค่าระบบ", "settings")
-    # Opening the program to the school LAN changes which network card it
-    # listens on, and that only happens while starting up. Ask the desktop
-    # shell for a restart so the admin never has to close the program by hand.
-    restarting = False
-    if bool(before.get("lan_enabled")) != bool(settings.get("lan_enabled")):
-        try:
-            import power
-
-            restarting = power.apply("restart_app", 0)
-        except Exception:  # noqa: BLE001
-            restarting = False
-    return {"settings": settings, "restarting": restarting}
+    # The program already answers the school LAN whenever it starts, so no
+    # restart is needed when this switch changes.
+    return {"settings": settings, "restarting": False}
 
 
 @router.get("/api/local/devices")

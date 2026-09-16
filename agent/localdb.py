@@ -111,7 +111,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "power_off_workdays_only": True,
     # LAN mode: this PC becomes the hub other kiosks connect to.
     "live_view_enabled": True,
-    "lan_enabled": False,
+    "lan_enabled": True,
     "lan_port": 8899,
 }
 
