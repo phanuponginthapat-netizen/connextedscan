@@ -1268,9 +1268,11 @@ def live_frames(x_local_token: str | None = Header(None)):
     # Watching this page is enough to ask the kiosks for many frames a second,
     # even before a picture arrives, so the first view is already moving.
     LIVE_WATCH["*"] = time.time()
+    now_ms = time.time() * 1000
     frames = [
         {**{k: v for k, v in frame.items() if k != "image"},
          "has_image": bool(frame.get("image")),
+         "age_seconds": max(0, int((now_ms - float(frame.get("seq") or 0)) / 1000)),
          "online": seen_recently(frame.get("at"), 15)}
         for frame in sorted(LIVE_FRAMES.values(), key=lambda f: f["device_name"])
     ]

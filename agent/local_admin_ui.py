@@ -900,11 +900,16 @@ async function tickLive() {
   (d.frames || []).forEach((f) => {
     const cap = document.getElementById('liveCap_' + f.device_id);
     if (cap) {
-      const state = f.online ? 'สด' : (f.has_image ? 'ภาพค้าง' : 'ยังไม่มีภาพ');
+      const age = Number(f.age_seconds || 0);
+      const state = f.online ? 'สด' : (f.has_image ? 'ภาพค้าง ' + age + ' วินาที' : 'ยังไม่มีภาพ');
+      const why = f.online ? (f.status || 'กำลังรอผู้ใช้งาน')
+        : (f.has_image
+          ? 'ตู้นี้หยุดส่งภาพ — ตรวจว่าหน้าจอสแกนยังเปิดอยู่ และกล้องไม่ถูกโปรแกรมอื่นใช้'
+          : 'รอเปิดหน้าจอสแกนที่ตู้นี้');
       cap.innerHTML = `<b>${esc(f.device_name)}</b>
-        <span class="pill ${f.online ? 'good' : 'bad'}">${state}</span><br />
-        ${esc(f.status || (f.has_image ? 'กำลังรอผู้ใช้งาน' : 'รอเปิดหน้าจอสแกนที่ตู้นี้'))}
-        ${f.at ? ' • ' + timeText(f.at) : ''}`;
+        <span class="pill ${f.online ? 'good' : 'bad'}">${esc(state)}</span><br />
+        ${esc(why)}${f.at ? ' • ' + timeText(f.at) : ''}`;
+      if (!f.online && f.has_image) startCamera(f.device_id);
     }
   });
   const recent = document.getElementById('liveRecent');

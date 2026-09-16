@@ -202,25 +202,47 @@ function previewFrame(wide) {
 }
 // While staff are watching the live page the server asks for many more frames
 // per second, so the admin sees smooth motion instead of a slideshow.
-let previewDelay = 2000, previewSending = false;
+let previewDelay = 2000, previewSending = false, previewOkAt = 0, previewLoops = 0;
 async function sendPreview() {
   if (display.live_view === false || previewSending) return;
-  const image = previewFrame(previewDelay < 500); if (!image) return;
   previewSending = true;
   try {
-    const res = await fetch('/local/api/public/kiosk/live', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ image, status: lastStatusText }),
-    });
-    const d = await res.json();
-    previewDelay = Math.min(Math.max(Number(d.interval_ms) || 2000, 100), 5000);
+    const v = $('cam');
+    // A paused or stalled camera is the usual reason the picture freezes on the
+    // admin screen, so nudge it back to life before grabbing the frame.
+    if (v && v.paused) { try { await v.play(); } catch (e) {} }
+    const image = previewFrame(previewDelay < 500);
+    if (image) {
+      const res = await fetch('/local/api/public/kiosk/live', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ image, status: lastStatusText }),
+      });
+      const d = await res.json();
+      previewDelay = Math.min(Math.max(Number(d.interval_ms) || 2000, 100), 5000);
+      previewOkAt = Date.now();
+    }
   } catch (e) { previewDelay = 2000; }
   previewSending = false;
 }
 async function previewLoop() {
-  for (;;) { await sendPreview(); await new Promise((r) => setTimeout(r, previewDelay)); }
+  const mine = ++previewLoops;
+  for (;;) {
+    if (mine !== previewLoops) return;  // a newer loop took over
+    await sendPreview();
+    await new Promise((r) => setTimeout(r, previewDelay));
+  }
 }
 previewLoop();
+// Watchdog: if no frame reached the server for a while (stalled camera, a
+// hung request, a browser that froze our timer) start the sender again so the
+// admin page never sits on a frozen picture.
+setInterval(() => {
+  if (display.live_view === false) return;
+  if (previewOkAt && Date.now() - previewOkAt < 12000) return;
+  previewSending = false;
+  previewDelay = 1000;
+  previewLoop();
+}, 8000);
 
 async function tick() {
   if (busy || Date.now() < pausedUntil) return;
