@@ -533,6 +533,10 @@ def kiosk_power_command(request: Request, x_device_key: str | None = Header(None
         if not settings.get("power_off_workdays_only") or rules.is_work_day(settings, weekday):
             power_off_due = minutes >= rules.time_to_minutes(settings.get("auto_power_off_time"))
 
+    power_off_action = str(settings.get("auto_power_off_action") or "shutdown")
+    if cctv and power_off_action in ("sleep", "shutdown"):
+        power_off_action = "screen_off"
+
     return {
         "command": command,
         "settings": {
@@ -540,8 +544,12 @@ def kiosk_power_command(request: Request, x_device_key: str | None = Header(None
             "screen_idle_minutes": settings.get("screen_idle_minutes"),
             "auto_power_off_action": settings.get("auto_power_off_action"),
         },
+        "power_saving_enabled": settings.get("power_saving_enabled"),
+        "screen_idle_minutes": settings.get("screen_idle_minutes"),
+        "cctv_always_on": cctv,
         "screen_off_window": screen_off_window,
         "power_off_due": power_off_due,
+        "power_off_action": power_off_action,
         "wake_mac": None,
     }
 
