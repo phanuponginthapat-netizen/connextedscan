@@ -204,6 +204,7 @@ export async function recordScan(input: RecordScanInput) {
       message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
       speak: (settings?.voice_duplicate_template ?? "สแกนซ้ำ {name} บันทึกเวลาไปแล้ว")
         .replace("{name}", displayName)
+        .replace("{nickname}", nickname)
         .replace("{direction}", directionLabel),
       next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
     };
@@ -260,6 +261,7 @@ export async function recordScan(input: RecordScanInput) {
   const template = settings?.voice_template ?? "สแกนสำเร็จ {name} {direction}";
   const speak = template
     .replace("{name}", displayName)
+    .replace("{nickname}", nickname)
     .replace("{direction}", directionLabel)
     .replace("{code}", student.student_code)
     .replace("{class}", student.class_room ?? "");

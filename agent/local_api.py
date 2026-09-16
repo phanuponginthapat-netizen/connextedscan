@@ -378,7 +378,11 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "avatar_url": avatar_url,
             "snapshot_url": snapshot_url,
             "message": f"{student['full_name']} สแกนซ้ำ — บันทึกเวลา{direction_label}ไปแล้ว",
-            "speak": template.replace("{name}", display_name).replace("{direction}", direction_label),
+            "speak": (
+                template.replace("{name}", display_name)
+                .replace("{nickname}", nickname)
+                .replace("{direction}", direction_label)
+            ),
             "next_delay_seconds": delay,
         }
 
@@ -413,6 +417,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
     template = settings.get("voice_template") or "สแกนสำเร็จ {name} {direction}"
     speak = (
         template.replace("{name}", display_name)
+        .replace("{nickname}", nickname)
         .replace("{direction}", direction_label)
         .replace("{code}", student["student_code"] or "")
         .replace("{class}", student["class_room"] or "")
