@@ -514,6 +514,11 @@ def kiosk_power_command(request: Request, x_device_key: str | None = Header(None
     command = db.kv_get(key)
     if command:
         db.kv_set(key, None)
+    # In CCTV mode the machine must stay awake so the camera keeps watching, so
+    # sleep / shutdown requests are downgraded to blanking the monitor.
+    cctv = bool(settings.get("cctv_always_on", True))
+    if cctv and command and str(command.get("command")) in ("sleep", "shutdown"):
+        command = {**command, "command": "screen_off"}
     minutes = rules.bangkok_minutes()
     weekday = rules.bangkok_weekday()
 
