@@ -16,7 +16,7 @@ const nav = [
   { to: "/admin/students", key: "nav.students", icon: Users },
   { to: "/admin/staff", key: "nav.staff", icon: Briefcase },
   { to: "/admin/attendance", key: "nav.attendance", icon: CalendarClock },
-  { to: "/admin/monthly", key: "nav.monthly", icon: FileBarChart },
+  { to: "/admin/monthly", key: "nav.individual_report", icon: FileBarChart },
   { to: "/admin/class-report", key: "nav.class_report", icon: ClipboardList },
   { to: "/admin/live", key: "nav.live", icon: MonitorPlay },
   { to: "/admin/install", key: "nav.install", icon: Download },

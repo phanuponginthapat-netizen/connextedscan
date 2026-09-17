@@ -198,6 +198,8 @@ CREATE TABLE IF NOT EXISTS attendance_logs (
 );
 CREATE INDEX IF NOT EXISTS attendance_scanned_idx ON attendance_logs(scanned_at DESC);
 CREATE INDEX IF NOT EXISTS attendance_student_idx ON attendance_logs(student_id, scanned_at DESC);
+CREATE INDEX IF NOT EXISTS attendance_report_idx
+  ON attendance_logs(status, direction, scanned_at, student_id);
 CREATE TABLE IF NOT EXISTS visitor_logs (
   id TEXT PRIMARY KEY,
   direction TEXT,
