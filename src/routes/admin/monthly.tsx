@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarRange, Download, Printer, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCms } from "@/lib/cms-client";
-import { StatCard } from "@/components/reports/report-ui";
+import { SortHeader, StatCard } from "@/components/reports/report-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,40 +39,30 @@ export const Route = createFileRoute("/admin/monthly")({
   component: MonthlyPage,
 });
 
-const THAI_MONTHS = [
-  "มกราคม",
-  "กุมภาพันธ์",
-  "มีนาคม",
-  "เมษายน",
-  "พฤษภาคม",
-  "มิถุนายน",
-  "กรกฎาคม",
-  "สิงหาคม",
-  "กันยายน",
-  "ตุลาคม",
-  "พฤศจิกายน",
-  "ธันวาคม",
-];
-
-function monthKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+function dateKey(date: Date) {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function MonthlyPage() {
   const { t } = useCms();
-  const [month, setMonth] = useState(() => monthKey(new Date()));
+  const [to, setTo] = useState(() => dateKey(new Date()));
+  const [from, setFrom] = useState(() => {
+    const date = new Date();
+    date.setDate(1);
+    return dateKey(date);
+  });
   const [group, setGroup] = useState<"all" | "student" | "staff">("all");
   const [place, setPlace] = useState("all");
   const [query, setQuery] = useState("");
-
-  const [yearStr = "1970", monthStr = "01"] = month.split("-");
-  const year = Number(yearStr);
-  const monthIndex = Number(monthStr) - 1;
-  const start = new Date(year, monthIndex, 1);
-  const end = new Date(year, monthIndex + 1, 1);
+  const [sort, setSort] = useState<"name" | "present" | "late" | "absent" | "rate">("rate");
+  const [direction, setDirection] = useState<"asc" | "desc">("asc");
+  const start = new Date(`${from}T00:00:00+07:00`);
+  const endExclusive = new Date(`${to}T00:00:00+07:00`);
+  endExclusive.setDate(endExclusive.getDate() + 1);
 
   const { data, isFetching } = useQuery({
-    queryKey: ["monthly", month],
+    queryKey: ["individual-report", from, to],
     queryFn: async () => {
       const [people, logs, settings] = await Promise.all([
         supabase
@@ -85,7 +75,7 @@ function MonthlyPage() {
           .select("student_id, direction, status, scanned_at")
           .eq("status", "ok")
           .gte("scanned_at", start.toISOString())
-          .lt("scanned_at", end.toISOString())
+          .lt("scanned_at", endExclusive.toISOString())
           .limit(50000),
         supabase.from("settings").select("late_after, late_grace_minutes, work_days, block_non_work_days").eq("id", true).maybeSingle(),
       ]);
@@ -123,7 +113,9 @@ function MonthlyPage() {
 
     const configuredDays = parseWorkDays(data?.settings?.work_days);
     let workingDays = 0;
-    for (let day = new Date(year, monthIndex, 1, 12); day < end && day <= new Date(); day.setDate(day.getDate() + 1)) {
+    const rangeEnd = new Date(`${to}T12:00:00`);
+    const today = new Date();
+    for (let day = new Date(`${from}T12:00:00`); day <= rangeEnd && day <= today; day.setDate(day.getDate() + 1)) {
       if (!data?.settings?.block_non_work_days || configuredDays.includes(day.getDay())) workingDays += 1;
     }
 
@@ -139,9 +131,14 @@ function MonthlyPage() {
         rate: workingDays ? Math.round((present / workingDays) * 100) : 0,
       };
     });
-    rows.sort((a, b) => a.rate - b.rate || a.full_name.localeCompare(b.full_name, "th"));
+    rows.sort((a, b) => {
+      const result = sort === "name"
+        ? a.full_name.localeCompare(b.full_name, "th")
+        : a[sort] - b[sort];
+      return (direction === "asc" ? result : -result) || a.full_name.localeCompare(b.full_name, "th");
+    });
     return { rows, workingDays };
-  }, [data, end, group, monthIndex, place, query, year]);
+  }, [data, direction, from, group, place, query, sort, to]);
 
   const placeOptions = useMemo(() => {
     const values = (data?.people ?? [])
@@ -184,7 +181,7 @@ function MonthlyPage() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `รายงานรายบุคคล-${month}.csv`;
+    a.download = `รายงานรายบุคคล-${from}-ถึง-${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -200,16 +197,20 @@ function MonthlyPage() {
             <CalendarRange className="size-6 text-primary" /> รายงานรายบุคคล
           </h1>
           <p className="text-sm text-muted-foreground">
-            ติดตามการมา สาย และขาดของแต่ละคน ประจำเดือน{THAI_MONTHS[monthIndex]} {year + 543}
+            ติดตามการมา สาย และขาดของแต่ละคนตามช่วงวันที่เลือก
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
           <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            aria-label="จากวันที่"
+            type="date"
+            value={from}
+            max={to}
+            onChange={(e) => setFrom(e.target.value)}
             className="h-9 rounded-md border bg-background px-3 text-sm"
           />
+          <span className="text-sm text-muted-foreground">ถึง</span>
+          <input aria-label="ถึงวันที่" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm" />
           <select
             value={group}
             onChange={(e) => { setGroup(e.target.value as typeof group); setPlace("all"); }}
@@ -256,19 +257,19 @@ function MonthlyPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>รหัส</TableHead>
-                  <TableHead>ชื่อ-สกุล</TableHead>
+                  <SortHeader label="ชื่อ-สกุล" sortKey="name" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("asc"); } }} />
                   <TableHead>ชั้น/ฝ่าย</TableHead>
-                  <TableHead className="text-right">มา</TableHead>
-                  <TableHead className="text-right">สาย</TableHead>
-                  <TableHead className="text-right">ขาด</TableHead>
-                  <TableHead className="text-right">อัตรามา</TableHead>
+                  <SortHeader className="text-right" label="มา" sortKey="present" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("desc"); } }} />
+                  <SortHeader className="text-right" label="สาย" sortKey="late" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("desc"); } }} />
+                  <SortHeader className="text-right" label="ขาด" sortKey="absent" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("desc"); } }} />
+                  <SortHeader className="text-right" label="อัตรามา" sortKey="rate" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("asc"); } }} />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {summary.rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                      ยังไม่มีข้อมูลในเดือนนี้
+                      ไม่พบข้อมูลตามช่วงเวลาและตัวกรองที่เลือก
                     </TableCell>
                   </TableRow>
                 ) : (
