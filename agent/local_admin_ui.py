@@ -106,7 +106,7 @@ const TABS = [
   ['import', '📥 นำเข้ารายชื่อ', 'นำเข้ารายชื่อหลายคนพร้อมกัน', 'วางข้อมูลจาก Excel หรือเลือกไฟล์ CSV'],
   ['enroll', '🙂 ลงทะเบียนใบหน้า', 'ลงทะเบียนใบหน้า', 'ค้นหาด้วยรหัส ชื่อ หรือระดับชั้น แล้วถ่ายภาพ'],
   ['history', '🕒 ประวัติการสแกน', 'ประวัติการสแกน', 'ดูย้อนหลัง ส่งออก CSV และลบรายการ'],
-  ['report', '📈 รายงาน', 'รายงานสรุป', 'สรุปรายวันและอันดับมาสาย'],
+  ['report', '👤 รายงานรายบุคคล', 'รายงานรายบุคคล', 'ติดตามการมา สาย และขาดของแต่ละคนตามช่วงเวลา'],
   ['class_report', '📋 รายงานการมาโรงเรียน', 'รายงานการมาโรงเรียน', 'สรุปตามชั้นและรายชื่อผู้ขาด'],
   ['certificate', '📜 ใบรับรองเวลาเรียน', 'ใบรับรองเวลาเรียน', 'เลือกคนและช่วงวัน แล้วสั่งพิมพ์'],
   ['visitors', '🚶 ผู้มาติดต่อ / แจ้งเตือน', 'ผู้มาติดต่อและการแจ้งเตือน', 'ภาพผู้ไม่ลงทะเบียนและเหตุการณ์ผิดปกติ'],
@@ -129,6 +129,8 @@ async function api(path, options = {}) {
 }
 const esc = (v) => String(v ?? '').replace(/[<>&"']/g, (c) => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 const timeText = (v) => new Date(v).toLocaleString('th-TH-u-ca-buddhist-nu-latn');
+const dateText = (v) => new Date(v + 'T12:00:00').toLocaleDateString('th-TH-u-ca-buddhist-nu-latn', {dateStyle:'medium'});
+const csvCell = (v) => `"${String(v ?? '').replaceAll('"','""')}"`;
 
 async function boot() {
   const status = await (await fetch('/local/api/local/auth/status')).json();
@@ -429,22 +431,27 @@ function csv() {
 
 /* ------------------------------------------------------------------ report */
 async function renderReport(view) {
-  const d = await api(`/api/local/report?start=${window.__rs || ''}&end=${window.__re || ''}`);
+  const query = new URLSearchParams({start:window.__rs || '', end:window.__re || '', q:window.__rq || '', group:window.__rg || 'all', class_room:window.__rc || ''});
+  const d = await api(`/api/local/report?${query}`);
+  window.__personReport = d;
   view.innerHTML = `<div class="card"><div class="row noprint">
       <div><label>จากวันที่</label><input id="r_s" type="date" value="${d.start}" /></div>
       <div><label>ถึงวันที่</label><input id="r_e" type="date" value="${d.end}" /></div>
-      <button class="btn ghost" onclick="window.__rs=$('#r_s').value;window.__re=$('#r_e').value;render()">สร้างรายงาน</button>
+      <div><label>ประเภท</label><select id="r_g"><option value="all">ทุกคน</option><option value="student">นักเรียน</option><option value="staff">บุคลากร</option></select></div>
+      <div><label>ชั้น/ฝ่าย</label><select id="r_c"><option value="">ทั้งหมด</option>${d.class_options.map((x)=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select></div>
+      <div style="min-width:210px"><label>ค้นหารหัสหรือชื่อ</label><input id="r_q" value="${esc(window.__rq || '')}" placeholder="รหัส หรือชื่อ-นามสกุล" /></div>
+      <button class="btn" onclick="applyPersonReport()">แสดงรายงาน</button>
+      <button class="btn ghost" onclick="personCsv()">ส่งออก CSV</button>
       <button class="btn ghost" onclick="window.print()">พิมพ์</button></div>
-    <h3>สรุปรายวัน (รายชื่อทั้งหมด ${d.people} คน)</h3>
-    <table><thead><tr><th>วันที่</th><th>มาแล้ว</th><th>มาสาย</th><th>ขาด</th></tr></thead><tbody>
-      ${d.days.map((x) => `<tr><td>${x.date}</td><td>${x.present}</td><td>${x.late}</td><td>${x.absent}</td></tr>`).join('')
-        || '<tr><td colspan="4">ไม่มีข้อมูลในช่วงนี้</td></tr>'}</tbody></table></div>
-    <div class="card"><h3>อันดับมาสาย</h3>
-    <table><thead><tr><th>ชื่อ</th><th>ชั้น</th><th>มาสาย (วัน)</th><th>มาเรียน (วัน)</th></tr></thead><tbody>
-      ${d.top_late.map((p) => `<tr><td>${esc(p.name || '')}</td><td>${esc(p.class_room || '')}</td>
-        <td>${p.late}</td><td>${p.present}</td></tr>`).join('') || '<tr><td colspan="4">ไม่มีคนมาสายในช่วงนี้</td></tr>'}
-    </tbody></table></div>`;
+    <h2>รายงานรายบุคคล</h2><p class="sub">${dateText(d.start)} ถึง ${dateText(d.end)} • คำนวณจากวันเรียน/วันทำงานที่ตั้งไว้</p></div>
+    <div class="kpi"><div><b>${d.people}</b><span>คนในรายงาน</span></div><div><b>${d.working_days}</b><span>วันเรียน/วันทำงาน</span></div><div><b>${d.average_rate}%</b><span>อัตรามาเฉลี่ย</span></div><div><b>${d.total_late}</b><span>มาสายรวม</span></div><div><b>${d.total_absent}</b><span>ขาดรวม</span></div></div>
+    <div class="card"><h3>สรุปแต่ละบุคคล</h3><div style="overflow:auto"><table><thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>ประเภท</th><th>ชั้น/ฝ่าย</th><th>มา</th><th>สาย</th><th>ขาด</th><th>อัตรามา</th></tr></thead><tbody>
+      ${d.persons.map((p) => `<tr><td>${esc(p.code)}</td><td><b>${esc(p.name)}</b></td><td>${p.person_type === 'staff' ? 'บุคลากร' : 'นักเรียน'}</td><td>${esc(p.class_room || '-')}</td><td>${p.present}</td><td>${p.late}</td><td>${p.absent}</td><td><span class="pill ${p.rate >= 80 ? 'good' : 'bad'}">${p.rate}%</span></td></tr>`).join('') || '<tr><td colspan="8">ไม่พบข้อมูลตามตัวกรอง</td></tr>'}
+    </tbody></table></div></div>`;
+  $('#r_g').value = window.__rg || 'all'; $('#r_c').value = window.__rc || '';
 }
+function applyPersonReport(){ window.__rs=$('#r_s').value;window.__re=$('#r_e').value;window.__rg=$('#r_g').value;window.__rc=$('#r_c').value;window.__rq=$('#r_q').value.trim();render(); }
+function personCsv(){ const d=window.__personReport;if(!d)return;const rows=d.persons.map(p=>[p.code,p.name,p.person_type==='staff'?'บุคลากร':'นักเรียน',p.class_room,p.present,p.late,p.absent,p.rate].map(csvCell).join(','));const blob=new Blob(['\ufeffรหัส,ชื่อ-นามสกุล,ประเภท,ชั้น/ฝ่าย,มา (วัน),สาย (วัน),ขาด (วัน),อัตรามา (%)\n'+rows.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`รายงานรายบุคคล-${d.start}-ถึง-${d.end}.csv`;a.click();URL.revokeObjectURL(a.href);}
 
 async function renderClassReport(view) {
   const date = window.__crd || new Date().toISOString().slice(0, 10);

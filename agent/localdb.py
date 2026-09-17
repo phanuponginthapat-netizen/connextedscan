@@ -129,7 +129,7 @@ DEFAULT_CONTENT: dict[str, Any] = {
     "theme_primary": "#1d6fe0",
     "theme_accent": "#0ea5e9",
     "theme_ink": "#132a4f",
-    "report_title": "รายงานการเข้า-ออกโรงเรียน",
+    "report_title": "รายงานรายบุคคล",
     "report_footer": "รายงานนี้ออกโดยระบบบันทึกเวลาด้วยใบหน้า",
     "signer_line": "ลงชื่อผู้รับรองรายงาน",
     "certificate_title": "ใบรับรองเวลาเรียน",
