@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import datetime as dt
 import io
 import json
 import os
@@ -856,52 +857,103 @@ def attendance_delete(log_id: str, x_local_token: str | None = Header(None)):
 
 
 @router.get("/api/local/report")
-def report(x_local_token: str | None = Header(None), start: str = "", end: str = ""):
+def report(x_local_token: str | None = Header(None), start: str = "", end: str = "",
+           q: str = "", group: str = "all", class_room: str = ""):
     require_admin(x_local_token)
     start = start or rules.bangkok_date_iso()
     end = end or rules.bangkok_date_iso()
+    try:
+        start_date = dt.date.fromisoformat(start)
+        end_date = dt.date.fromisoformat(end)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="รูปแบบวันที่ไม่ถูกต้อง") from exc
+    if end_date < start_date:
+        raise HTTPException(status_code=400, detail="วันสิ้นสุดต้องไม่น้อยกว่าวันเริ่มต้น")
+    if (end_date - start_date).days > 366:
+        raise HTTPException(status_code=400, detail="เลือกช่วงเวลาได้ไม่เกิน 1 ปี")
     settings = db.get_settings()
     late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
         settings.get("late_grace_minutes") or 0
     )
+    work_days = rules.parse_work_days(settings.get("work_days"))
+    counted_days: list[str] = []
+    cursor = start_date
+    while cursor <= end_date:
+        weekday = (cursor.weekday() + 1) % 7
+        if not settings.get("block_non_work_days") or weekday in work_days:
+            counted_days.append(cursor.isoformat())
+        cursor += dt.timedelta(days=1)
+
+    local_tz = dt.timezone(dt.timedelta(hours=7))
+    utc = dt.timezone.utc
+    start_utc = dt.datetime.combine(start_date, dt.time.min, local_tz).astimezone(utc).isoformat()
+    end_exclusive = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min, local_tz).astimezone(utc).isoformat()
     rows = db.query(
-        "SELECT date(l.scanned_at, '+7 hours') AS day, l.student_id, l.direction, l.scanned_at,"
-        " s.full_name, s.student_code, s.class_room FROM attendance_logs l"
-        " LEFT JOIN students s ON s.id = l.student_id"
-        " WHERE l.status = 'ok' AND date(l.scanned_at, '+7 hours') BETWEEN ? AND ?"
-        " ORDER BY l.scanned_at",
-        (start, end),
+        "SELECT date(scanned_at, '+7 hours') AS day, student_id, MIN(scanned_at) AS scanned_at"
+        " FROM attendance_logs WHERE status = 'ok' AND direction = 'in'"
+        " AND scanned_at >= ? AND scanned_at < ? GROUP BY day, student_id ORDER BY day",
+        (start_utc, end_exclusive),
     )
-    people_total = len(db.list_active_people())
-    days: dict[str, dict] = {}
-    per_person: dict[str, dict] = {}
+    people = db.list_active_people()
+    term = q.strip().casefold()
+    filtered = []
+    for person in people:
+        person_group = person.get("person_type") or "student"
+        place = person.get("department") if person_group == "staff" else person.get("class_room")
+        haystack = " ".join(str(person.get(k) or "") for k in ("student_code", "full_name", "class_room", "department")).casefold()
+        if group in ("student", "staff") and person_group != group:
+            continue
+        if class_room and (place or "") != class_room:
+            continue
+        if term and term not in haystack:
+            continue
+        filtered.append(person)
+
+    allowed_ids = {person["id"] for person in filtered}
+    day_seen: dict[str, set[str]] = {day: set() for day in counted_days}
+    day_late: dict[str, int] = {day: 0 for day in counted_days}
+    per_person = {
+        person["id"]: {
+            "id": person["id"], "name": person.get("full_name") or "",
+            "code": person.get("student_code") or "", "person_type": person.get("person_type") or "student",
+            "class_room": person.get("department") if person.get("person_type") == "staff" else person.get("class_room"),
+            "present": 0, "late": 0,
+        }
+        for person in filtered
+    }
     for row in rows:
-        day = days.setdefault(row["day"], {"date": row["day"], "present": set(), "late": 0})
-        if row["direction"] != "in" or not row["student_id"]:
+        if row["day"] not in day_seen or row["student_id"] not in allowed_ids:
             continue
-        if row["student_id"] in day["present"]:
-            continue
-        day["present"].add(row["student_id"])
+        day_seen[row["day"]].add(row["student_id"])
         hour = (int(row["scanned_at"][11:13]) + 7) % 24
         minute = int(row["scanned_at"][14:16])
         late = hour * 60 + minute > late_limit
         if late:
-            day["late"] += 1
-        person = per_person.setdefault(row["student_id"], {
-            "name": row["full_name"], "code": row["student_code"],
-            "class_room": row["class_room"], "present": 0, "late": 0,
-        })
+            day_late[row["day"]] += 1
+        person = per_person[row["student_id"]]
         person["present"] += 1
         person["late"] += 1 if late else 0
 
     day_list = [
-        {"date": d["date"], "present": len(d["present"]), "late": d["late"],
-         "absent": max(people_total - len(d["present"]), 0)}
-        for d in sorted(days.values(), key=lambda x: x["date"])
+        {"date": day, "present": len(day_seen[day]), "late": day_late[day],
+         "absent": max(len(filtered) - len(day_seen[day]), 0)}
+        for day in counted_days
     ]
-    top_late = sorted(per_person.values(), key=lambda p: -p["late"])[:20]
-    return {"start": start, "end": end, "people": people_total, "days": day_list,
-            "top_late": [p for p in top_late if p["late"] > 0], "persons": list(per_person.values())}
+    persons = list(per_person.values())
+    for person in persons:
+        person["absent"] = max(len(counted_days) - person["present"], 0)
+        person["rate"] = round(person["present"] * 100 / len(counted_days)) if counted_days else 0
+    persons.sort(key=lambda p: (p["rate"], -p["absent"], p["name"]))
+    options = sorted({
+        (person.get("department") if person.get("person_type") == "staff" else person.get("class_room")) or ""
+        for person in people
+    } - {""})
+    total_late = sum(person["late"] for person in persons)
+    total_absent = sum(person["absent"] for person in persons)
+    average_rate = round(sum(person["rate"] for person in persons) / len(persons)) if persons else 0
+    return {"start": start, "end": end, "people": len(filtered), "working_days": len(counted_days),
+            "average_rate": average_rate, "total_late": total_late, "total_absent": total_absent,
+            "days": day_list, "persons": persons, "class_options": options}
 
 
 def _gender_counts():

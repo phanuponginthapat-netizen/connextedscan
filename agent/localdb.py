@@ -129,7 +129,7 @@ DEFAULT_CONTENT: dict[str, Any] = {
     "theme_primary": "#1d6fe0",
     "theme_accent": "#0ea5e9",
     "theme_ink": "#132a4f",
-    "report_title": "รายงานการเข้า-ออกโรงเรียน",
+    "report_title": "รายงานรายบุคคล",
     "report_footer": "รายงานนี้ออกโดยระบบบันทึกเวลาด้วยใบหน้า",
     "signer_line": "ลงชื่อผู้รับรองรายงาน",
     "certificate_title": "ใบรับรองเวลาเรียน",
@@ -198,6 +198,8 @@ CREATE TABLE IF NOT EXISTS attendance_logs (
 );
 CREATE INDEX IF NOT EXISTS attendance_scanned_idx ON attendance_logs(scanned_at DESC);
 CREATE INDEX IF NOT EXISTS attendance_student_idx ON attendance_logs(student_id, scanned_at DESC);
+CREATE INDEX IF NOT EXISTS attendance_report_idx
+  ON attendance_logs(status, direction, scanned_at, student_id);
 CREATE TABLE IF NOT EXISTS visitor_logs (
   id TEXT PRIMARY KEY,
   direction TEXT,

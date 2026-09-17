@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarRange, Download, Printer } from "lucide-react";
+import { CalendarRange, Download, Printer, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCms } from "@/lib/cms-client";
-import { StatCard } from "@/components/reports/report-ui";
+import { SortHeader, StatCard } from "@/components/reports/report-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { parseWorkDays } from "@/lib/attendance-rules";
 import {
   Table,
   TableBody,
@@ -20,15 +22,15 @@ import {
 export const Route = createFileRoute("/admin/monthly")({
   head: () => ({
     meta: [
-      { title: "รายงานรายเดือน | FaceGate" },
+      { title: "รายงานรายบุคคล | FaceGate" },
       {
         name: "description",
-        content: "สรุปวันมาเรียน วันมาสาย และวันขาด ของนักเรียนและบุคลากรรายเดือน พร้อมดาวน์โหลดไฟล์",
+        content: "รายงานการมา สาย และขาดของนักเรียนและบุคลากรแต่ละคน พร้อมตัวกรองและดาวน์โหลดไฟล์",
       },
-      { property: "og:title", content: "รายงานรายเดือน | FaceGate" },
+      { property: "og:title", content: "รายงานรายบุคคล | FaceGate" },
       {
         property: "og:description",
-        content: "สรุปวันมา วันสาย และวันขาดรายเดือน พร้อมดาวน์โหลดเป็นไฟล์ตาราง",
+        content: "ติดตามการมา สาย และขาดของแต่ละคนตามช่วงเวลา พร้อมดาวน์โหลดเป็นไฟล์ตาราง",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -37,38 +39,30 @@ export const Route = createFileRoute("/admin/monthly")({
   component: MonthlyPage,
 });
 
-const THAI_MONTHS = [
-  "มกราคม",
-  "กุมภาพันธ์",
-  "มีนาคม",
-  "เมษายน",
-  "พฤษภาคม",
-  "มิถุนายน",
-  "กรกฎาคม",
-  "สิงหาคม",
-  "กันยายน",
-  "ตุลาคม",
-  "พฤศจิกายน",
-  "ธันวาคม",
-];
-
-function monthKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+function dateKey(date: Date) {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function MonthlyPage() {
   const { t } = useCms();
-  const [month, setMonth] = useState(() => monthKey(new Date()));
+  const [to, setTo] = useState(() => dateKey(new Date()));
+  const [from, setFrom] = useState(() => {
+    const date = new Date();
+    date.setDate(1);
+    return dateKey(date);
+  });
   const [group, setGroup] = useState<"all" | "student" | "staff">("all");
-
-  const [yearStr = "1970", monthStr = "01"] = month.split("-");
-  const year = Number(yearStr);
-  const monthIndex = Number(monthStr) - 1;
-  const start = new Date(year, monthIndex, 1);
-  const end = new Date(year, monthIndex + 1, 1);
+  const [place, setPlace] = useState("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"name" | "present" | "late" | "absent" | "rate">("rate");
+  const [direction, setDirection] = useState<"asc" | "desc">("asc");
+  const start = new Date(`${from}T00:00:00+07:00`);
+  const endExclusive = new Date(`${to}T00:00:00+07:00`);
+  endExclusive.setDate(endExclusive.getDate() + 1);
 
   const { data, isFetching } = useQuery({
-    queryKey: ["monthly", month],
+    queryKey: ["individual-report", from, to],
     queryFn: async () => {
       const [people, logs, settings] = await Promise.all([
         supabase
@@ -81,9 +75,9 @@ function MonthlyPage() {
           .select("student_id, direction, status, scanned_at")
           .eq("status", "ok")
           .gte("scanned_at", start.toISOString())
-          .lt("scanned_at", end.toISOString())
+          .lt("scanned_at", endExclusive.toISOString())
           .limit(50000),
-        supabase.from("settings").select("late_after, late_grace_minutes").eq("id", true).maybeSingle(),
+        supabase.from("settings").select("late_after, late_grace_minutes, work_days, block_non_work_days").eq("id", true).maybeSingle(),
       ]);
       return { people: people.data ?? [], logs: logs.data ?? [], settings: settings.data };
     },
@@ -92,9 +86,15 @@ function MonthlyPage() {
   });
 
   const summary = useMemo(() => {
-    const people = (data?.people ?? []).filter((p) =>
-      group === "all" ? true : p.person_type === group,
-    );
+    const normalizedQuery = query.trim().toLocaleLowerCase("th");
+    const people = (data?.people ?? []).filter((p) => {
+      if (group !== "all" && p.person_type !== group) return false;
+      const personPlace = p.person_type === "staff" ? p.department : p.class_room;
+      if (place !== "all" && personPlace !== place) return false;
+      if (!normalizedQuery) return true;
+      return [p.student_code, p.full_name, p.class_room, p.department]
+        .some((value) => (value ?? "").toLocaleLowerCase("th").includes(normalizedQuery));
+    });
     const lateAfter = data?.settings?.late_after ?? "08:00:00";
     const [lh = 8, lm = 0] = lateAfter.split(":").map(Number);
     const lateMinutes = lh * 60 + lm + (data?.settings?.late_grace_minutes ?? 0);
@@ -103,16 +103,21 @@ function MonthlyPage() {
     for (const log of data?.logs ?? []) {
       if (!log.student_id || log.direction !== "in") continue;
       const d = new Date(log.scanned_at);
-      const day = d.toISOString().slice(0, 10);
+      const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(d);
       const rec = perPerson.get(log.student_id) ?? { days: new Set(), late: new Set(), first: null };
       rec.days.add(day);
-      if (d.getHours() * 60 + d.getMinutes() > lateMinutes) rec.late.add(day);
+      const timeParts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hour12: false }).format(d).split(":").map(Number);
+      if ((timeParts[0] ?? 0) * 60 + (timeParts[1] ?? 0) > lateMinutes) rec.late.add(day);
       perPerson.set(log.student_id, rec);
     }
 
-    const workingDays = new Set(
-      (data?.logs ?? []).map((l) => new Date(l.scanned_at).toISOString().slice(0, 10)),
-    ).size;
+    const configuredDays = parseWorkDays(data?.settings?.work_days);
+    let workingDays = 0;
+    const rangeEnd = new Date(`${to}T12:00:00`);
+    const today = new Date();
+    for (let day = new Date(`${from}T12:00:00`); day <= rangeEnd && day <= today; day.setDate(day.getDate() + 1)) {
+      if (!data?.settings?.block_non_work_days || configuredDays.includes(day.getDay())) workingDays += 1;
+    }
 
     const rows = people.map((p) => {
       const rec = perPerson.get(p.id);
@@ -126,8 +131,21 @@ function MonthlyPage() {
         rate: workingDays ? Math.round((present / workingDays) * 100) : 0,
       };
     });
-    rows.sort((a, b) => a.rate - b.rate || a.full_name.localeCompare(b.full_name, "th"));
+    rows.sort((a, b) => {
+      const result = sort === "name"
+        ? a.full_name.localeCompare(b.full_name, "th")
+        : a[sort] - b[sort];
+      return (direction === "asc" ? result : -result) || a.full_name.localeCompare(b.full_name, "th");
+    });
     return { rows, workingDays };
+  }, [data, direction, from, group, place, query, sort, to]);
+
+  const placeOptions = useMemo(() => {
+    const values = (data?.people ?? [])
+      .filter((person) => group === "all" || person.person_type === group)
+      .map((person) => person.person_type === "staff" ? person.department : person.class_room)
+      .filter((value): value is string => Boolean(value));
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b, "th", { numeric: true }));
   }, [data, group]);
 
   const totals = useMemo(() => {
@@ -163,7 +181,7 @@ function MonthlyPage() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `รายงานรายเดือน-${month}.csv`;
+    a.download = `รายงานรายบุคคล-${from}-ถึง-${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -176,28 +194,40 @@ function MonthlyPage() {
             {t("brand.school_name")}
           </p>
           <h1 className="flex items-center gap-2 font-display text-2xl font-semibold">
-            <CalendarRange className="size-6 text-primary" /> รายงานรายเดือน
+            <CalendarRange className="size-6 text-primary" /> รายงานรายบุคคล
           </h1>
           <p className="text-sm text-muted-foreground">
-            สรุปวันมา วันสาย และวันขาดของแต่ละคน ประจำเดือน{THAI_MONTHS[monthIndex]} {year + 543}
+            ติดตามการมา สาย และขาดของแต่ละคนตามช่วงวันที่เลือก
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
           <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            aria-label="จากวันที่"
+            type="date"
+            value={from}
+            max={to}
+            onChange={(e) => setFrom(e.target.value)}
             className="h-9 rounded-md border bg-background px-3 text-sm"
           />
+          <span className="text-sm text-muted-foreground">ถึง</span>
+          <input aria-label="ถึงวันที่" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm" />
           <select
             value={group}
-            onChange={(e) => setGroup(e.target.value as typeof group)}
+            onChange={(e) => { setGroup(e.target.value as typeof group); setPlace("all"); }}
             className="h-9 rounded-md border bg-background px-3 text-sm"
           >
             <option value="all">ทุกคน</option>
             <option value="student">นักเรียน</option>
             <option value="staff">บุคลากร</option>
           </select>
+          <select value={place} onChange={(e) => setPlace(e.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm">
+            <option value="all">ทุกชั้น/ฝ่าย</option>
+            {placeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+          <div className="relative min-w-52">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ค้นหารหัสหรือชื่อ" className="pl-9" />
+          </div>
           <Button variant="secondary" onClick={downloadCsv}>
             <Download className="size-4" /> ดาวน์โหลดไฟล์
           </Button>
@@ -209,16 +239,16 @@ function MonthlyPage() {
 
       <div className="stagger-children grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="จำนวนคนในรายงาน" value={totals.people} />
-        <StatCard label="วันที่มีการสแกน" value={summary.workingDays} hint="ใช้เป็นฐานคิดอัตรามา" />
+        <StatCard label="วันเรียน/วันทำงาน" value={summary.workingDays} hint="ตามวันที่ตั้งค่าไว้" />
         <StatCard label="รวมวันมาสาย" value={totals.late} />
-        <StatCard label="อัตรามาเฉลี่ย" value={`${totals.avg}%`} />
+        <StatCard label="รวมวันขาด" value={totals.absent} hint={`อัตรามาเฉลี่ย ${totals.avg}%`} />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">สรุปรายบุคคล</CardTitle>
           <CardDescription>
-            เรียงจากคนที่มาน้อยที่สุดก่อน เพื่อให้ติดตามได้ง่าย {isFetching ? "• กำลังโหลด…" : ""}
+            เรียงจากคนที่มีอัตรามาน้อยที่สุด เพื่อช่วยค้นหาคนที่ควรติดตาม {isFetching ? "• กำลังอัปเดต…" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -227,19 +257,19 @@ function MonthlyPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>รหัส</TableHead>
-                  <TableHead>ชื่อ-สกุล</TableHead>
+                  <SortHeader label="ชื่อ-สกุล" sortKey="name" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("asc"); } }} />
                   <TableHead>ชั้น/ฝ่าย</TableHead>
-                  <TableHead className="text-right">มา</TableHead>
-                  <TableHead className="text-right">สาย</TableHead>
-                  <TableHead className="text-right">ขาด</TableHead>
-                  <TableHead className="text-right">อัตรามา</TableHead>
+                  <SortHeader className="text-right" label="มา" sortKey="present" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("desc"); } }} />
+                  <SortHeader className="text-right" label="สาย" sortKey="late" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("desc"); } }} />
+                  <SortHeader className="text-right" label="ขาด" sortKey="absent" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("desc"); } }} />
+                  <SortHeader className="text-right" label="อัตรามา" sortKey="rate" active={sort} dir={direction} onSort={(key) => { if (sort === key) setDirection((value) => value === "asc" ? "desc" : "asc"); else { setSort(key); setDirection("asc"); } }} />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {summary.rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                      ยังไม่มีข้อมูลในเดือนนี้
+                      ไม่พบข้อมูลตามช่วงเวลาและตัวกรองที่เลือก
                     </TableCell>
                   </TableRow>
                 ) : (
