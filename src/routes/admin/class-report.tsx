@@ -75,7 +75,10 @@ function ClassReportPage() {
       if (log.student_id && !firstScan.has(log.student_id)) firstScan.set(log.student_id, log.scanned_at);
     }
     const [hour = 8, minute = 0] = (data?.settings?.late_after ?? "08:00:00").split(":").map(Number);
-    const lateLimit = hour * 60 + minute + (data?.settings?.late_grace_minutes ?? 0);
+    // Check-in only schools never mark anyone late.
+    const lateLimit = data?.settings?.checkin_only_mode
+      ? Number.POSITIVE_INFINITY
+      : hour * 60 + minute + (data?.settings?.late_grace_minutes ?? 0);
     const roomMap = new Map<string, { classRoom: string; total: Counts; present: Counts; late: Counts; absent: Counts }>();
     const absentPeople: Array<{ student_code: string; full_name: string; class_room: string; gender: Gender }> = [];
 
