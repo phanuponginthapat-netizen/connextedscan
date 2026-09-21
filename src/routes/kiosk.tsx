@@ -80,6 +80,10 @@ type TodayStats = {
   left?: number;
   windows_closed?: boolean;
   is_workday?: boolean;
+  /** check-in only school: no closing time, no late marking */
+  checkin_only?: boolean;
+  /** show the statistics board after this many minutes without a scan (0 = off) */
+  idle_stats_minutes?: number;
 };
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
