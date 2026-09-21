@@ -28,6 +28,7 @@ import numpy as np
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import clock
 import door
 import power
 from face_engine import Face, FaceEngine
@@ -1460,6 +1461,8 @@ if __name__ == "__main__":
         local_api.set_embedder(embed_photo)
         print(f"[agent] standalone mode — data in {local_api.db.DATA_DIR}")
 
+    clock.sync_now()
+    clock.start()
     load_cache()
     door.start()
     threading.Thread(target=sync_loop, daemon=True).start()

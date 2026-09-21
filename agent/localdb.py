@@ -312,7 +312,13 @@ def new_id() -> str:
 
 
 def now_iso() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "Z"
+    """UTC timestamp corrected against internet time (never the raw PC clock)."""
+    try:
+        import clock
+
+        return clock.now_utc().strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+    except Exception:  # noqa: BLE001
+        return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "Z"
 
 
 # ---------------------------------------------------------------- key/value
