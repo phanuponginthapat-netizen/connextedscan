@@ -6,7 +6,7 @@ on:
       version:
         description: "หมายเลขเวอร์ชัน (จะใช้เป็นชื่อ Release เช่น 1.4.0)"
         required: false
-        default: "1.4.0"
+        default: "1.4.1"
 
 jobs:
   windows:

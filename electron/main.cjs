@@ -452,7 +452,14 @@ function startAgent() {
     if (line.includes("Uvicorn running")) {
       agentStatus = { ...agentStatus, state: "running", message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน" };
     }
-    if (/no module named/i.test(line)) {
+    if (/onnxruntime_pybind11_state|DLL load failed/i.test(line)) {
+      agentStatus = {
+        ...agentStatus,
+        state: "error",
+        message: "ไฟล์ระบบสำหรับประมวลผลใบหน้าไม่ครบ กรุณาติดตั้ง FaceGate รุ่นล่าสุดทับของเดิม",
+        lastError: line.slice(-500),
+      };
+    } else if (/no module named/i.test(line)) {
       agentStatus = {
         ...agentStatus,
         state: "error",

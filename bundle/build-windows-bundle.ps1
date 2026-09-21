@@ -28,6 +28,12 @@ $PYTHON_VERSION = "3.11.9"
 $PYTHON_URL = "https://www.python.org/ftp/python/$PYTHON_VERSION/python-$PYTHON_VERSION-embed-amd64.zip"
 $GETPIP_URL = "https://bootstrap.pypa.io/get-pip.py"
 $MODEL_URL = "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_sc.zip"
+$VC_RUNTIME_DLLS = @(
+    "msvcp140.dll",
+    "msvcp140_1.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll"
+)
 
 Write-Host "== FaceGate all-in-one bundle (Windows x64) ==" -ForegroundColor Cyan
 Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
@@ -48,12 +54,31 @@ Get-ChildItem $pythonDir -Filter "python*._pth" | ForEach-Object {
 Invoke-WebRequest -Uri $GETPIP_URL -OutFile (Join-Path $work "get-pip.py")
 & (Join-Path $pythonDir "python.exe") (Join-Path $work "get-pip.py") --no-warn-script-location
 
+# ONNX Runtime is compiled with Microsoft Visual C++ and does not carry these
+# DLLs in its wheel. Deploy them app-locally so a clean/offline Windows PC does
+# not need a separate Visual C++ Redistributable installation.
+foreach ($dll in $VC_RUNTIME_DLLS) {
+    $sourceDll = Join-Path "$env:WINDIR\System32" $dll
+    if (-not (Test-Path $sourceDll)) {
+        throw "Required Microsoft Visual C++ runtime is missing on the build runner: $dll"
+    }
+    Copy-Item $sourceDll (Join-Path $pythonDir $dll) -Force
+}
+
 # ---------- 2. Python libraries ----------
 Write-Host "[2/5] Python libraries into runtime\site" -ForegroundColor Yellow
 & (Join-Path $pythonDir "python.exe") -m pip install `
     --no-cache-dir --no-compile `
     --target $siteDir `
     -r (Join-Path $root "agent\requirements.txt")
+if ($LASTEXITCODE -ne 0) { throw "Python dependency installation failed with exit code $LASTEXITCODE" }
+
+# Fail during the build, rather than after installation at a school. This also
+# checks that every native extension can load with the bundled interpreter.
+$env:PYTHONPATH = $siteDir
+& (Join-Path $pythonDir "python.exe") -c "import cv2, numpy, onnxruntime; print('native runtime OK:', onnxruntime.__version__)"
+if ($LASTEXITCODE -ne 0) { throw "Bundled native Python runtime validation failed with exit code $LASTEXITCODE" }
+Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
 
 # ---------- 3. face models ----------
 Write-Host "[3/5] face models" -ForegroundColor Yellow
