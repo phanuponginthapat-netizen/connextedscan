@@ -111,6 +111,10 @@ if STANDALONE:
     def admin_screen():  # offline admin pages
         return HTMLResponse(local_ui.ADMIN_HTML)
 
+    @app.get("/visit")
+    def visit_screen():  # visitor self-registration (opened from the kiosk QR code)
+        return HTMLResponse(local_ui.VISIT_HTML)
+
     @app.get("/")
     def home_screen():
         return RedirectResponse("/kiosk")
@@ -126,6 +130,10 @@ if SATELLITE:
     @app.get("/kiosk")
     def kiosk_screen_satellite():
         return HTMLResponse(local_ui.KIOSK_HTML)
+
+    @app.get("/visit")
+    def visit_screen_satellite():
+        return HTMLResponse(local_ui.VISIT_HTML)
 
     @app.get("/")
     def home_screen_satellite():

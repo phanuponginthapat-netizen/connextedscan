@@ -51,7 +51,7 @@ export async function recordScan(input: RecordScanInput) {
     supabaseAdmin
       .from("students")
       .select(
-        "id, full_name, nickname, student_code, class_room, is_active, avatar_path, person_type, department, position",
+        "id, full_name, nickname, student_code, class_room, is_active, avatar_path, person_type, department, position, visit_date, visit_reason",
       )
       .eq("id", studentId)
       .maybeSingle(),
@@ -66,8 +66,23 @@ export async function recordScan(input: RecordScanInput) {
     };
   }
 
+  // Visitors register themselves through the QR code and may only enter on the
+  // day they registered; time windows and lateness never apply to them.
+  const isVisitor = student.person_type === "visitor";
+  if (isVisitor) {
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
+    if (student.visit_date !== today) {
+      return {
+        result: "denied" as const,
+        message: "สิทธิ์ผู้มาเยือนหมดอายุแล้ว กรุณาลงทะเบียนใหม่ผ่าน QR code",
+        speak: "สิทธิ์ผู้มาเยือนหมดอายุ กรุณาลงทะเบียนใหม่",
+        next_delay_seconds: settings?.next_person_delay_seconds ?? 5,
+      };
+    }
+  }
+
   // Days the system is open for scanning (e.g. Mon–Fri).
-  if (settings && !isWorkDay(settings, bangkokWeekday())) {
+  if (settings && !isVisitor && !isWorkDay(settings, bangkokWeekday())) {
     return {
       result: "denied" as const,
       message: "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
@@ -120,7 +135,7 @@ export async function recordScan(input: RecordScanInput) {
     direction = deviceDefault === "out" ? "out" : "in";
   }
 
-  if (settings) {
+  if (settings && !isVisitor) {
     const decision = decideDirection(settings, now, direction, bangkokWeekday());
     if (!decision.allowed) {
       const fmt = (v: string) => v.slice(0, 5);
@@ -232,8 +247,8 @@ export async function recordScan(input: RecordScanInput) {
     };
   }
 
-  const late = settings ? isLate(settings, now, direction) : false;
-  const earlyLeave = settings ? isEarlyLeave(settings, now, direction) : false;
+  const late = settings && !isVisitor ? isLate(settings, now, direction) : false;
+  const earlyLeave = settings && !isVisitor ? isEarlyLeave(settings, now, direction) : false;
 
   const { data: inserted } = await supabaseAdmin
     .from("attendance_logs")

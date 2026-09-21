@@ -24,7 +24,7 @@ async function handle() {
   const { data: settings } = await supabaseAdmin
     .from("settings")
     .select(
-      "checkin_start, checkin_end, checkout_start, checkout_end, late_after, late_grace_minutes, work_days, block_non_work_days, screensaver_mode, school_name, checkin_only_mode, idle_stats_minutes",
+      "checkin_start, checkin_end, checkout_start, checkout_end, late_after, late_grace_minutes, work_days, block_non_work_days, screensaver_mode, school_name, checkin_only_mode, idle_stats_minutes, visitor_register_enabled",
     )
     .eq("id", true)
     .maybeSingle();
@@ -63,17 +63,23 @@ async function handle() {
     }
   }
 
-  const people = peopleRows?.length ?? 0;
-  const present = firstIn.size;
+  // Visitors are guests of the day: they never count as school members and
+  // never appear as "absent".
+  const people = (peopleRows ?? []).filter((person) => person.person_type !== "visitor").length;
   const personTypeById = new Map((peopleRows ?? []).map((person) => [person.id, person.person_type]));
   let studentsPresent = 0;
   let staffPresent = 0;
+  let visitorsPresent = 0;
   for (const studentId of firstIn.keys()) {
-    if (personTypeById.get(studentId) === "staff") staffPresent += 1;
+    const type = personTypeById.get(studentId);
+    if (type === "staff") staffPresent += 1;
+    else if (type === "visitor") visitorsPresent += 1;
     else studentsPresent += 1;
   }
+  const present = studentsPresent + staffPresent;
   let late = 0;
-  for (const minutes of firstIn.values()) if (minutes > lateLimit) late += 1;
+  for (const [id, minutes] of firstIn)
+    if (personTypeById.get(id) !== "visitor" && minutes > lateLimit) late += 1;
 
   const now = bangkokMinutes();
   const workDays = parseWorkDays(settings?.work_days ?? null);
@@ -93,6 +99,8 @@ async function handle() {
     present,
     students_present: studentsPresent,
     staff_present: staffPresent,
+    visitors_present: visitorsPresent,
+    visitor_register_enabled: Boolean(settings?.visitor_register_enabled),
     late,
     on_time: Math.max(0, present - late),
     absent: isWorkday ? Math.max(0, people - present) : 0,

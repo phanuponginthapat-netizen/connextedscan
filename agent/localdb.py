@@ -78,6 +78,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "auto_update_enabled": False,
     "failed_alert_threshold": 5,
     "visitor_mode": False,
+    "visitor_register_enabled": False,
     "second_camera_index": -1,
     "second_camera_direction": "out",
     "voice_enabled": True,
@@ -272,6 +273,11 @@ def connect() -> sqlite3.Connection:
             columns = {row[1] for row in _conn.execute("PRAGMA table_info(students)").fetchall()}
             if "gender" not in columns:
                 _conn.execute("ALTER TABLE students ADD COLUMN gender TEXT")
+            # Self-service visitor registration through the kiosk QR code.
+            if "visit_reason" not in columns:
+                _conn.execute("ALTER TABLE students ADD COLUMN visit_reason TEXT")
+            if "visit_date" not in columns:
+                _conn.execute("ALTER TABLE students ADD COLUMN visit_date TEXT")
             # LAN mode: remember which kiosk produced each row.
             for table in ("attendance_logs", "visitor_logs", "security_alerts"):
                 cols = {row[1] for row in _conn.execute(f"PRAGMA table_info({table})").fetchall()}

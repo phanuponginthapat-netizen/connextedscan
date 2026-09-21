@@ -304,7 +304,18 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
     weekday = rules.bangkok_weekday()
     minutes = rules.bangkok_minutes()
 
-    if not rules.is_work_day(settings, weekday):
+    # Visitors register themselves through the kiosk QR code and may only
+    # enter on the day they registered. Time windows never apply to them.
+    is_visitor = (student["person_type"] or "") == "visitor"
+    if is_visitor and (student["visit_date"] or "") != rules.bangkok_date_iso():
+        return {
+            "result": "denied",
+            "message": "สิทธิ์ผู้มาเยือนหมดอายุแล้ว กรุณาลงทะเบียนใหม่ผ่าน QR code",
+            "speak": "สิทธิ์ผู้มาเยือนหมดอายุ กรุณาลงทะเบียนใหม่",
+            "next_delay_seconds": delay,
+        }
+
+    if not is_visitor and not rules.is_work_day(settings, weekday):
         return {
             "result": "denied",
             "message": "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
@@ -334,7 +345,11 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
     if wanted not in ("in", "out"):
         preferred = device.get("direction") or "auto"
         wanted = preferred if preferred in ("in", "out") else None
-    decision = rules.decide_direction(settings, minutes, wanted, weekday)
+    decision = (
+        {"allowed": True, "direction": "out" if wanted == "out" else "in"}
+        if is_visitor
+        else rules.decide_direction(settings, minutes, wanted, weekday)
+    )
     if not decision["allowed"]:
         insert_log(student_id, decision["direction"], "out_of_window", confidence,
                    geometry_score, snapshot_path, device)
@@ -397,8 +412,8 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "next_delay_seconds": delay,
         }
 
-    late = rules.is_late(settings, minutes, direction)
-    early = rules.is_early_leave(settings, minutes, direction)
+    late = False if is_visitor else rules.is_late(settings, minutes, direction)
+    early = False if is_visitor else rules.is_early_leave(settings, minutes, direction)
     log_id = insert_log(student_id, direction, "ok", confidence, geometry_score, snapshot_path, device)
 
     auto_enrolled = False
@@ -659,8 +674,13 @@ def today_stats() -> dict:
     is_workday = rules.is_work_day(settings, rules.bangkok_weekday())
     checkin_only = rules.is_checkin_only(settings)
     person_types = {person["id"]: person.get("person_type") for person in people}
-    students_present = sum(1 for person_id in first_in if person_types.get(person_id) != "staff")
+    # Visitors are counted on their own and never mixed into school figures.
+    people = [person for person in people if person.get("person_type") != "visitor"]
+    students_present = sum(
+        1 for person_id in first_in if person_types.get(person_id) not in ("staff", "visitor")
+    )
     staff_present = sum(1 for person_id in first_in if person_types.get(person_id) == "staff")
+    visitors_present = sum(1 for person_id in first_in if person_types.get(person_id) == "visitor")
     # Check-in only schools never close the scan window.
     checkin_closed = (
         False
@@ -681,6 +701,8 @@ def today_stats() -> dict:
         "present": len(first_in),
         "students_present": students_present,
         "staff_present": staff_present,
+        "visitors_present": visitors_present,
+        "visitor_register_enabled": bool(settings.get("visitor_register_enabled")),
         "late": late,
         "on_time": len(first_in) - late,
         "absent": max(len(people) - len(first_in), 0) if is_workday else 0,
@@ -690,6 +712,114 @@ def today_stats() -> dict:
         "windows_closed": checkin_closed and checkout_closed,
         "is_workday": is_workday,
         "server_time": db.now_iso(),
+    }
+
+
+@router.get("/api/public/visit/qr.svg")
+def visit_qr(request: Request):
+    """QR code of the visitor registration page, drawn offline as an SVG."""
+    base = str(request.base_url).rstrip("/")
+    url = f"{base}/visit"
+    try:
+        import io
+
+        import qrcode
+        import qrcode.image.svg as qrsvg
+
+        img = qrcode.make(url, image_factory=qrsvg.SvgPathImage, box_size=12, border=2)
+        buf = io.BytesIO()
+        img.save(buf)
+        return Response(
+            content=buf.getvalue(),
+            media_type="image/svg+xml",
+            headers={"cache-control": "no-store"},
+        )
+    except Exception:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="ยังไม่รองรับการสร้าง QR code") from None
+
+
+@router.get("/api/public/visit/status")
+def visit_status():
+    """Tells the visitor registration page whether the school is accepting visitors."""
+    settings = db.get_settings()
+    return {
+        "enabled": bool(settings.get("visitor_register_enabled")),
+        "school_name": settings.get("school_name"),
+    }
+
+
+@router.post("/api/public/visit/register")
+async def visit_register(request: Request):
+    """Self-service registration: a visitor fills the form and takes a photo."""
+    settings = db.get_settings()
+    if not settings.get("visitor_register_enabled"):
+        raise HTTPException(status_code=403, detail="ยังไม่เปิดรับลงทะเบียนผู้มาเยือน")
+
+    body = await request.json()
+    full_name = (body.get("full_name") or "").strip()
+    if len(full_name) < 2:
+        raise HTTPException(status_code=400, detail="กรุณากรอกชื่อ-นามสกุล")
+    data = decode_jpeg(body.get("photo"))
+    if not data:
+        raise HTTPException(status_code=400, detail="กรุณาถ่ายภาพใบหน้าให้ชัดเจน")
+    if EMBEDDER is None:
+        raise HTTPException(status_code=503, detail="ตัวประมวลผลใบหน้ายังไม่พร้อม กรุณารอสักครู่")
+    try:
+        result = EMBEDDER(data)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    today = rules.bangkok_date_iso()
+    gender = body.get("gender")
+    gender = gender if gender in ("male", "female") else None
+    seq = db.one(
+        "SELECT COUNT(*) AS n FROM students WHERE person_type = 'visitor' AND visit_date = ?",
+        (today,),
+    )
+    code = f"V{today.replace('-', '')[2:]}-{int((seq or {}).get('n', 0)) + 1:03d}"
+    person_id = db.new_id()
+    now = db.now_iso()
+    db.run(
+        "INSERT INTO students (id, student_code, full_name, nickname, class_room, guardian_phone,"
+        " gender, person_type, department, position, avatar_path, is_active, created_at, updated_at,"
+        " visit_reason, visit_date) VALUES (?,?,?,NULL,NULL,NULL,?,'visitor',?,NULL,NULL,1,?,?,?,?)",
+        (person_id, code, full_name, gender, (body.get("affiliation") or "").strip() or None,
+         now, now, (body.get("reason") or "").strip() or None, today),
+    )
+    avatar = save_jpeg(db.AVATAR_DIR, f"{person_id}.jpg", data)
+    db.run("UPDATE students SET avatar_path = ? WHERE id = ?", (avatar, person_id))
+    face_id = db.new_id()
+    path = save_jpeg(db.FACE_DIR, f"{face_id}.jpg", data)
+    db.run(
+        "INSERT INTO student_faces (id, student_id, image_path, source, embedding, geometry,"
+        " quality, status, processed_at, created_at) VALUES (?,?,?,'visitor',?,?,?,'ready',?,?)",
+        (face_id, person_id, path, json.dumps(result["embedding"]),
+         json.dumps(result.get("geometry")) if result.get("geometry") else None,
+         result.get("quality"), now, now),
+    )
+    db.add_audit("ลงทะเบียนผู้มาเยือน", person_id, full_name)
+    return {"ok": True, "code": code, "full_name": full_name, "valid_date": today}
+
+
+@router.get("/api/local/visitor-people")
+def visitor_people(x_local_token: str | None = Header(None)):
+    """Visitor dashboard: everybody who registered through the QR code."""
+    require_admin(x_local_token)
+    rows = db.query(
+        "SELECT s.id, s.student_code, s.full_name, s.gender, s.department, s.visit_reason,"
+        " s.visit_date, s.created_at, s.avatar_path,"
+        " (SELECT MIN(scanned_at) FROM attendance_logs l WHERE l.student_id = s.id"
+        "   AND l.status = 'ok' AND l.direction = 'in') AS entered_at,"
+        " (SELECT MAX(scanned_at) FROM attendance_logs l WHERE l.student_id = s.id"
+        "   AND l.status = 'ok' AND l.direction = 'out') AS left_at"
+        " FROM students s WHERE s.person_type = 'visitor'"
+        " ORDER BY s.created_at DESC LIMIT 500"
+    )
+    today = rules.bangkok_date_iso()
+    return {
+        "today": today,
+        "enabled": bool(db.get_settings().get("visitor_register_enabled")),
+        "items": [{**r, "avatar_url": media_url(r.get("avatar_path"))} for r in rows],
     }
 
 
@@ -919,7 +1049,8 @@ def report(x_local_token: str | None = Header(None), start: str = "", end: str =
         " AND scanned_at >= ? AND scanned_at < ? GROUP BY day, student_id ORDER BY day",
         (start_utc, end_exclusive),
     )
-    people = db.list_active_people()
+    # Visitors have their own dashboard and never appear in school reports.
+    people = [p for p in db.list_active_people() if (p.get("person_type") or "") != "visitor"]
     term = q.strip().casefold()
     filtered = []
     for person in people:

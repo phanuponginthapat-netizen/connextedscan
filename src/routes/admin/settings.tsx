@@ -107,6 +107,7 @@ type SettingsRow = {
   failed_alert_threshold: number;
   absent_check_time: string;
   visitor_mode: boolean;
+  visitor_register_enabled: boolean;
   second_camera_index: number;
   second_camera_direction: string;
   auto_update_enabled: boolean;
@@ -606,6 +607,16 @@ function SettingsPage() {
                     />
                     <span className="text-sm">
                       โหมดงานกิจกรรม/ผู้มาเยือน — บันทึกคนนอกที่มาติดต่อไว้ดูย้อนหลังได้
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <Switch
+                      checked={Boolean(form.visitor_register_enabled)}
+                      onCheckedChange={(v) => set({ visitor_register_enabled: v })}
+                    />
+                    <span className="text-sm">
+                      เปิดลงทะเบียนผู้มาเยือน/บุคลากรภายนอกด้วย QR code — หน้าจอตู้สแกนจะแสดง QR
+                      ให้ผู้มาเยือนกรอกข้อมูลและถ่ายภาพใบหน้าเอง ใช้เข้าได้เฉพาะวันนั้น
                     </span>
                   </div>
                   <div className="grid max-w-md gap-4 sm:grid-cols-2">

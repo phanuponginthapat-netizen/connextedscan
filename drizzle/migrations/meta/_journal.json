@@ -162,6 +162,13 @@
       "when": 1789969204067,
       "tag": "0022_add_checkin_only_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1789973325707,
+      "tag": "0023_add_visitor_registration",
+      "breakpoints": true
     }
   ]
 }

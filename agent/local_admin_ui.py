@@ -110,6 +110,7 @@ const TABS = [
   ['class_report', '📋 รายงานการมาโรงเรียน', 'รายงานการมาโรงเรียน', 'สรุปตามชั้นและรายชื่อผู้ขาด'],
   ['certificate', '📜 ใบรับรองเวลาเรียน', 'ใบรับรองเวลาเรียน', 'เลือกคนและช่วงวัน แล้วสั่งพิมพ์'],
   ['visitors', '🚶 ผู้มาติดต่อ / แจ้งเตือน', 'ผู้มาติดต่อและการแจ้งเตือน', 'ภาพผู้ไม่ลงทะเบียนและเหตุการณ์ผิดปกติ'],
+  ['guests', '🎫 ผู้มาเยือน (QR)', 'ผู้มาเยือนและบุคลากรภายนอก', 'คนที่ลงทะเบียนเองผ่าน QR code บนหน้าจอตู้สแกน'],
   ['content', '🎨 เนื้อหาและธีม', 'เนื้อหาและธีม', 'ชื่อโรงเรียน โลโก้ สี และข้อความบนหน้าจอ'],
   ['settings', '⚙️ ตั้งค่าระบบ', 'ตั้งค่าระบบ', 'เวลาเข้า-ออก การจำใบหน้า เสียงพูด'],
   ['device', '🚪 ประตู / พลังงาน', 'ประตูอัจฉริยะและพลังงาน', 'ทดสอบไม้กั้นและสั่งปิด-เปิดเครื่อง'],
@@ -175,7 +176,7 @@ async function render() {
   const view = $('#view');
   view.innerHTML = '<div class="card">กำลังโหลด…</div>';
   const map = { overview: renderOverview, people: renderPeople, import: renderImport, enroll: renderEnroll,
-    history: renderHistory, report: renderReport, class_report: renderClassReport, certificate: renderCertificate, visitors: renderVisitors,
+    history: renderHistory, report: renderReport, class_report: renderClassReport, certificate: renderCertificate, visitors: renderVisitors, guests: renderGuests,
     content: renderContent, settings: renderSettings, device: renderDevice, devices: renderDevices,
     live: renderLive, health: renderHealth,
     backup: renderBackup, audit: renderAudit };
@@ -534,6 +535,29 @@ async function renderVisitors(view) {
     <div class="card"><h3>การแจ้งเตือนความปลอดภัย</h3><div class="faces">${shots(d.alerts)}</div></div>`;
 }
 
+/* ------------------------------------------------------------------ guests */
+async function renderGuests(view) {
+  const d = await api('/api/local/visitor-people');
+  const items = d.items || [];
+  const gender = (g) => g === 'male' ? 'ชาย' : g === 'female' ? 'หญิง' : 'ไม่ระบุ';
+  const time = (v) => v ? new Date(v).toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
+  const today = items.filter((r) => r.visit_date === d.today);
+  const rows = items.map((r) => `<tr><td>${esc(r.student_code)}</td><td><b>${esc(r.full_name)}</b></td>
+    <td>${gender(r.gender)}</td><td>${esc(r.department || '-')}</td><td>${esc(r.visit_reason || '-')}</td>
+    <td>${esc(r.visit_date || '-')}</td><td>${r.entered_at ? time(r.entered_at) : 'ยังไม่เข้า'}</td>
+    <td>${time(r.left_at)}</td></tr>`).join('')
+    || '<tr><td colspan="8" class="sub">ยังไม่มีผู้มาเยือนลงทะเบียน</td></tr>';
+  view.innerHTML = `${d.enabled ? '' : '<div class="card">โหมดลงทะเบียนผู้มาเยือนปิดอยู่ — เปิดได้ที่หน้าตั้งค่าระบบ</div>'}
+    <div class="card"><h3>สถิติผู้มาเยือน</h3><div class="kpi">
+      <div><b>${today.length}</b><span>ลงทะเบียนวันนี้</span></div>
+      <div><b>${today.filter((r) => r.entered_at).length}</b><span>เข้าโรงเรียนแล้ววันนี้</span></div>
+      <div><b>${items.length}</b><span>ทั้งหมดที่บันทึกไว้</span></div>
+      <div><b>${items.filter((r) => r.entered_at).length}</b><span>เคยเข้าโรงเรียน</span></div></div></div>
+    <div class="card"><h3>รายชื่อผู้มาเยือน</h3><table><thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th>
+      <th>เพศ</th><th>สังกัด/อาชีพ</th><th>เหตุผล</th><th>วันที่</th><th>เข้า</th><th>ออก</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+}
+
 /* ----------------------------------------------------------------- content */
 const CONTENT_TEXT = [
   ['brand_name', 'ชื่อระบบที่แสดง'], ['kiosk_title', 'หัวข้อหน้าตู้สแกน'],
@@ -613,6 +637,7 @@ const FLAGS = [
   ['block_non_work_days', 'ปิดรับสแกนวันหยุด'], ['require_liveness', 'ตรวจว่าเป็นคนจริง'],
   ['save_snapshots', 'เก็บภาพตอนสแกน'], ['auto_enroll', 'เรียนรู้ใบหน้าเพิ่มอัตโนมัติ'],
   ['visitor_mode', 'บันทึกภาพผู้ไม่ลงทะเบียน'],
+  ['visitor_register_enabled', 'เปิดลงทะเบียนผู้มาเยือนด้วย QR code (หน้าจอตู้สแกนจะแสดง QR)'],
   ['kiosk_show_recent', 'แสดงรายการล่าสุด'], ['kiosk_mirror', 'กลับภาพกล้องเหมือนกระจก'],
   ['kiosk_show_clock', 'แสดงเวลา'], ['kiosk_news_enabled', 'เปิดข้อความข่าววิ่ง'],
   ['voice_enabled', 'เปิดเสียงพูด'], ['live_view_enabled', 'ส่งภาพสดให้หน้ากล้องสด'],

@@ -439,6 +439,7 @@ export type Database = {
           snapshot_retention_days: number
           updated_at: string
           visitor_mode: boolean
+          visitor_register_enabled: boolean
           voice_denied_text: string
           voice_duplicate_template: string
           voice_enabled: boolean
@@ -539,6 +540,7 @@ export type Database = {
           snapshot_retention_days?: number
           updated_at?: string
           visitor_mode?: boolean
+          visitor_register_enabled?: boolean
           voice_denied_text?: string
           voice_duplicate_template?: string
           voice_enabled?: boolean
@@ -639,6 +641,7 @@ export type Database = {
           snapshot_retention_days?: number
           updated_at?: string
           visitor_mode?: boolean
+          visitor_register_enabled?: boolean
           voice_denied_text?: string
           voice_duplicate_template?: string
           voice_enabled?: boolean
@@ -749,6 +752,8 @@ export type Database = {
           position: string | null
           student_code: string
           updated_at: string
+          visit_date: string | null
+          visit_reason: string | null
         }
         Insert: {
           avatar_path?: string | null
@@ -765,6 +770,8 @@ export type Database = {
           position?: string | null
           student_code: string
           updated_at?: string
+          visit_date?: string | null
+          visit_reason?: string | null
         }
         Update: {
           avatar_path?: string | null
@@ -781,6 +788,8 @@ export type Database = {
           position?: string | null
           student_code?: string
           updated_at?: string
+          visit_date?: string | null
+          visit_reason?: string | null
         }
         Relationships: []
       }
