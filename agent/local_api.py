@@ -305,7 +305,8 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
     minutes = rules.bangkok_minutes()
 
     # Visitors register themselves through the kiosk QR code and may only
-    # enter on the day they registered. Time windows never apply to them.
+    # enter on the day they registered. Otherwise they follow exactly the same
+    # scan rules as the school (check-in only or check-in/out, days, windows).
     is_visitor = (student["person_type"] or "") == "visitor"
     if is_visitor and (student["visit_date"] or "") != rules.bangkok_date_iso():
         return {
@@ -315,7 +316,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "next_delay_seconds": delay,
         }
 
-    if not is_visitor and not rules.is_work_day(settings, weekday):
+    if not rules.is_work_day(settings, weekday):
         return {
             "result": "denied",
             "message": "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
@@ -345,11 +346,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
     if wanted not in ("in", "out"):
         preferred = device.get("direction") or "auto"
         wanted = preferred if preferred in ("in", "out") else None
-    decision = (
-        {"allowed": True, "direction": "out" if wanted == "out" else "in"}
-        if is_visitor
-        else rules.decide_direction(settings, minutes, wanted, weekday)
-    )
+    decision = rules.decide_direction(settings, minutes, wanted, weekday)
     if not decision["allowed"]:
         insert_log(student_id, decision["direction"], "out_of_window", confidence,
                    geometry_score, snapshot_path, device)
@@ -412,8 +409,8 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "next_delay_seconds": delay,
         }
 
-    late = False if is_visitor else rules.is_late(settings, minutes, direction)
-    early = False if is_visitor else rules.is_early_leave(settings, minutes, direction)
+    late = rules.is_late(settings, minutes, direction)
+    early = rules.is_early_leave(settings, minutes, direction)
     log_id = insert_log(student_id, direction, "ok", confidence, geometry_score, snapshot_path, device)
 
     auto_enrolled = False
