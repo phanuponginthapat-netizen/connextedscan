@@ -83,7 +83,7 @@ export async function recordScan(input: RecordScanInput) {
   }
 
   // Days the system is open for scanning (e.g. Mon–Fri).
-  if (settings && !isVisitor && !isWorkDay(settings, bangkokWeekday())) {
+  if (settings && !isWorkDay(settings, bangkokWeekday())) {
     return {
       result: "denied" as const,
       message: "วันนี้ไม่ใช่วันทำการ ระบบปิดรับการสแกน",
@@ -136,7 +136,7 @@ export async function recordScan(input: RecordScanInput) {
     direction = deviceDefault === "out" ? "out" : "in";
   }
 
-  if (settings && !isVisitor) {
+  if (settings) {
     const decision = decideDirection(settings, now, direction, bangkokWeekday());
     if (!decision.allowed) {
       const fmt = (v: string) => v.slice(0, 5);
@@ -248,8 +248,8 @@ export async function recordScan(input: RecordScanInput) {
     };
   }
 
-  const late = settings && !isVisitor ? isLate(settings, now, direction) : false;
-  const earlyLeave = settings && !isVisitor ? isEarlyLeave(settings, now, direction) : false;
+  const late = settings ? isLate(settings, now, direction) : false;
+  const earlyLeave = settings ? isEarlyLeave(settings, now, direction) : false;
 
   const { data: inserted } = await supabaseAdmin
     .from("attendance_logs")
