@@ -528,7 +528,7 @@ async function makeCert() {
 async function renderVisitors(view) {
   const d = await api('/api/local/visitors');
   const shots = (rows) => rows.map((r) => `<figure><img src="${r.snapshot_url || ''}" alt="" />
-    <figcaption class="sub">${new Date(r.created_at).toLocaleString('th-TH-u-ca-buddhist-nu-latn')}<br />${esc(r.kind || r.direction || '')}</figcaption></figure>`).join('')
+    <figcaption class="sub">${new Date(r.created_at).toLocaleString('th-TH-u-ca-buddhist-nu-latn',{hour12:false})}<br />${esc(r.detail || r.kind || r.direction || '')}</figcaption></figure>`).join('')
     || '<p class="sub">ยังไม่มีข้อมูล</p>';
   view.innerHTML = `<div class="card"><h3>ผู้มาติดต่อ (ไม่ได้ลงทะเบียน)</h3><div class="faces">${shots(d.visitors)}</div></div>
     <div class="card"><h3>การแจ้งเตือนความปลอดภัย</h3><div class="faces">${shots(d.alerts)}</div></div>`;
