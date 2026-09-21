@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, Settings2, User, Volume2, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, Settings2, Sparkles, User, Users, Volume2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,7 @@ type ScanResult = {
   direction?: "in" | "out";
   avatar_url?: string | null;
   snapshot_url?: string | null;
+  confidence?: number;
   face_detection?: LiveDetection;
 };
 
@@ -150,9 +151,15 @@ function Kiosk() {
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
   const [camReady, setCamReady] = useState(false);
   const [booted, setBooted] = useState(false);
+  const [now, setNow] = useState(() => new Date());
   const displayRef = useRef(display);
   displayRef.current = display;
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const thaiVoice = () => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
