@@ -60,7 +60,7 @@ function ClassReportPage() {
           .lt("scanned_at", end.toISOString())
           .order("scanned_at")
           .limit(10000),
-        supabase.from("settings").select("late_after, late_grace_minutes, school_name").eq("id", true).maybeSingle(),
+        supabase.from("settings").select("late_after, late_grace_minutes, school_name, checkin_only_mode").eq("id", true).maybeSingle(),
       ]);
       if (people.error) throw people.error;
       if (logs.error) throw logs.error;
