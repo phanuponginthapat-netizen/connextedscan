@@ -538,8 +538,8 @@ async function renderVisitors(view) {
 const CONTENT_TEXT = [
   ['brand_name', 'ชื่อระบบที่แสดง'], ['kiosk_title', 'หัวข้อหน้าตู้สแกน'],
   ['kiosk_subtitle', 'ข้อความแนะนำใต้ชื่อ'], ['kiosk_footer', 'ข้อความท้ายหน้าจอ'],
-  ['kiosk_welcome', 'ข้อความต้อนรับเมื่อสแกนผ่าน'], ['kiosk_live_label', 'ป้ายกล้องสด'],
-  ['kiosk_today_label', 'ป้ายผู้มาเรียนวันนี้'], ['kiosk_comparison_title', 'หัวข้อผลเปรียบเทียบ'],
+  ['kiosk_welcome', 'ข้อความต้อนรับก่อนชื่อโรงเรียน'], ['kiosk_live_label', 'ป้ายกล้องสด'],
+  ['kiosk_today_label', 'หัวข้อจำนวนนักเรียน/บุคลากรวันนี้'], ['kiosk_comparison_title', 'หัวข้อผลเปรียบเทียบ'],
   ['kiosk_camera_image_label', 'ป้ายภาพจากกล้อง'], ['kiosk_registered_image_label', 'ป้ายภาพลงทะเบียน'],
   ['kiosk_match_score_label', 'ป้ายคะแนนเปรียบเทียบ'], ['kiosk_verified_label', 'ป้ายยืนยันตัวตน'],
   ['kiosk_class_label', 'ป้ายชั้นเรียน'], ['kiosk_id_label', 'ป้ายรหัส'],

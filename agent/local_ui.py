@@ -55,14 +55,14 @@ KIOSK_HTML = r"""<!doctype html>
 <body>
 <header class="top">
   <div class="brand"><div class="brandMark" id="logoFallback">✦</div><img id="logo" alt="" style="display:none"/><div><b id="school">FaceGate</b><span id="kioskTitle">ระบบสแกนใบหน้าเข้า-ออกโรงเรียน</span></div></div>
-  <div class="today"><span id="todayLabel">เข้าเรียนวันนี้</span> : <b id="sPresent">0</b> คน</div>
+  <div class="today"><span id="todayLabel">วันนี้</span> · นักเรียน <b id="sStudents">0</b> คน · บุคลากร <b id="sStaff">0</b> คน</div>
   <div class="timebox"><div><div class="clock" id="clock">--:--:--</div><div class="date" id="date"></div></div><button class="adminBtn" onclick="location.href='/admin'">หลังบ้าน (F9)</button></div>
 </header>
 <div class="app">
   <div class="stage" id="stage"><video id="cam" autoplay playsinline muted></video><div class="shade"></div><div class="live"><i></i><span id="liveLabel">กล้องสด</span></div><div class="guide"><i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i></div><div class="banner" id="banner">กรุณามองกล้องในกรอบ</div>
     <div class="compare" id="compare"><h3 id="comparisonTitle">ผลการเปรียบเทียบใบหน้า</h3><div class="comparePics"><figure><img id="cameraShot" alt=""/><figcaption id="cameraLabel">ภาพจากกล้อง</figcaption></figure><div class="verifyIcon">✓</div><figure><img id="registeredShot" alt=""/><figcaption id="registeredLabel">ภาพลงทะเบียน</figcaption></figure></div><div class="score"><b><span id="matchLabel">คะแนนตรงกัน</span>: <span id="matchScore">—</span></b><div class="scoreline"><i id="scoreFill" style="width:0"></i></div><small id="verifiedLabel">ยืนยันตัวตนแล้ว</small></div></div>
   </div>
-  <aside class="side"><div class="welcome"><i>✦</i><span id="welcome">ยินดีต้อนรับกลับโรงเรียน!</span></div>
+  <aside class="side"><div class="welcome"><i>✦</i><span id="welcome">ยินดีต้อนรับเข้าสู่โรงเรียนของเรา</span></div>
     <div class="profile" id="profile"><img class="avatar" id="profileAvatar" alt=""/><h2 id="profileName">—</h2><div class="role" id="profileRole">—</div><div class="facts"><div class="fact"><small id="classLabel">ชั้นเรียน</small><b id="profileClass">—</b></div><div class="fact"><small id="idLabel">รหัส</small><b id="profileId">—</b></div></div><div class="resultTime"><span id="timeLabel">เวลาเข้า-ออก</span><b id="scanTime">--:--:-- น.</b></div><div class="resultBar" id="resultBar">บันทึกสำเร็จ</div></div>
     <div class="waiting" id="waiting"><div class="ready"><small>FACEGATE READY</small><h2 id="subtitle">กรุณามองกล้องในกรอบ</h2><p id="readyDetail">ระบบพร้อมสำหรับการสแกน</p></div><div class="listTitle"><span>สแกนเข้าล่าสุด</span><small>วันนี้</small></div><div class="list" id="list"></div></div>
   </aside>
@@ -96,7 +96,7 @@ function showResult(d, captured) {
   $('resultBar').className = 'resultBar' + (ok ? '' : ' bad');
   $('resultBar').textContent = ok ? (content.kiosk_success_label || 'บันทึกสำเร็จ') : d.message;
   $('cameraShot').src = d.snapshot_url || captured || d.avatar_url || '';
-  $('registeredShot').src = d.avatar_url || d.snapshot_url || captured || '';
+  $('registeredShot').src = d.registered_face_url || d.avatar_url || '';
   const score = Math.max(0, Math.min(100, Math.round(Number(d.confidence || 0) * 1000) / 10));
   $('matchScore').textContent = d.confidence == null ? '—' : score + '%'; $('scoreFill').style.width = score + '%';
   $('compare').className = 'compare show';
@@ -264,8 +264,11 @@ async function loadBrand() {
     $('kioskTitle').textContent = c.kiosk_title || 'ระบบสแกนใบหน้าเข้า-ออกโรงเรียน';
     const sub = c.kiosk_subtitle || 'กรุณามองกล้องในกรอบวงรี';
     $('subtitle').textContent = c.device_name ? `${c.device_name} • ${sub}` : sub;
-    $('welcome').textContent = c.kiosk_welcome || 'ยินดีต้อนรับกลับโรงเรียน!';
-    $('liveLabel').textContent = c.kiosk_live_label || 'กล้องสด'; $('todayLabel').textContent = c.kiosk_today_label || 'เข้าเรียนวันนี้';
+    const school = c.school_name || c.brand_name || 'โรงเรียนของเรา';
+    let welcome = c.kiosk_welcome || 'ยินดีต้อนรับเข้าสู่';
+    if (welcome === 'ยินดีต้อนรับกลับโรงเรียน!' || welcome === 'ยินดีต้อนรับกลับโรงเรียน') welcome = 'ยินดีต้อนรับเข้าสู่';
+    $('welcome').textContent = welcome.includes('{school}') ? welcome.replaceAll('{school}', school) : welcome + school;
+    $('liveLabel').textContent = c.kiosk_live_label || 'กล้องสด'; $('todayLabel').textContent = c.kiosk_today_label || 'วันนี้';
     $('comparisonTitle').textContent = c.kiosk_comparison_title || 'ผลการเปรียบเทียบใบหน้า';
     $('cameraLabel').textContent = c.kiosk_camera_image_label || 'ภาพจากกล้อง'; $('registeredLabel').textContent = c.kiosk_registered_image_label || 'ภาพลงทะเบียน';
     $('matchLabel').textContent = c.kiosk_match_score_label || 'คะแนนตรงกัน'; $('verifiedLabel').textContent = c.kiosk_verified_label || 'ยืนยันตัวตนแล้ว';
@@ -293,7 +296,8 @@ async function loadRecent() {
 async function loadStats() {
   try {
     const s = await (await fetch('/local/api/public/kiosk/today-stats')).json();
-    $('sPresent').textContent = s.present;
+    $('sStudents').textContent = s.students_present || 0;
+    $('sStaff').textContent = s.staff_present || 0;
     $('vPresent').textContent = s.present; $('vLate').textContent = s.late;
     $('vAbsent').textContent = s.absent; $('vLeft').textContent = s.left;
     checkinOnly = !!s.checkin_only;

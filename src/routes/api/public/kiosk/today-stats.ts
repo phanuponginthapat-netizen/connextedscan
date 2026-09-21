@@ -32,8 +32,8 @@ async function handle() {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
   const dayStart = new Date(`${today}T00:00:00+07:00`).toISOString();
 
-  const [{ count: peopleCount }, { data: logs }] = await Promise.all([
-    supabaseAdmin.from("students").select("id", { count: "exact", head: true }).eq("is_active", true),
+  const [{ data: peopleRows }, { data: logs }] = await Promise.all([
+    supabaseAdmin.from("students").select("id, person_type").eq("is_active", true),
     supabaseAdmin
       .from("attendance_logs")
       .select("student_id, direction, scanned_at")
@@ -63,8 +63,15 @@ async function handle() {
     }
   }
 
-  const people = peopleCount ?? 0;
+  const people = peopleRows?.length ?? 0;
   const present = firstIn.size;
+  const personTypeById = new Map((peopleRows ?? []).map((person) => [person.id, person.person_type]));
+  let studentsPresent = 0;
+  let staffPresent = 0;
+  for (const studentId of firstIn.keys()) {
+    if (personTypeById.get(studentId) === "staff") staffPresent += 1;
+    else studentsPresent += 1;
+  }
   let late = 0;
   for (const minutes of firstIn.values()) if (minutes > lateLimit) late += 1;
 
@@ -84,6 +91,8 @@ async function handle() {
     idle_stats_minutes: settings?.idle_stats_minutes ?? 0,
     people,
     present,
+    students_present: studentsPresent,
+    staff_present: staffPresent,
     late,
     on_time: Math.max(0, present - late),
     absent: isWorkday ? Math.max(0, people - present) : 0,

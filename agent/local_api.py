@@ -368,6 +368,14 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
 
     avatar_url = media_url(student["avatar_path"])
     snapshot_url = media_url(snapshot_path)
+    # Use a real enrolled face in the comparison panel. A live scan must never
+    # be reused as the registered image when the profile photo is missing.
+    registered_face = db.one(
+        "SELECT image_path FROM student_faces WHERE student_id = ? AND status = 'ready'"
+        " ORDER BY CASE WHEN source = 'auto' THEN 1 ELSE 0 END, created_at LIMIT 1",
+        (student_id,),
+    )
+    registered_face_url = media_url((registered_face or {}).get("image_path")) or avatar_url
 
     if recent:
         insert_log(student_id, direction, "duplicate", confidence, geometry_score, snapshot_path, device)
@@ -377,6 +385,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "student": dict(student),
             "direction": direction,
             "avatar_url": avatar_url,
+            "registered_face_url": registered_face_url,
             "snapshot_url": snapshot_url,
             "confidence": confidence,
             "message": f"{student['full_name']} สแกนซ้ำ — บันทึกเวลา{direction_label}ไปแล้ว",
@@ -432,6 +441,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
         "student": dict(student),
         "direction": direction,
         "avatar_url": avatar_url,
+        "registered_face_url": registered_face_url,
         "snapshot_url": snapshot_url,
         "confidence": confidence,
         "late": late,
@@ -648,6 +658,9 @@ def today_stats() -> dict:
     minutes = rules.bangkok_minutes()
     is_workday = rules.is_work_day(settings, rules.bangkok_weekday())
     checkin_only = rules.is_checkin_only(settings)
+    person_types = {person["id"]: person.get("person_type") for person in people}
+    students_present = sum(1 for person_id in first_in if person_types.get(person_id) != "staff")
+    staff_present = sum(1 for person_id in first_in if person_types.get(person_id) == "staff")
     # Check-in only schools never close the scan window.
     checkin_closed = (
         False
@@ -666,6 +679,8 @@ def today_stats() -> dict:
         "screensaver_mode": settings.get("screensaver_mode") or "stats",
         "people": len(people),
         "present": len(first_in),
+        "students_present": students_present,
+        "staff_present": staff_present,
         "late": late,
         "on_time": len(first_in) - late,
         "absent": max(len(people) - len(first_in), 0) if is_workday else 0,
