@@ -673,6 +673,29 @@ function Kiosk() {
   });
   const success = result?.result === "ok";
 
+  // Resting screen: after the configured quiet period, or once the scan
+  // windows close, or when the power plan blanks the screen. The camera and
+  // the scan loop keep running underneath, so the board disappears again as
+  // soon as a face appears.
+  const checkinOnly = Boolean(todayStats?.checkin_only);
+  const idleMinutes = Number(todayStats?.idle_stats_minutes ?? 0);
+  const idleRest = idleMinutes > 0 && now.getTime() - lastActivity >= idleMinutes * 60_000;
+  const showSaver =
+    (todayStats?.screensaver_mode ?? "stats") === "stats" &&
+    Boolean(todayStats?.windows_closed || powerInfo?.screen_off || idleRest);
+  const saverTiles = checkinOnly
+    ? [
+        { label: "มาแล้ว", value: todayStats?.present ?? 0 },
+        { label: "ยังไม่มา", value: todayStats?.absent ?? 0 },
+        { label: "ทั้งหมด", value: todayStats?.people ?? 0 },
+      ]
+    : [
+        { label: "มาแล้ว", value: todayStats?.present ?? 0 },
+        { label: "มาสาย", value: todayStats?.late ?? 0 },
+        { label: "ขาด", value: todayStats?.absent ?? 0 },
+        { label: "กลับแล้ว", value: todayStats?.left ?? 0 },
+      ];
+
   return (
     <main className="flex h-screen w-screen flex-col overflow-hidden bg-background font-sans">
       <header className="z-20 flex min-h-20 shrink-0 items-center justify-between gap-4 border-b bg-card/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
