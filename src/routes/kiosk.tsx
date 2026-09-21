@@ -156,6 +156,20 @@ function Kiosk() {
   const [camReady, setCamReady] = useState(false);
   const [booted, setBooted] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  // Last time somebody actually used the kiosk (face seen, scan, or a touch).
+  // Used to rest the screen on the statistics board without ever stopping
+  // the camera, so the next person is scanned the moment they step up.
+  const [lastActivity, setLastActivity] = useState(() => Date.now());
+  const bumpActivity = useCallback(() => setLastActivity(Date.now()), []);
+
+  useEffect(() => {
+    window.addEventListener("pointerdown", bumpActivity);
+    window.addEventListener("keydown", bumpActivity);
+    return () => {
+      window.removeEventListener("pointerdown", bumpActivity);
+      window.removeEventListener("keydown", bumpActivity);
+    };
+  }, [bumpActivity]);
   const displayRef = useRef(display);
   displayRef.current = display;
   const audioRef = useRef<HTMLAudioElement | null>(null);
