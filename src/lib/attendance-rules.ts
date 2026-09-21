@@ -109,7 +109,7 @@ export function decideDirection(
 
 /** Late = arrived after the late threshold plus the grace period. */
 export function isLate(settings: TimeWindows, minutes: number, direction: Direction): boolean {
-  if (direction !== "in") return false;
+  if (direction !== "in" || settings.checkin_only_mode) return false;
   return minutes > timeToMinutes(settings.late_after) + (settings.late_grace_minutes ?? 0);
 }
 
