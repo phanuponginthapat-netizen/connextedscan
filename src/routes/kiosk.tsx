@@ -759,7 +759,7 @@ function Kiosk() {
 
   return (
     <main className="kiosk-screen flex h-screen w-screen flex-col overflow-hidden bg-background font-sans">
-      <header className="kiosk-header z-20 grid min-h-20 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b bg-card/95 px-5 py-3 shadow-sm backdrop-blur sm:flex sm:justify-between md:px-8">
+      <header className="kiosk-header z-20 grid min-h-20 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b bg-card/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
         <div className="flex min-w-0 items-center gap-3">
           {logo ? (
             <img src={logo} alt={t("brand.name")} className="size-12 shrink-0 rounded-xl border bg-card object-contain p-1" />
@@ -849,7 +849,7 @@ function Kiosk() {
 
         <aside className="kiosk-side flex min-h-[40vh] flex-col overflow-hidden border-l bg-card p-5 md:p-7 lg:min-h-0">
           {result ? (
-            <div className="kiosk-result animate-rise flex h-full flex-col">
+            <div className="kiosk-result animate-rise h-full">
               <div className="flex items-center gap-3">
                 <div className={`flex size-12 items-center justify-center rounded-2xl ${success ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
                   {success ? <Sparkles className="size-6" /> : <XCircle className="size-6" />}

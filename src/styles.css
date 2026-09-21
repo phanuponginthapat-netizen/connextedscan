@@ -325,6 +325,18 @@
 
 /* Portrait kiosk: camera remains the dominant first view, while the result
    panel uses the lower half without forcing important content off-screen. */
+.kiosk-result {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (orientation: landscape) and (min-width: 600px) {
+  .kiosk-header {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
 @media (orientation: portrait) and (min-width: 600px) {
   .kiosk-header {
     min-height: 7.5rem;
@@ -449,6 +461,7 @@
 
   .kiosk-side {
     padding-block: 1rem;
+    overflow-y: auto;
   }
 
   .kiosk-profile h3 {

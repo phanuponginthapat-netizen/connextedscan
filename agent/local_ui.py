@@ -62,7 +62,7 @@ KIOSK_HTML = r"""<!doctype html>
     .facts{grid-column:2;grid-row:1;margin-top:0}.resultTime{grid-column:2;grid-row:2;margin-top:10px}.resultBar{grid-column:2;grid-row:3;margin-top:10px;align-self:start}
     .saver .grid{grid-template-columns:repeat(2,minmax(180px,1fr));max-width:620px;width:86%}
   }
-  @media(orientation:portrait) and (min-width:600px) and (max-height:950px){.app{grid-template-rows:minmax(20rem,51%) minmax(0,49%)}.side{padding-block:14px}.visitorBox img{width:96px;height:96px}}
+  @media(orientation:portrait) and (min-width:600px) and (max-height:950px){.app{grid-template-rows:minmax(20rem,51%) minmax(0,49%)}.side{padding-block:14px;overflow-y:auto}.visitorBox img{width:96px;height:96px}}
   @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 .visitorBox{margin-bottom:12px;padding:12px;border-radius:16px;border:2px solid rgba(37,99,235,.35);background:#fff;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
 .visitorBox b{color:#1d4ed8;font-size:1rem}
