@@ -3,3 +3,4 @@
 - [x] Rename and improve the individual attendance report in online and standalone systems
 - [x] Bundle the Microsoft Visual C++ runtime required by ONNX Runtime on clean Windows PCs
 - [ ] Redesign online and standalone kiosk screens and expand CMS controls
+- [ ] Add deduplicated unknown-person security alerts with snapshots and five-attempt escalation
