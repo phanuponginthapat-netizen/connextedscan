@@ -838,6 +838,15 @@ function Kiosk() {
   );
 }
 
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border bg-muted/50 p-4">
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      <p className="mt-1 truncate font-display text-lg font-bold text-foreground">{value}</p>
+    </div>
+  );
+}
+
 /**
  * Scrolling news bar. The track slides -50%, so it renders two identical
  * halves; each half repeats the text enough times to fill the bar, which

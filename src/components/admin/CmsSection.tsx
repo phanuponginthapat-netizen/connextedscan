@@ -75,7 +75,7 @@ export function CmsSection({ group }: { group: CmsGroup }) {
 
   return (
     <div>
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {group.fields.map((field) => (
           <div key={field.key} className="space-y-2">
             <Label htmlFor={field.key}>{field.label}</Label>
