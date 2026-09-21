@@ -102,14 +102,13 @@ def decide_direction(settings: dict[str, Any], minutes: int, requested: str | No
 
 
 def is_late(settings: dict[str, Any], minutes: int, direction: str) -> bool:
-    if direction != "in":
+    if direction != "in" or is_checkin_only(settings):
         return False
-    grace = int(settings.get("late_grace_minutes") or 0)
-    return minutes > time_to_minutes(settings.get("late_after")) + grace
+    return minutes > late_limit(settings)
 
 
 def is_early_leave(settings: dict[str, Any], minutes: int, direction: str) -> bool:
     before = settings.get("early_leave_before")
-    if direction != "out" or not before:
+    if direction != "out" or is_checkin_only(settings) or not before:
         return False
     return minutes < time_to_minutes(before)

@@ -55,6 +55,12 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "early_leave_before": None,
     "work_days": "1,2,3,4,5",
     "block_non_work_days": True,
+    # Check-in only schools: every scan is an arrival, the scan windows never
+    # close and nobody is marked late or leaving early.
+    "checkin_only_mode": False,
+    # Rest the screen on the statistics board after this many quiet minutes
+    # (0 = never). The camera keeps running the whole time.
+    "idle_stats_minutes": 0,
     "match_threshold": 0.42,
     "geometry_min_score": 0.5,
     "geometry_weight": 0.3,
