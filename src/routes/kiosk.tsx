@@ -37,6 +37,7 @@ type ScanResult = {
   } | null;
   direction?: "in" | "out";
   avatar_url?: string | null;
+  registered_face_url?: string | null;
   snapshot_url?: string | null;
   confidence?: number;
   face_detection?: LiveDetection;
@@ -74,6 +75,8 @@ type TodayStats = {
   screensaver_mode?: string;
   people?: number;
   present?: number;
+  students_present?: number;
+  staff_present?: number;
   late?: number;
   on_time?: number;
   absent?: number;
@@ -672,6 +675,15 @@ function Kiosk() {
     year: "numeric",
   });
   const success = result?.result === "ok";
+  const schoolName = t("brand.school_name") || "โรงเรียนของเรา";
+  const welcomeSetting = t("kiosk.welcome");
+  const welcomePrefix =
+    welcomeSetting === "ยินดีต้อนรับกลับโรงเรียน!" || welcomeSetting === "ยินดีต้อนรับกลับโรงเรียน"
+      ? "ยินดีต้อนรับเข้าสู่"
+      : welcomeSetting || "ยินดีต้อนรับเข้าสู่";
+  const welcomeText = welcomePrefix.includes("{school}")
+    ? welcomePrefix.replaceAll("{school}", schoolName)
+    : `${welcomePrefix}${schoolName}`;
 
   // Resting screen: after the configured quiet period, or once the scan
   // windows close, or when the power plan blanks the screen. The camera and
@@ -715,8 +727,11 @@ function Kiosk() {
 
         <div className="hidden items-center gap-3 rounded-full border bg-muted/70 px-5 py-2 text-sm font-semibold md:flex">
           <span className="size-2 animate-pulse rounded-full bg-success" />
-          <span>{t("kiosk.today_label")} :</span>
-          <strong className="text-primary">{todayStats?.present ?? 0}</strong>
+          <span>{t("kiosk.today_label")}</span>
+          <span>· นักเรียน</span>
+          <strong className="text-primary">{todayStats?.students_present ?? 0}</strong>
+          <span>คน · บุคลากร</span>
+          <strong className="text-primary">{todayStats?.staff_present ?? 0}</strong>
           <span>คน</span>
         </div>
 
@@ -783,7 +798,11 @@ function Kiosk() {
                 </figure>
                 {success ? <CheckCircle2 className="size-9 text-success" /> : <XCircle className="size-9 text-destructive" />}
                 <figure className="text-center">
-                  <img src={result.avatar_url ?? result.snapshot_url ?? ""} alt={t("kiosk.registered_image_label")} className="mx-auto aspect-square w-full max-w-28 rounded-xl bg-muted object-cover" />
+                  {result.registered_face_url || result.avatar_url ? (
+                    <img src={result.registered_face_url ?? result.avatar_url ?? ""} alt={t("kiosk.registered_image_label")} className="mx-auto aspect-square w-full max-w-28 rounded-xl bg-muted object-cover" />
+                  ) : (
+                    <div className="mx-auto flex aspect-square w-full max-w-28 items-center justify-center rounded-xl bg-muted"><User className="size-10 text-muted-foreground" /></div>
+                  )}
                   <figcaption className="mt-1 text-xs text-muted-foreground">{t("kiosk.registered_image_label")}</figcaption>
                 </figure>
               </div>
@@ -805,7 +824,7 @@ function Kiosk() {
                 <div className={`flex size-12 items-center justify-center rounded-2xl ${success ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
                   {success ? <Sparkles className="size-6" /> : <XCircle className="size-6" />}
                 </div>
-                <h2 className="font-display text-2xl font-extrabold">{success ? t("kiosk.welcome") : result.message}</h2>
+                <h2 className="font-display text-2xl font-extrabold">{success ? welcomeText : result.message}</h2>
               </div>
               <div className="my-6 flex flex-col items-center text-center">
                 <div className="relative">
