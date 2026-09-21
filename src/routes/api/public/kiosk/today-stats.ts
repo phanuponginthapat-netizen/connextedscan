@@ -71,12 +71,17 @@ async function handle() {
   const now = bangkokMinutes();
   const workDays = parseWorkDays(settings?.work_days ?? null);
   const isWorkday = !settings?.block_non_work_days || workDays.includes(bangkokWeekday());
-  const checkinClosed = now > timeToMinutes(settings?.checkin_end ?? "10:00:00");
-  const checkoutClosed = now > timeToMinutes(settings?.checkout_end ?? "19:00:00");
+  // Check-in only schools have no closing time and nobody is ever late.
+  const checkinOnly = Boolean(settings?.checkin_only_mode);
+  if (checkinOnly) late = 0;
+  const checkinClosed = !checkinOnly && now > timeToMinutes(settings?.checkin_end ?? "10:00:00");
+  const checkoutClosed = !checkinOnly && now > timeToMinutes(settings?.checkout_end ?? "19:00:00");
 
   return jsonResponse({
     school_name: settings?.school_name ?? "",
     screensaver_mode: settings?.screensaver_mode ?? "stats",
+    checkin_only: checkinOnly,
+    idle_stats_minutes: settings?.idle_stats_minutes ?? 0,
     people,
     present,
     late,
