@@ -378,6 +378,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "direction": direction,
             "avatar_url": avatar_url,
             "snapshot_url": snapshot_url,
+            "confidence": confidence,
             "message": f"{student['full_name']} สแกนซ้ำ — บันทึกเวลา{direction_label}ไปแล้ว",
             "speak": (
                 template.replace("{name}", display_name)
@@ -432,6 +433,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
         "direction": direction,
         "avatar_url": avatar_url,
         "snapshot_url": snapshot_url,
+        "confidence": confidence,
         "late": late,
         "early_leave": early,
         "log": {"id": log_id},
