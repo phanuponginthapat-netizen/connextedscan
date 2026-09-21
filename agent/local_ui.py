@@ -68,7 +68,7 @@ KIOSK_HTML = r"""<!doctype html>
   </aside>
 </div>
 <div class="news" id="newsBox" style="display:none"><div id="news"></div></div>
-<div class="saver" id="saver" onclick="wake()"><div style="font-size:1.5rem;font-weight:700" id="saverTitle">สถิติวันนี้</div><div class="grid"><div><b id="vPresent">0</b>มาแล้ว</div><div><b id="vLate">0</b>มาสาย</div><div><b id="vAbsent">0</b>ขาด</div><div><b id="vLeft">0</b>กลับแล้ว</div></div><div style="opacity:.65">แตะหน้าจอเพื่อกลับสู่การสแกน</div></div>
+<div class="saver" id="saver" onclick="wake()"><div style="font-size:1.5rem;font-weight:700" id="saverTitle">สถิติวันนี้</div><div class="grid"><div><b id="vPresent">0</b>มาแล้ว</div><div><b id="vLate">0</b><span id="saverLateLabel">มาสาย</span></div><div><b id="vAbsent">0</b><span id="saverAbsentLabel">ขาด</span></div><div><b id="vLeft">0</b><span id="saverLeftLabel">กลับแล้ว</span></div></div><div style="opacity:.65">แตะหน้าจอเพื่อกลับสู่การสแกน</div></div>
 <script>
 const $ = (id) => document.getElementById(id);
 let display = { mirror: true, voice_enabled: true, next_delay_seconds: 5 };
@@ -241,6 +241,9 @@ async function tick() {
     const res = await fetch('/scan', { method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ image }) });
     const d = await res.json();
+    // Any face at the screen counts as activity, so the stats board steps
+    // aside and the camera keeps scanning without a manual touch.
+    if (d.result !== 'no_face') bumpActivity();
     if (d.result === 'ok') {
       say(d.message, 'ok'); showResult(d, 'data:image/jpeg;base64,' + image); speak(d.speak); loadRecent(); loadStats();
       pausedUntil = Date.now() + (d.next_delay_seconds || 5) * 1000;
@@ -293,14 +296,37 @@ async function loadStats() {
     $('sPresent').textContent = s.present;
     $('vPresent').textContent = s.present; $('vLate').textContent = s.late;
     $('vAbsent').textContent = s.absent; $('vLeft').textContent = s.left;
-    $('saver').className = 'saver' + (s.screensaver_mode === 'stats' && s.windows_closed ? ' show' : '');
+    checkinOnly = !!s.checkin_only;
+    idleMinutes = Number(s.idle_stats_minutes || 0);
+    if (checkinOnly) {
+      // Check-in only schools have no late count and no check-out count.
+      $('saverLateLabel').textContent = 'ยังไม่มา';
+      $('vLate').textContent = s.absent;
+      $('saverAbsentLabel').textContent = 'ทั้งหมด';
+      $('vAbsent').textContent = s.people;
+      $('saverLeftLabel').textContent = 'วันทำการ';
+      $('vLeft').textContent = s.is_workday ? 'เปิด' : 'ปิด';
+    }
+    statsMode = s.screensaver_mode === 'stats';
+    windowsClosed = !!s.windows_closed;
+    applySaver();
     // CCTV mode: the screen may rest, but the camera keeps watching and keeps
     // feeding the live page, so make sure the video never pauses.
     const v = $('cam');
     if (v && v.paused) { try { await v.play(); } catch (e) {} }
   } catch (e) {}
 }
-function wake() { $('saver').className = 'saver'; }
+let statsMode = true, windowsClosed = false, checkinOnly = false, idleMinutes = 0;
+let lastActivity = Date.now();
+function bumpActivity() { lastActivity = Date.now(); applySaver(); }
+function applySaver() {
+  const idle = idleMinutes > 0 && Date.now() - lastActivity > idleMinutes * 60000;
+  const show = statsMode && (windowsClosed || idle);
+  $('saver').className = 'saver' + (show ? ' show' : '');
+}
+function wake() { lastActivity = Date.now(); $('saver').className = 'saver'; }
+window.addEventListener('pointerdown', bumpActivity);
+window.addEventListener('keydown', bumpActivity);
 function clock() {
   const now = new Date();
   $('clock').textContent = now.toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit', second:'2-digit', hour12:false });
@@ -308,6 +334,7 @@ function clock() {
 }
 loadBrand(); startCamera(); loadRecent(); loadStats(); clock();
 setInterval(tick, 900); setInterval(loadRecent, 15000); setInterval(loadStats, 60000);
+setInterval(applySaver, 5000);
 setInterval(clock, 1000); setInterval(loadBrand, 120000);
 </script>
 </body>
