@@ -453,6 +453,7 @@ function startAgent() {
       agentStatus = { ...agentStatus, state: "running", message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน" };
     }
     if (/onnxruntime_pybind11_state|DLL load failed/i.test(line)) {
+      agentProcess._faceGateFatal = true;
       agentStatus = {
         ...agentStatus,
         state: "error",
@@ -473,12 +474,15 @@ function startAgent() {
   agentProcess.on("close", (code) => {
     console.log(`[agent] process exited with code ${code}`);
     appendLog(`exit code ${code}`);
-    const shouldRestart = !appIsQuitting && !agentProcess?._faceGateRestart;
+    const fatalDependencyError = Boolean(agentProcess?._faceGateFatal);
+    const shouldRestart = !appIsQuitting && !agentProcess?._faceGateRestart && !fatalDependencyError;
     agentProcess = null;
     agentStatus = {
       ...agentStatus,
       state: "error",
-      message: `ตัวประมวลผลหยุดทำงาน (รหัส ${code ?? "ไม่ทราบ"})`,
+      message: fatalDependencyError
+        ? agentStatus.message
+        : `ตัวประมวลผลหยุดทำงาน (รหัส ${code ?? "ไม่ทราบ"})`,
     };
     if (shouldRestart) {
       agentStatus.message = "ตัวประมวลผลหยุดทำงาน กำลังเปิดใหม่อัตโนมัติ";
