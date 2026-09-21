@@ -168,7 +168,9 @@ function Kiosk() {
   // Difference between real (server) time and this PC's clock, so a wrong
   // clock on the kiosk machine never shows or records the wrong time.
   const clockOffsetRef = useRef(0);
-  const [now, setNow] = useState(() => new Date());
+  // Keep the first server/client render identical; the real server-corrected
+  // clock starts immediately after hydration.
+  const [now, setNow] = useState(() => new Date(0));
   // Last time somebody actually used the kiosk (face seen, scan, or a touch).
   // Used to rest the screen on the statistics board without ever stopping
   // the camera, so the next person is scanned the moment they step up.
@@ -212,6 +214,7 @@ function Kiosk() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    setNow(new Date(Date.now() + clockOffsetRef.current));
     const timer = setInterval(
       () => setNow(new Date(Date.now() + clockOffsetRef.current)),
       1000,
@@ -755,8 +758,8 @@ function Kiosk() {
       ];
 
   return (
-    <main className="flex h-screen w-screen flex-col overflow-hidden bg-background font-sans">
-      <header className="z-20 flex min-h-20 shrink-0 items-center justify-between gap-4 border-b bg-card/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
+    <main className="kiosk-screen flex h-screen w-screen flex-col overflow-hidden bg-background font-sans">
+      <header className="kiosk-header z-20 grid min-h-20 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b bg-card/95 px-5 py-3 shadow-sm backdrop-blur sm:flex sm:justify-between md:px-8">
         <div className="flex min-w-0 items-center gap-3">
           {logo ? (
             <img src={logo} alt={t("brand.name")} className="size-12 shrink-0 rounded-xl border bg-card object-contain p-1" />
@@ -771,7 +774,7 @@ function Kiosk() {
           </div>
         </div>
 
-        <div className="hidden items-center gap-3 rounded-full border bg-muted/70 px-5 py-2 text-sm font-semibold md:flex">
+        <div className="kiosk-today hidden items-center gap-3 rounded-full border bg-muted/70 px-5 py-2 text-sm font-semibold md:flex">
           <span className="size-2 animate-pulse rounded-full bg-success" />
           <span>{todayLabel}</span>
           <span>· นักเรียน</span>
@@ -788,7 +791,7 @@ function Kiosk() {
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="kiosk-clock flex shrink-0 items-center gap-3">
           <div className="hidden items-center gap-2 text-primary sm:flex">
             <Users className="size-5" />
             <Clock3 className="size-5" />
@@ -815,8 +818,8 @@ function Kiosk() {
         </div>
       )}
 
-      <section className="grid min-h-0 flex-1 grid-cols-1 overflow-auto bg-muted/40 lg:grid-cols-[3fr_2fr] lg:overflow-hidden">
-        <div className="relative min-h-[52vh] overflow-hidden bg-camera lg:min-h-0">
+      <section className="kiosk-layout grid min-h-0 flex-1 grid-cols-1 overflow-auto bg-muted/40 lg:grid-cols-[3fr_2fr] lg:overflow-hidden">
+        <div className="kiosk-camera relative min-h-[52vh] overflow-hidden bg-camera lg:min-h-0">
           <video ref={videoRef} autoPlay muted playsInline className={`h-full w-full object-cover ${display.mirror ? "scale-x-[-1]" : ""}`} />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-camera/55 via-transparent to-camera/55" />
 
@@ -844,16 +847,16 @@ function Kiosk() {
           {camError && <div className="absolute inset-0 flex items-center justify-center bg-camera p-6 text-center text-destructive-foreground">{camError}</div>}
         </div>
 
-        <aside className="flex min-h-[40vh] flex-col overflow-hidden border-l bg-card p-5 md:p-7 lg:min-h-0">
+        <aside className="kiosk-side flex min-h-[40vh] flex-col overflow-hidden border-l bg-card p-5 md:p-7 lg:min-h-0">
           {result ? (
-            <div className="animate-rise flex h-full flex-col">
+            <div className="kiosk-result animate-rise flex h-full flex-col">
               <div className="flex items-center gap-3">
                 <div className={`flex size-12 items-center justify-center rounded-2xl ${success ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
                   {success ? <Sparkles className="size-6" /> : <XCircle className="size-6" />}
                 </div>
                 <h2 className="font-display text-2xl font-extrabold">{success ? welcomeText : result.message}</h2>
               </div>
-              <div className="my-6 flex flex-col items-center text-center">
+              <div className="kiosk-profile my-6 flex flex-col items-center text-center">
                 <div className="relative">
                   {result.avatar_url ? <img src={result.avatar_url} alt={result.student?.full_name ?? "ผู้สแกน"} className="size-36 rounded-full border-8 border-background object-cover shadow-panel" /> : <div className="flex size-36 items-center justify-center rounded-full bg-muted"><User className="size-12 text-muted-foreground" /></div>}
                   <span className={`absolute bottom-1 right-1 flex size-10 items-center justify-center rounded-full border-4 border-card ${success ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}`}>
@@ -877,14 +880,14 @@ function Kiosk() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="rounded-2xl bg-primary p-5 text-primary-foreground">
+            <div className="kiosk-waiting flex h-full min-h-0 flex-col">
+              <div className="kiosk-ready rounded-2xl bg-primary p-5 text-primary-foreground">
                 <p className="text-xs font-semibold opacity-75">FACEGATE READY</p>
                 <h2 className="mt-1 font-display text-2xl font-bold">{t("kiosk.subtitle")}</h2>
                 <p className="mt-2 text-sm opacity-80">{agentOnline === true ? `ระบบพร้อม • ลงทะเบียนแล้ว ${knownFaces ?? 0} ใบหน้า` : "กำลังเชื่อมต่อระบบประมวลผล"}</p>
               </div>
               {visitorMode && (
-                <div className="mt-4 rounded-2xl border-2 border-primary/30 bg-card p-4 text-center">
+                <div className="kiosk-visitor mt-4 rounded-2xl border-2 border-primary/30 bg-card p-4 text-center">
                   <p className="font-display text-base font-bold text-primary">ผู้มาเยือน / บุคลากรภายนอก</p>
                   <p className="mt-1 text-xs text-muted-foreground">สแกน QR code นี้เพื่อลงทะเบียนเข้าโรงเรียน</p>
                   {visitorQr ? (
@@ -895,7 +898,7 @@ function Kiosk() {
                   <p className="mt-2 text-xs text-muted-foreground">กรอกข้อมูลและถ่ายภาพใบหน้า แล้วมาสแกนที่ตู้นี้ • วันนี้เข้าแล้ว {todayStats?.visitors_present ?? 0} คน</p>
                 </div>
               )}
-              <div className="mt-5 flex min-h-0 flex-1 flex-col">
+              <div className="kiosk-recent mt-5 flex min-h-0 flex-1 flex-col">
                 <div className="flex items-center justify-between"><h3 className="font-display text-lg font-bold">สแกนเข้าล่าสุด</h3><span className="text-xs text-muted-foreground">{recent.length} รายการ</span></div>
                 <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
                   {recent.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">ยังไม่มีรายการสแกน</p> : recent.map((item) => (
@@ -929,7 +932,7 @@ function Kiosk() {
       {showSaver && (
         <button type="button" className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-8 bg-camera p-8 text-camera-foreground" onClick={() => { bumpActivity(); if (powerInfo?.screen_off) void sendPowerCommand("screen_on"); }}>
           <div className="text-center"><p className="text-sm opacity-60">สถิติวันนี้</p><p className="mt-2 font-display text-3xl font-semibold">{todayStats?.school_name || t("brand.name")}</p><p className="mt-1 opacity-60">{dateText}</p></div>
-          <div className="grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">{saverTiles.map((item) => <div key={item.label} className="rounded-2xl border border-camera-foreground/10 bg-camera-foreground/5 p-6 text-center"><p className="text-6xl font-bold text-success">{item.value}</p><p className="mt-2 text-sm opacity-70">{item.label}</p></div>)}</div>
+          <div className="kiosk-saver-grid grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">{saverTiles.map((item) => <div key={item.label} className="rounded-2xl border border-camera-foreground/10 bg-camera-foreground/5 p-6 text-center"><p className="text-6xl font-bold text-success">{item.value}</p><p className="mt-2 text-sm opacity-70">{item.label}</p></div>)}</div>
           <p className="text-sm opacity-60">กล้องยังทำงานอยู่ — เดินเข้ามาสแกนได้ทันที</p>
         </button>
       )}
