@@ -452,7 +452,15 @@ function startAgent() {
     if (line.includes("Uvicorn running")) {
       agentStatus = { ...agentStatus, state: "running", message: "ตัวประมวลผลใบหน้าพร้อมใช้งาน" };
     }
-    if (/no module named/i.test(line)) {
+    if (/onnxruntime_pybind11_state|DLL load failed/i.test(line)) {
+      agentProcess._faceGateFatal = true;
+      agentStatus = {
+        ...agentStatus,
+        state: "error",
+        message: "ไฟล์ระบบสำหรับประมวลผลใบหน้าไม่ครบ กรุณาติดตั้ง FaceGate รุ่นล่าสุดทับของเดิม",
+        lastError: line.slice(-500),
+      };
+    } else if (/no module named/i.test(line)) {
       agentStatus = {
         ...agentStatus,
         state: "error",
@@ -466,12 +474,15 @@ function startAgent() {
   agentProcess.on("close", (code) => {
     console.log(`[agent] process exited with code ${code}`);
     appendLog(`exit code ${code}`);
-    const shouldRestart = !appIsQuitting && !agentProcess?._faceGateRestart;
+    const fatalDependencyError = Boolean(agentProcess?._faceGateFatal);
+    const shouldRestart = !appIsQuitting && !agentProcess?._faceGateRestart && !fatalDependencyError;
     agentProcess = null;
     agentStatus = {
       ...agentStatus,
       state: "error",
-      message: `ตัวประมวลผลหยุดทำงาน (รหัส ${code ?? "ไม่ทราบ"})`,
+      message: fatalDependencyError
+        ? agentStatus.message
+        : `ตัวประมวลผลหยุดทำงาน (รหัส ${code ?? "ไม่ทราบ"})`,
     };
     if (shouldRestart) {
       agentStatus.message = "ตัวประมวลผลหยุดทำงาน กำลังเปิดใหม่อัตโนมัติ";
