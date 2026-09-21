@@ -15,6 +15,11 @@ export type TimeWindows = {
   early_leave_before?: string | null;
   work_days?: string | null;
   block_non_work_days?: boolean | null;
+  /**
+   * Check-in only schools: every scan is recorded as an arrival, the scan
+   * windows never close and nobody is ever marked late or leaving early.
+   */
+  checkin_only_mode?: boolean | null;
 };
 
 export type Direction = "in" | "out";
