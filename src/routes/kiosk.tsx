@@ -71,6 +71,8 @@ function personRole(s: NonNullable<ScanResult["student"]>) {
 }
 
 type TodayStats = {
+  /** real Thai time from the server — the kiosk PC clock may be wrong */
+  server_time?: string;
   school_name?: string;
   screensaver_mode?: string;
   people?: number;
@@ -163,6 +165,9 @@ function Kiosk() {
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null);
   const [camReady, setCamReady] = useState(false);
   const [booted, setBooted] = useState(false);
+  // Difference between real (server) time and this PC's clock, so a wrong
+  // clock on the kiosk machine never shows or records the wrong time.
+  const clockOffsetRef = useRef(0);
   const [now, setNow] = useState(() => new Date());
   // Last time somebody actually used the kiosk (face seen, scan, or a touch).
   // Used to rest the screen on the statistics board without ever stopping
@@ -207,7 +212,10 @@ function Kiosk() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const timer = setInterval(
+      () => setNow(new Date(Date.now() + clockOffsetRef.current)),
+      1000,
+    );
     return () => clearInterval(timer);
   }, []);
 
@@ -650,6 +658,10 @@ function Kiosk() {
       try {
         const res = await fetch("/api/public/kiosk/today-stats");
         const body = (await res.json()) as TodayStats;
+        if (body.server_time) {
+          const t = Date.parse(body.server_time);
+          if (!Number.isNaN(t)) clockOffsetRef.current = t - Date.now();
+        }
         if (!stopped) setTodayStats(body);
       } catch {
         // keep the last known numbers on a network hiccup

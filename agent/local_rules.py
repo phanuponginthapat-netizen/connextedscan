@@ -13,7 +13,13 @@ BANGKOK = _dt.timezone(_dt.timedelta(hours=7))
 
 
 def bangkok_now() -> _dt.datetime:
-    return _dt.datetime.now(BANGKOK)
+    """Thailand time taken from internet-corrected clock, not the PC clock."""
+    try:
+        import clock
+
+        return clock.now_tz(BANGKOK)
+    except Exception:  # noqa: BLE001
+        return _dt.datetime.now(BANGKOK)
 
 
 def time_to_minutes(value: str | None) -> int:
