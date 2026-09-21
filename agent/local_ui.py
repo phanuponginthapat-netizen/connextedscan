@@ -72,6 +72,7 @@ KIOSK_HTML = r"""<!doctype html>
 <script>
 const $ = (id) => document.getElementById(id);
 let display = { mirror: true, voice_enabled: true, next_delay_seconds: 5 };
+let content = {};
 let busy = false, pausedUntil = 0;
 
 async function startCamera() {
@@ -80,6 +81,27 @@ async function startCamera() {
 }
 var lastStatusText = '';
 function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); lastStatusText = text || ''; }
+function showResult(d, captured) {
+  const student = d.student || {};
+  const ok = d.result === 'ok';
+  $('waiting').style.display = 'none'; $('profile').className = 'profile show';
+  $('profileAvatar').src = d.avatar_url || d.snapshot_url || '';
+  $('profileName').textContent = student.full_name || d.message || 'ไม่พบข้อมูล';
+  $('profileRole').textContent = student.person_type === 'staff'
+    ? ['บุคลากร', student.department, student.position].filter(Boolean).join(' • ')
+    : ['นักเรียน', student.class_room ? 'ชั้น ' + student.class_room : ''].filter(Boolean).join(' • ');
+  $('profileClass').textContent = student.class_room || student.department || '—';
+  $('profileId').textContent = student.student_code || '—';
+  $('scanTime').textContent = new Date().toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' น.';
+  $('resultBar').className = 'resultBar' + (ok ? '' : ' bad');
+  $('resultBar').textContent = ok ? (content.kiosk_success_label || 'บันทึกสำเร็จ') : d.message;
+  $('cameraShot').src = d.snapshot_url || captured || d.avatar_url || '';
+  $('registeredShot').src = d.avatar_url || d.snapshot_url || captured || '';
+  const score = Math.max(0, Math.min(100, Math.round(Number(d.confidence || 0) * 1000) / 10));
+  $('matchScore').textContent = d.confidence == null ? '—' : score + '%'; $('scoreFill').style.width = score + '%';
+  $('compare').className = 'compare show';
+  setTimeout(() => { $('profile').className = 'profile'; $('waiting').style.display = ''; $('compare').className = 'compare'; }, (d.next_delay_seconds || 5) * 1000);
+}
 let audioReady = false, thaiVoice = null, browserVoiceOk = false;
 const clipCache = new Map();
 
@@ -220,10 +242,10 @@ async function tick() {
       body: JSON.stringify({ image }) });
     const d = await res.json();
     if (d.result === 'ok') {
-      say(d.message, 'ok'); speak(d.speak); loadRecent(); loadStats();
+      say(d.message, 'ok'); showResult(d, 'data:image/jpeg;base64,' + image); speak(d.speak); loadRecent(); loadStats();
       pausedUntil = Date.now() + (d.next_delay_seconds || 5) * 1000;
     } else if (d.result === 'duplicate' || d.result === 'denied') {
-      say(d.message, 'bad'); speak(d.speak); pausedUntil = Date.now() + 3000;
+      say(d.message, 'bad'); showResult(d, 'data:image/jpeg;base64,' + image); speak(d.speak); pausedUntil = Date.now() + 3000;
     } else if (d.message && d.result !== 'no_face') { say(d.message); }
     else { say($('subtitle').textContent); }
   } catch (e) {}
@@ -231,22 +253,29 @@ async function tick() {
 }
 async function loadBrand() {
   try {
-    const c = await (await fetch('/local/api/public/kiosk/content')).json();
+    const c = await (await fetch('/local/api/public/kiosk/content')).json(); content = c;
     document.documentElement.style.setProperty('--primary', c.theme_primary || '#1d6fe0');
     document.documentElement.style.setProperty('--accent', c.theme_accent || '#0ea5e9');
     document.documentElement.style.setProperty('--ink', c.theme_ink || '#132a4f');
     $('school').textContent = c.school_name || c.brand_name || 'FaceGate';
+    $('kioskTitle').textContent = c.kiosk_title || 'ระบบสแกนใบหน้าเข้า-ออกโรงเรียน';
     const sub = c.kiosk_subtitle || 'กรุณามองกล้องในกรอบวงรี';
     $('subtitle').textContent = c.device_name ? `${c.device_name} • ${sub}` : sub;
+    $('welcome').textContent = c.kiosk_welcome || 'ยินดีต้อนรับกลับโรงเรียน!';
+    $('liveLabel').textContent = c.kiosk_live_label || 'กล้องสด'; $('todayLabel').textContent = c.kiosk_today_label || 'เข้าเรียนวันนี้';
+    $('comparisonTitle').textContent = c.kiosk_comparison_title || 'ผลการเปรียบเทียบใบหน้า';
+    $('cameraLabel').textContent = c.kiosk_camera_image_label || 'ภาพจากกล้อง'; $('registeredLabel').textContent = c.kiosk_registered_image_label || 'ภาพลงทะเบียน';
+    $('matchLabel').textContent = c.kiosk_match_score_label || 'คะแนนตรงกัน'; $('verifiedLabel').textContent = c.kiosk_verified_label || 'ยืนยันตัวตนแล้ว';
+    $('classLabel').textContent = c.kiosk_class_label || 'ชั้นเรียน'; $('idLabel').textContent = c.kiosk_id_label || 'รหัส'; $('timeLabel').textContent = c.kiosk_time_label || 'เวลาเข้า-ออก';
     $('saverTitle').textContent = (c.school_name || '') + ' — สถิติวันนี้';
-    if (c.logo_url) { $('logo').src = c.logo_url; $('logo').style.display = 'block'; }
+    if (c.logo_url) { $('logo').src = c.logo_url; $('logo').style.display = 'block'; $('logoFallback').style.display = 'none'; }
   } catch (e) {}
 }
 async function loadRecent() {
   try {
     const data = await (await fetch('/local/api/public/kiosk/recent')).json();
     display = data.display || display;
-    $('stage').className = 'panel stage' + (display.mirror ? ' mirror' : '');
+    $('stage').className = 'stage' + (display.mirror ? ' mirror' : '');
     if (display.news_enabled && display.news_text) {
       $('newsBox').style.display = 'block';
       $('news').textContent = (display.news_text + '   •   ').repeat(8);
@@ -261,7 +290,7 @@ async function loadRecent() {
 async function loadStats() {
   try {
     const s = await (await fetch('/local/api/public/kiosk/today-stats')).json();
-    $('sPresent').textContent = s.present; $('sLate').textContent = s.late; $('sAbsent').textContent = s.absent;
+    $('sPresent').textContent = s.present;
     $('vPresent').textContent = s.present; $('vLate').textContent = s.late;
     $('vAbsent').textContent = s.absent; $('vLeft').textContent = s.left;
     $('saver').className = 'saver' + (s.screensaver_mode === 'stats' && s.windows_closed ? ' show' : '');
@@ -274,12 +303,12 @@ async function loadStats() {
 function wake() { $('saver').className = 'saver'; }
 function clock() {
   const now = new Date();
-  $('clock').textContent = now.toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit' });
+  $('clock').textContent = now.toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit', second:'2-digit', hour12:false });
   $('date').textContent = now.toLocaleDateString('th-TH-u-ca-buddhist-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 loadBrand(); startCamera(); loadRecent(); loadStats(); clock();
 setInterval(tick, 900); setInterval(loadRecent, 15000); setInterval(loadStats, 60000);
-setInterval(clock, 5000); setInterval(loadBrand, 120000);
+setInterval(clock, 1000); setInterval(loadBrand, 120000);
 </script>
 </body>
 </html>
