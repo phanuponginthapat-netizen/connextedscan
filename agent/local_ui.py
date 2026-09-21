@@ -268,7 +268,8 @@ async function loadBrand() {
     let welcome = c.kiosk_welcome || 'ยินดีต้อนรับเข้าสู่';
     if (welcome === 'ยินดีต้อนรับกลับโรงเรียน!' || welcome === 'ยินดีต้อนรับกลับโรงเรียน') welcome = 'ยินดีต้อนรับเข้าสู่';
     $('welcome').textContent = welcome.includes('{school}') ? welcome.replaceAll('{school}', school) : welcome + school;
-    $('liveLabel').textContent = c.kiosk_live_label || 'กล้องสด'; $('todayLabel').textContent = c.kiosk_today_label || 'วันนี้';
+    $('liveLabel').textContent = c.kiosk_live_label || 'กล้องสด';
+    $('todayLabel').textContent = c.kiosk_today_label === 'เข้าเรียนวันนี้' ? 'วันนี้' : (c.kiosk_today_label || 'วันนี้');
     $('comparisonTitle').textContent = c.kiosk_comparison_title || 'ผลการเปรียบเทียบใบหน้า';
     $('cameraLabel').textContent = c.kiosk_camera_image_label || 'ภาพจากกล้อง'; $('registeredLabel').textContent = c.kiosk_registered_image_label || 'ภาพลงทะเบียน';
     $('matchLabel').textContent = c.kiosk_match_score_label || 'คะแนนตรงกัน'; $('verifiedLabel').textContent = c.kiosk_verified_label || 'ยืนยันตัวตนแล้ว';

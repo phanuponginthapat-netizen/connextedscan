@@ -684,6 +684,7 @@ function Kiosk() {
   const welcomeText = welcomePrefix.includes("{school}")
     ? welcomePrefix.replaceAll("{school}", schoolName)
     : `${welcomePrefix}${schoolName}`;
+  const todayLabel = t("kiosk.today_label") === "เข้าเรียนวันนี้" ? "วันนี้" : t("kiosk.today_label");
 
   // Resting screen: after the configured quiet period, or once the scan
   // windows close, or when the power plan blanks the screen. The camera and
@@ -727,7 +728,7 @@ function Kiosk() {
 
         <div className="hidden items-center gap-3 rounded-full border bg-muted/70 px-5 py-2 text-sm font-semibold md:flex">
           <span className="size-2 animate-pulse rounded-full bg-success" />
-          <span>{t("kiosk.today_label")}</span>
+          <span>{todayLabel}</span>
           <span>· นักเรียน</span>
           <strong className="text-primary">{todayStats?.students_present ?? 0}</strong>
           <span>คน · บุคลากร</span>
