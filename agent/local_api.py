@@ -623,9 +623,7 @@ def today_stats() -> dict:
         " WHERE status = 'ok' AND date(scanned_at, '+7 hours') = ? ORDER BY scanned_at",
         (rules.bangkok_date_iso(),),
     )
-    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
-        settings.get("late_grace_minutes") or 0
-    )
+    late_limit = rules.late_limit(settings)
     first_in: dict[str, str] = {}
     left: set[str] = set()
     for row in rows:
@@ -874,9 +872,7 @@ def report(x_local_token: str | None = Header(None), start: str = "", end: str =
     if (end_date - start_date).days > 366:
         raise HTTPException(status_code=400, detail="เลือกช่วงเวลาได้ไม่เกิน 1 ปี")
     settings = db.get_settings()
-    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
-        settings.get("late_grace_minutes") or 0
-    )
+    late_limit = rules.late_limit(settings)
     work_days = rules.parse_work_days(settings.get("work_days"))
     counted_days: list[str] = []
     cursor = start_date
@@ -967,9 +963,7 @@ def class_report(x_local_token: str | None = Header(None), date: str = ""):
     require_admin(x_local_token)
     date = date or rules.bangkok_date_iso()
     settings = db.get_settings()
-    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
-        settings.get("late_grace_minutes") or 0
-    )
+    late_limit = rules.late_limit(settings)
     people = db.query(
         "SELECT id, student_code, full_name, IFNULL(NULLIF(class_room,''),'ไม่ระบุชั้น') AS class_room,"
         " CASE WHEN gender IN ('male','female') THEN gender ELSE 'unspecified' END AS gender"
@@ -1444,9 +1438,7 @@ def certificate(person_id: str, x_local_token: str | None = Header(None), start:
     start = start or rules.bangkok_date_iso()
     end = end or rules.bangkok_date_iso()
     settings = db.get_settings()
-    late_limit = rules.time_to_minutes(settings.get("late_after")) + int(
-        settings.get("late_grace_minutes") or 0
-    )
+    late_limit = rules.late_limit(settings)
     rows = db.query(
         "SELECT date(scanned_at, '+7 hours') AS day, scanned_at FROM attendance_logs"
         " WHERE student_id = ? AND status = 'ok' AND direction = 'in'"
