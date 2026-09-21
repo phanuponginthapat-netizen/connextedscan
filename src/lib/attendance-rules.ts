@@ -85,6 +85,9 @@ export function decideDirection(
     return { allowed: false, direction: requested ?? "in", reason: "non_work_day" };
   }
 
+  // Check-in only: always an arrival, at any time of the working day.
+  if (settings.checkin_only_mode) return { allowed: true, direction: "in" };
+
   const inOpen =
     minutes >= timeToMinutes(settings.checkin_start) &&
     minutes <= timeToMinutes(settings.checkin_end);
