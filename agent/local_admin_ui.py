@@ -548,12 +548,12 @@ async function renderGuests(view) {
     <td>${time(r.left_at)}</td></tr>`).join('')
     || '<tr><td colspan="8" class="sub">ยังไม่มีผู้มาเยือนลงทะเบียน</td></tr>';
   view.innerHTML = `${d.enabled ? '' : '<div class="card">โหมดลงทะเบียนผู้มาเยือนปิดอยู่ — เปิดได้ที่หน้าตั้งค่าระบบ</div>'}
-    <div class="card"><div class="stats">
+    <div class="card"><h3>สถิติผู้มาเยือน</h3><div class="kpi">
       <div><b>${today.length}</b><span>ลงทะเบียนวันนี้</span></div>
       <div><b>${today.filter((r) => r.entered_at).length}</b><span>เข้าโรงเรียนแล้ววันนี้</span></div>
       <div><b>${items.length}</b><span>ทั้งหมดที่บันทึกไว้</span></div>
       <div><b>${items.filter((r) => r.entered_at).length}</b><span>เคยเข้าโรงเรียน</span></div></div></div>
-    <div class="card"><h3>รายชื่อผู้มาเยือน</h3><table class="tbl"><thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th>
+    <div class="card"><h3>รายชื่อผู้มาเยือน</h3><table><thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th>
       <th>เพศ</th><th>สังกัด/อาชีพ</th><th>เหตุผล</th><th>วันที่</th><th>เข้า</th><th>ออก</th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
 }
