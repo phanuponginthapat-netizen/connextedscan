@@ -658,6 +658,10 @@ function Kiosk() {
       try {
         const res = await fetch("/api/public/kiosk/today-stats");
         const body = (await res.json()) as TodayStats;
+        if (body.server_time) {
+          const t = Date.parse(body.server_time);
+          if (!Number.isNaN(t)) clockOffsetRef.current = t - Date.now();
+        }
         if (!stopped) setTodayStats(body);
       } catch {
         // keep the last known numbers on a network hiccup
