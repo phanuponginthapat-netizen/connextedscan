@@ -515,6 +515,8 @@ function Kiosk() {
       lastDurationRef.current = performance.now() - startedAt;
       const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       setLiveDetection(data.face_detection ?? null);
+      // Somebody is in front of the camera: wake the screen from the stats board.
+      if (data.face_detection || (data.result && data.result !== "no_face")) bumpActivity();
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
         setStatus("idle");
