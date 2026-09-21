@@ -528,7 +528,7 @@ async function makeCert() {
 async function renderVisitors(view) {
   const d = await api('/api/local/visitors');
   const shots = (rows) => rows.map((r) => `<figure><img src="${r.snapshot_url || ''}" alt="" />
-    <figcaption class="sub">${new Date(r.created_at).toLocaleString('th-TH-u-ca-buddhist-nu-latn')}<br />${esc(r.kind || r.direction || '')}</figcaption></figure>`).join('')
+    <figcaption class="sub">${new Date(r.created_at).toLocaleString('th-TH-u-ca-buddhist-nu-latn',{hour12:false})}<br />${esc(r.detail || r.kind || r.direction || '')}</figcaption></figure>`).join('')
     || '<p class="sub">ยังไม่มีข้อมูล</p>';
   view.innerHTML = `<div class="card"><h3>ผู้มาติดต่อ (ไม่ได้ลงทะเบียน)</h3><div class="faces">${shots(d.visitors)}</div></div>
     <div class="card"><h3>การแจ้งเตือนความปลอดภัย</h3><div class="faces">${shots(d.alerts)}</div></div>`;
@@ -538,6 +538,13 @@ async function renderVisitors(view) {
 const CONTENT_TEXT = [
   ['brand_name', 'ชื่อระบบที่แสดง'], ['kiosk_title', 'หัวข้อหน้าตู้สแกน'],
   ['kiosk_subtitle', 'ข้อความแนะนำใต้ชื่อ'], ['kiosk_footer', 'ข้อความท้ายหน้าจอ'],
+  ['kiosk_welcome', 'ข้อความต้อนรับเมื่อสแกนผ่าน'], ['kiosk_live_label', 'ป้ายกล้องสด'],
+  ['kiosk_today_label', 'ป้ายผู้มาเรียนวันนี้'], ['kiosk_comparison_title', 'หัวข้อผลเปรียบเทียบ'],
+  ['kiosk_camera_image_label', 'ป้ายภาพจากกล้อง'], ['kiosk_registered_image_label', 'ป้ายภาพลงทะเบียน'],
+  ['kiosk_match_score_label', 'ป้ายคะแนนเปรียบเทียบ'], ['kiosk_verified_label', 'ป้ายยืนยันตัวตน'],
+  ['kiosk_class_label', 'ป้ายชั้นเรียน'], ['kiosk_id_label', 'ป้ายรหัส'],
+  ['kiosk_time_label', 'ป้ายเวลาเข้า-ออก'], ['kiosk_status_label', 'ป้ายสถานะ'],
+  ['kiosk_success_label', 'ข้อความสถานะสำเร็จ'],
   ['report_title', 'ชื่อรายงาน'], ['report_footer', 'ข้อความท้ายรายงาน'],
   ['signer_line', 'ช่องลงชื่อผู้รับรอง'], ['certificate_title', 'ชื่อใบรับรอง'],
 ];

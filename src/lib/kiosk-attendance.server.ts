@@ -201,6 +201,7 @@ export async function recordScan(input: RecordScanInput) {
       direction,
       avatar_url: avatarUrl,
       snapshot_url: snapshotUrl,
+      confidence,
       message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
       speak: (settings?.voice_duplicate_template ?? "สแกนซ้ำ {name} บันทึกเวลาไปแล้ว")
         .replace("{name}", displayName)
@@ -272,6 +273,7 @@ export async function recordScan(input: RecordScanInput) {
     direction,
     avatar_url: avatarUrl,
     snapshot_url: snapshotUrl,
+    confidence,
     late,
     early_leave: earlyLeave,
     log: inserted,

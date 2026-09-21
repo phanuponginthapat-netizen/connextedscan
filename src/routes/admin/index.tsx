@@ -147,16 +147,24 @@ function Dashboard() {
           .limit(5000),
         supabase
           .from("security_alerts")
-          .select("id, kind, message, device_name, attempts, created_at")
+          .select("id, kind, message, device_name, attempts, snapshot_path, created_at")
           .is("acknowledged_at", null)
           .order("created_at", { ascending: false })
           .limit(6),
         supabase.from("settings").select("absent_check_time").eq("id", true).maybeSingle(),
       ]);
       const arrived = new Set((arrivals.data ?? []).map((a) => a.student_id));
+      const alertRows = alerts.data ?? [];
+      const signedSnapshots = await Promise.all(
+        alertRows.map(async (alert) => {
+          if (!alert.snapshot_path) return null;
+          const { data } = await supabase.storage.from("faces").createSignedUrl(alert.snapshot_path, 3600);
+          return data?.signedUrl ?? null;
+        }),
+      );
       return {
         absent: (people.data ?? []).filter((p) => !arrived.has(p.id)),
-        alerts: alerts.data ?? [],
+        alerts: alertRows.map((alert, index) => ({ ...alert, snapshotUrl: signedSnapshots[index] })),
         absentCheckTime: settings.data?.absent_check_time ?? "09:00:00",
       };
     },
@@ -234,13 +242,22 @@ function Dashboard() {
               alerts.map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3"
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm">{a.message}</p>
+                  <div className="flex min-w-0 gap-3">
+                    {a.snapshotUrl ? (
+                      <img
+                        src={a.snapshotUrl}
+                        alt="ภาพบุคคลที่จุดสแกน"
+                        className="size-16 shrink-0 rounded-md border object-cover"
+                      />
+                    ) : null}
+                    <div className="min-w-0">
+                    <p className="text-sm font-medium text-destructive">{a.message}</p>
                     <p className="text-xs text-muted-foreground">
-                      {a.device_name ?? "ไม่ทราบจุดสแกน"} • {timeText(a.created_at)}
+                      {a.device_name ?? "ไม่ทราบจุดสแกน"} • {timeText(a.created_at)} • {a.attempts} ครั้ง
                     </p>
+                    </div>
                   </div>
                   <Button size="sm" variant="secondary" onClick={() => void resolveAlert(a.id)}>
                     รับทราบ

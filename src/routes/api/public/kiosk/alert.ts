@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/public/kiosk/alert")({
         const device = await authenticateDevice(request);
         if (!device) return jsonResponse({ error: "invalid device key" }, 401);
 
-        let body: { attempts?: number; snapshot?: string; message?: string } = {};
+        let body: { attempts?: number; snapshot?: string; message?: string; kind?: string } = {};
         try {
           body = ((await request.json()) as typeof body) ?? {};
         } catch {
@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/public/kiosk/alert")({
         }
 
         const { error } = await supabaseAdmin.from("security_alerts").insert({
-          kind: "failed_streak",
+          kind: body.kind === "intrusion_attempt" ? "intrusion_attempt" : "unknown_person",
           message:
             body.message ??
             `พบการสแกนไม่ผ่านติดกัน ${attempts} ครั้งที่ ${device.name} อาจเป็นบุคคลภายนอก`,

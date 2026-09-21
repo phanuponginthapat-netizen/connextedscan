@@ -378,6 +378,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
             "direction": direction,
             "avatar_url": avatar_url,
             "snapshot_url": snapshot_url,
+            "confidence": confidence,
             "message": f"{student['full_name']} สแกนซ้ำ — บันทึกเวลา{direction_label}ไปแล้ว",
             "speak": (
                 template.replace("{name}", display_name)
@@ -432,6 +433,7 @@ async def kiosk_attendance(request: Request, x_device_key: str | None = Header(N
         "direction": direction,
         "avatar_url": avatar_url,
         "snapshot_url": snapshot_url,
+        "confidence": confidence,
         "late": late,
         "early_leave": early,
         "log": {"id": log_id},
@@ -474,7 +476,7 @@ async def kiosk_alert(request: Request, x_device_key: str | None = Header(None))
         "INSERT INTO security_alerts (id, kind, detail, snapshot_path, device_id, device_name,"
         " created_at) VALUES (?,?,?,?,?,?,?)",
         (db.new_id(), str(body.get("kind") or "failed_scan")[:40],
-         str(body.get("detail") or "")[:300], path, device["id"], device["name"], db.now_iso()),
+         str(body.get("message") or body.get("detail") or "")[:300], path, device["id"], device["name"], db.now_iso()),
     )
     return {"ok": True}
 
