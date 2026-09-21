@@ -73,6 +73,12 @@ Write-Host "[2/5] Python libraries into runtime\site" -ForegroundColor Yellow
     -r (Join-Path $root "agent\requirements.txt")
 if ($LASTEXITCODE -ne 0) { throw "Python dependency installation failed with exit code $LASTEXITCODE" }
 
+$onnxNativeDir = Join-Path $siteDir "onnxruntime\capi"
+if (-not (Test-Path $onnxNativeDir)) { throw "ONNX Runtime native folder was not created" }
+foreach ($dll in $VC_RUNTIME_DLLS) {
+    Copy-Item (Join-Path $pythonDir $dll) (Join-Path $onnxNativeDir $dll) -Force
+}
+
 # Fail during the build, rather than after installation at a school. This also
 # checks that every native extension can load with the bundled interpreter.
 $env:PYTHONPATH = $siteDir
