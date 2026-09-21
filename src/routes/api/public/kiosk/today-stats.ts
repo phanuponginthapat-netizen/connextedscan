@@ -24,7 +24,7 @@ async function handle() {
   const { data: settings } = await supabaseAdmin
     .from("settings")
     .select(
-      "checkin_start, checkin_end, checkout_start, checkout_end, late_after, late_grace_minutes, work_days, block_non_work_days, screensaver_mode, school_name",
+      "checkin_start, checkin_end, checkout_start, checkout_end, late_after, late_grace_minutes, work_days, block_non_work_days, screensaver_mode, school_name, checkin_only_mode, idle_stats_minutes",
     )
     .eq("id", true)
     .maybeSingle();
