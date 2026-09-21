@@ -119,6 +119,6 @@ export function isEarlyLeave(
   minutes: number,
   direction: Direction,
 ): boolean {
-  if (direction !== "out" || !settings.early_leave_before) return false;
+  if (direction !== "out" || settings.checkin_only_mode || !settings.early_leave_before) return false;
   return minutes < timeToMinutes(settings.early_leave_before);
 }
