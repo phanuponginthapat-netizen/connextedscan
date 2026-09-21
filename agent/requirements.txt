@@ -6,3 +6,4 @@ opencv-python-headless==4.10.0.84
 onnxruntime==1.19.2
 pydantic==2.10.4
 pyserial==3.5
+qrcode==7.4.2

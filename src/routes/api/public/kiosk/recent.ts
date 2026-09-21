@@ -108,7 +108,12 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
               ]
                 .filter(Boolean)
                 .join(" • "),
-              role: person?.person_type === "staff" ? "บุคลากร" : "นักเรียน",
+              role:
+                person?.person_type === "staff"
+                  ? "บุคลากร"
+                  : person?.person_type === "visitor"
+                    ? "ผู้มาเยือน"
+                    : "นักเรียน",
               direction: row.direction === "out" ? "out" : "in",
               scanned_at: row.scanned_at,
               avatar_url: avatarUrl,

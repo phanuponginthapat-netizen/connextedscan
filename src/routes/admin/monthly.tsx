@@ -69,6 +69,7 @@ function MonthlyPage() {
           .from("students")
           .select("id, full_name, student_code, class_room, department, position, person_type")
           .eq("is_active", true)
+          .neq("person_type", "visitor")
           .limit(3000),
         supabase
           .from("attendance_logs")

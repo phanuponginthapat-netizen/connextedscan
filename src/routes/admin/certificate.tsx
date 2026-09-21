@@ -53,6 +53,7 @@ function CertificatePage() {
         .from("students")
         .select("id, student_code, full_name, class_room, department, person_type")
         .eq("is_active", true)
+        .neq("person_type", "visitor")
         .order("full_name");
       return data ?? [];
     },

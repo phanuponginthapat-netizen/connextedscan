@@ -131,6 +131,7 @@ export const CMS_GROUPS: CmsGroup[] = [
       { key: "nav.power", label: "เมนู – ประหยัดพลังงาน", default: "ประหยัดพลังงาน" },
       { key: "nav.individual_report", label: "เมนู – รายงานรายบุคคล", default: "รายงานรายบุคคล" },
       { key: "nav.class_report", label: "เมนู – รายงานการมาโรงเรียน", default: "รายงานการมาโรงเรียน" },
+      { key: "nav.visitors", label: "เมนู – ผู้มาเยือน", default: "ผู้มาเยือน" },
       { key: "nav.live", label: "เมนู – จอแสดงผลจอใหญ่", default: "จอแสดงผลจอใหญ่" },
       { key: "nav.health", label: "เมนู – สุขภาพระบบ", default: "สุขภาพระบบ" },
       { key: "nav.audit", label: "เมนู – บันทึกการใช้งาน", default: "บันทึกการใช้งาน" },

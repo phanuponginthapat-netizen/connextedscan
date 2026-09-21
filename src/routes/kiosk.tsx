@@ -87,6 +87,10 @@ type TodayStats = {
   checkin_only?: boolean;
   /** show the statistics board after this many minutes without a scan (0 = off) */
   idle_stats_minutes?: number;
+  /** visitors who scanned in today */
+  visitors_present?: number;
+  /** self-service visitor registration through the kiosk QR code is open */
+  visitor_register_enabled?: boolean;
 };
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
@@ -164,6 +168,30 @@ function Kiosk() {
   // the camera, so the next person is scanned the moment they step up.
   const [lastActivity, setLastActivity] = useState(() => Date.now());
   const bumpActivity = useCallback(() => setLastActivity(Date.now()), []);
+  // QR code that lets outside visitors register themselves on their phone.
+  const [visitorQr, setVisitorQr] = useState<string | null>(null);
+  const visitorMode = Boolean(todayStats?.visitor_register_enabled);
+  useEffect(() => {
+    if (!visitorMode) {
+      setVisitorQr(null);
+      return;
+    }
+    let stopped = false;
+    const build = async () => {
+      try {
+        const QRCode = await import("qrcode");
+        const url = `${window.location.origin}/visit`;
+        const data = await QRCode.toDataURL(url, { width: 512, margin: 1 });
+        if (!stopped) setVisitorQr(data);
+      } catch {
+        if (!stopped) setVisitorQr(null);
+      }
+    };
+    void build();
+    return () => {
+      stopped = true;
+    };
+  }, [visitorMode]);
 
   useEffect(() => {
     window.addEventListener("pointerdown", bumpActivity);
@@ -734,6 +762,13 @@ function Kiosk() {
           <span>คน · บุคลากร</span>
           <strong className="text-primary">{todayStats?.staff_present ?? 0}</strong>
           <span>คน</span>
+          {visitorMode && (
+            <>
+              <span>· ผู้มาเยือน</span>
+              <strong className="text-primary">{todayStats?.visitors_present ?? 0}</strong>
+              <span>คน</span>
+            </>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -857,6 +892,18 @@ function Kiosk() {
                 <h2 className="mt-1 font-display text-2xl font-bold">{t("kiosk.subtitle")}</h2>
                 <p className="mt-2 text-sm opacity-80">{agentOnline === true ? `ระบบพร้อม • ลงทะเบียนแล้ว ${knownFaces ?? 0} ใบหน้า` : "กำลังเชื่อมต่อระบบประมวลผล"}</p>
               </div>
+              {visitorMode && (
+                <div className="mt-4 rounded-2xl border-2 border-primary/30 bg-card p-4 text-center">
+                  <p className="font-display text-base font-bold text-primary">ผู้มาเยือน / บุคลากรภายนอก</p>
+                  <p className="mt-1 text-xs text-muted-foreground">สแกน QR code นี้เพื่อลงทะเบียนเข้าโรงเรียน</p>
+                  {visitorQr ? (
+                    <img src={visitorQr} alt="QR code ลงทะเบียนผู้มาเยือน" className="mx-auto mt-3 w-40 rounded-xl border bg-white p-2" />
+                  ) : (
+                    <div className="mx-auto mt-3 flex size-40 items-center justify-center rounded-xl border bg-muted text-xs text-muted-foreground">กำลังสร้าง QR…</div>
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">กรอกข้อมูลและถ่ายภาพใบหน้า แล้วมาสแกนที่ตู้นี้ • วันนี้เข้าแล้ว {todayStats?.visitors_present ?? 0} คน</p>
+                </div>
+              )}
               <div className="mt-5 flex min-h-0 flex-1 flex-col">
                 <div className="flex items-center justify-between"><h3 className="font-display text-lg font-bold">สแกนเข้าล่าสุด</h3><span className="text-xs text-muted-foreground">{recent.length} รายการ</span></div>
                 <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">

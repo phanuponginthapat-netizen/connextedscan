@@ -238,7 +238,8 @@ export async function runNotificationChecks(
   const { data: people } = await supabaseAdmin
     .from("students")
     .select("id, full_name, student_code, class_room, person_type, department")
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .neq("person_type", "visitor");
   const { data: todayLogs } = await supabaseAdmin
     .from("attendance_logs")
     .select("student_id, direction, status, scanned_at")

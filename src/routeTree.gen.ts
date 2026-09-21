@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as KioskRouteImport } from './routes/kiosk'
 import { Route as TabletRouteImport } from './routes/tablet'
+import { Route as VisitRouteImport } from './routes/visit'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAttendanceRouteImport } from './routes/admin/attendance'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
@@ -29,6 +30,7 @@ import { Route as AdminMonthlyRouteImport } from './routes/admin/monthly'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminPowerRouteImport } from './routes/admin/power'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminVisitorsRouteImport } from './routes/admin/visitors'
 import { Route as AdminStaffIndexRouteImport } from './routes/admin/staff/index'
 import { Route as AdminStaffIdRouteImport } from './routes/admin/staff/$id'
 import { Route as AdminStudentsIndexRouteImport } from './routes/admin/students/index'
@@ -51,6 +53,8 @@ import { Route as ApiPublicKioskTodayStatsRouteImport } from './routes/api/publi
 import { Route as ApiPublicKioskTtsRouteImport } from './routes/api/public/kiosk/tts'
 import { Route as ApiPublicKioskVisitorRouteImport } from './routes/api/public/kiosk/visitor'
 import { Route as ApiPublicKioskWebScanRouteImport } from './routes/api/public/kiosk/web-scan'
+import { Route as ApiPublicVisitRegisterRouteImport } from './routes/api/public/visit/register'
+import { Route as ApiPublicVisitStatusRouteImport } from './routes/api/public/visit/status'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -80,6 +84,11 @@ const KioskRoute = KioskRouteImport.update({
 const TabletRoute = TabletRouteImport.update({
   id: '/tablet',
   path: '/tablet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VisitRoute = VisitRouteImport.update({
+  id: '/visit',
+  path: '/visit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -150,6 +159,11 @@ const AdminPowerRoute = AdminPowerRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminVisitorsRoute = AdminVisitorsRouteImport.update({
+  id: '/visitors',
+  path: '/visitors',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminStaffIndexRoute = AdminStaffIndexRouteImport.update({
@@ -269,6 +283,16 @@ const ApiPublicKioskWebScanRoute = ApiPublicKioskWebScanRouteImport.update({
   path: '/api/public/kiosk/web-scan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVisitRegisterRoute = ApiPublicVisitRegisterRouteImport.update({
+  id: '/api/public/visit/register',
+  path: '/api/public/visit/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicVisitStatusRoute = ApiPublicVisitStatusRouteImport.update({
+  id: '/api/public/visit/status',
+  path: '/api/public/visit/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -277,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
+  '/visit': typeof VisitRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/certificate': typeof AdminCertificateRoute
@@ -290,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/visitors': typeof AdminVisitorsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
   '/admin/students/$id': typeof AdminStudentsIdRoute
@@ -313,6 +339,8 @@ export interface FileRoutesByFullPath {
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
+  '/api/public/visit/register': typeof ApiPublicVisitRegisterRoute
+  '/api/public/visit/status': typeof ApiPublicVisitStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -320,6 +348,7 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
+  '/visit': typeof VisitRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/certificate': typeof AdminCertificateRoute
@@ -333,6 +362,7 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/visitors': typeof AdminVisitorsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
   '/admin/students/$id': typeof AdminStudentsIdRoute
@@ -356,6 +386,8 @@ export interface FileRoutesByTo {
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
+  '/api/public/visit/register': typeof ApiPublicVisitRegisterRoute
+  '/api/public/visit/status': typeof ApiPublicVisitStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -365,6 +397,7 @@ export interface FileRoutesById {
   '/download': typeof DownloadRoute
   '/kiosk': typeof KioskRoute
   '/tablet': typeof TabletRoute
+  '/visit': typeof VisitRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/certificate': typeof AdminCertificateRoute
@@ -378,6 +411,7 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/power': typeof AdminPowerRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/visitors': typeof AdminVisitorsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/staff/$id': typeof AdminStaffIdRoute
   '/admin/students/$id': typeof AdminStudentsIdRoute
@@ -401,6 +435,8 @@ export interface FileRoutesById {
   '/api/public/kiosk/tts': typeof ApiPublicKioskTtsRoute
   '/api/public/kiosk/visitor': typeof ApiPublicKioskVisitorRoute
   '/api/public/kiosk/web-scan': typeof ApiPublicKioskWebScanRoute
+  '/api/public/visit/register': typeof ApiPublicVisitRegisterRoute
+  '/api/public/visit/status': typeof ApiPublicVisitStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -411,6 +447,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/kiosk'
     | '/tablet'
+    | '/visit'
     | '/admin/attendance'
     | '/admin/audit'
     | '/admin/certificate'
@@ -424,6 +461,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/power'
     | '/admin/settings'
+    | '/admin/visitors'
     | '/admin/'
     | '/admin/staff/$id'
     | '/admin/students/$id'
@@ -447,6 +485,8 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
+    | '/api/public/visit/register'
+    | '/api/public/visit/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -454,6 +494,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/kiosk'
     | '/tablet'
+    | '/visit'
     | '/admin/attendance'
     | '/admin/audit'
     | '/admin/certificate'
@@ -467,6 +508,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/power'
     | '/admin/settings'
+    | '/admin/visitors'
     | '/admin'
     | '/admin/staff/$id'
     | '/admin/students/$id'
@@ -490,6 +532,8 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
+    | '/api/public/visit/register'
+    | '/api/public/visit/status'
   id:
     | '__root__'
     | '/'
@@ -498,6 +542,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/kiosk'
     | '/tablet'
+    | '/visit'
     | '/admin/attendance'
     | '/admin/audit'
     | '/admin/certificate'
@@ -511,6 +556,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/power'
     | '/admin/settings'
+    | '/admin/visitors'
     | '/admin/'
     | '/admin/staff/$id'
     | '/admin/students/$id'
@@ -534,6 +580,8 @@ export interface FileRouteTypes {
     | '/api/public/kiosk/tts'
     | '/api/public/kiosk/visitor'
     | '/api/public/kiosk/web-scan'
+    | '/api/public/visit/register'
+    | '/api/public/visit/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -543,6 +591,7 @@ export interface RootRouteChildren {
   DownloadRoute: typeof DownloadRoute
   KioskRoute: typeof KioskRoute
   TabletRoute: typeof TabletRoute
+  VisitRoute: typeof VisitRoute
   ApiPublicAdminAttendanceDeleteRoute: typeof ApiPublicAdminAttendanceDeleteRoute
   ApiPublicAgentFileRoute: typeof ApiPublicAgentFileRoute
   ApiPublicCronBackupRoute: typeof ApiPublicCronBackupRoute
@@ -561,6 +610,8 @@ export interface RootRouteChildren {
   ApiPublicKioskTtsRoute: typeof ApiPublicKioskTtsRoute
   ApiPublicKioskVisitorRoute: typeof ApiPublicKioskVisitorRoute
   ApiPublicKioskWebScanRoute: typeof ApiPublicKioskWebScanRoute
+  ApiPublicVisitRegisterRoute: typeof ApiPublicVisitRegisterRoute
+  ApiPublicVisitStatusRoute: typeof ApiPublicVisitStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -605,6 +656,13 @@ declare module '@tanstack/react-router' {
       path: '/tablet'
       fullPath: '/tablet'
       preLoaderRoute: typeof TabletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/visit': {
+      id: '/visit'
+      path: '/visit'
+      fullPath: '/visit'
+      preLoaderRoute: typeof VisitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -703,6 +761,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/visitors': {
+      id: '/admin/visitors'
+      path: '/visitors'
+      fullPath: '/admin/visitors'
+      preLoaderRoute: typeof AdminVisitorsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/staff/': {
@@ -859,6 +924,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicKioskWebScanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/visit/register': {
+      id: '/api/public/visit/register'
+      path: '/api/public/visit/register'
+      fullPath: '/api/public/visit/register'
+      preLoaderRoute: typeof ApiPublicVisitRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/visit/status': {
+      id: '/api/public/visit/status'
+      path: '/api/public/visit/status'
+      fullPath: '/api/public/visit/status'
+      preLoaderRoute: typeof ApiPublicVisitStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -876,6 +955,7 @@ interface AdminRouteRouteChildren {
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPowerRoute: typeof AdminPowerRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminVisitorsRoute: typeof AdminVisitorsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminStaffIdRoute: typeof AdminStaffIdRoute
   AdminStudentsIdRoute: typeof AdminStudentsIdRoute
@@ -897,6 +977,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPowerRoute: AdminPowerRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminVisitorsRoute: AdminVisitorsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminStaffIdRoute: AdminStaffIdRoute,
   AdminStudentsIdRoute: AdminStudentsIdRoute,
@@ -915,6 +996,7 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadRoute: DownloadRoute,
   KioskRoute: KioskRoute,
   TabletRoute: TabletRoute,
+  VisitRoute: VisitRoute,
   ApiPublicAdminAttendanceDeleteRoute: ApiPublicAdminAttendanceDeleteRoute,
   ApiPublicAgentFileRoute: ApiPublicAgentFileRoute,
   ApiPublicCronBackupRoute: ApiPublicCronBackupRoute,
@@ -933,6 +1015,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicKioskTtsRoute: ApiPublicKioskTtsRoute,
   ApiPublicKioskVisitorRoute: ApiPublicKioskVisitorRoute,
   ApiPublicKioskWebScanRoute: ApiPublicKioskWebScanRoute,
+  ApiPublicVisitRegisterRoute: ApiPublicVisitRegisterRoute,
+  ApiPublicVisitStatusRoute: ApiPublicVisitStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

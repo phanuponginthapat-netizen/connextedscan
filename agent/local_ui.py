@@ -50,6 +50,10 @@ KIOSK_HTML = r"""<!doctype html>
   .saver{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;gap:26px;align-items:center;justify-content:center;color:#fff;background:#111c2c}.saver.show{display:flex}.saver .grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:18px}.saver .grid div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px;text-align:center}.saver .grid b{display:block;font-size:3rem;color:#70dda7}
   @media(max-width:850px){.today{display:none}.top{padding:10px 14px}.app{grid-template-columns:1fr;height:calc(100vh - 82px);overflow:auto}.stage{min-height:55vh}.side{min-height:45vh}.compare{width:360px}.brand span{display:none}}
   @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+.visitorBox{margin-bottom:12px;padding:12px;border-radius:16px;border:2px solid rgba(37,99,235,.35);background:#fff;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.visitorBox b{color:#1d4ed8;font-size:1rem}
+.visitorBox small{color:#64748b;font-size:.78rem}
+.visitorBox img{width:150px;height:150px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;padding:6px}
 </style>
 </head>
 <body>
@@ -64,6 +68,13 @@ KIOSK_HTML = r"""<!doctype html>
   </div>
   <aside class="side"><div class="welcome"><i>✦</i><span id="welcome">ยินดีต้อนรับเข้าสู่โรงเรียนของเรา</span></div>
     <div class="profile" id="profile"><img class="avatar" id="profileAvatar" alt=""/><h2 id="profileName">—</h2><div class="role" id="profileRole">—</div><div class="facts"><div class="fact"><small id="classLabel">ชั้นเรียน</small><b id="profileClass">—</b></div><div class="fact"><small id="idLabel">รหัส</small><b id="profileId">—</b></div></div><div class="resultTime"><span id="timeLabel">เวลาเข้า-ออก</span><b id="scanTime">--:--:-- น.</b></div><div class="resultBar" id="resultBar">บันทึกสำเร็จ</div></div>
+    <div class="visitorBox" id="visitorBox" style="display:none">
+      <b>ผู้มาเยือน / บุคลากรภายนอก</b>
+      <small>สแกน QR code นี้เพื่อลงทะเบียนเข้าโรงเรียน</small>
+      <img id="visitorQr" alt="QR code ลงทะเบียนผู้มาเยือน"/>
+      <small id="visitorUrl"></small>
+      <small>วันนี้เข้าแล้ว <b id="visitorCount">0</b> คน</small>
+    </div>
     <div class="waiting" id="waiting"><div class="ready"><small>FACEGATE READY</small><h2 id="subtitle">กรุณามองกล้องในกรอบ</h2><p id="readyDetail">ระบบพร้อมสำหรับการสแกน</p></div><div class="listTitle"><span>สแกนเข้าล่าสุด</span><small>วันนี้</small></div><div class="list" id="list"></div></div>
   </aside>
 </div>
@@ -299,6 +310,17 @@ async function loadStats() {
     const s = await (await fetch('/local/api/public/kiosk/today-stats')).json();
     $('sStudents').textContent = s.students_present || 0;
     $('sStaff').textContent = s.staff_present || 0;
+    // Visitor QR code: only shown while the admin keeps the mode open.
+    const vBox = $('visitorBox');
+    if (s.visitor_register_enabled) {
+      const url = location.origin + '/visit';
+      $('visitorQr').src = '/local/api/public/visit/qr.svg';
+      $('visitorUrl').textContent = url;
+      $('visitorCount').textContent = s.visitors_present || 0;
+      vBox.style.display = 'flex';
+    } else {
+      vBox.style.display = 'none';
+    }
     $('vPresent').textContent = s.present; $('vLate').textContent = s.late;
     $('vAbsent').textContent = s.absent; $('vLeft').textContent = s.left;
     checkinOnly = !!s.checkin_only;
@@ -341,6 +363,109 @@ loadBrand(); startCamera(); loadRecent(); loadStats(); clock();
 setInterval(tick, 900); setInterval(loadRecent, 15000); setInterval(loadStats, 60000);
 setInterval(applySaver, 5000);
 setInterval(clock, 1000); setInterval(loadBrand, 120000);
+</script>
+</body>
+</html>
+"""
+
+
+VISIT_HTML = r"""<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ลงทะเบียนผู้มาเยือน</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans Thai",system-ui,sans-serif;background:#f1f5f9;color:#0f172a}
+.wrap{max-width:520px;margin:0 auto;padding:18px}
+h1{font-size:1.3rem;margin:.2rem 0}
+p.lead{color:#64748b;font-size:.9rem;margin-top:0}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:.82rem;color:#475569;margin:10px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:12px;font:inherit}
+video,canvas,img#shot{width:100%;border-radius:14px;background:#0f172a;aspect-ratio:4/3;object-fit:cover}
+button{width:100%;padding:13px;border:0;border-radius:14px;background:#1d4ed8;color:#fff;font:inherit;font-weight:700;margin-top:12px}
+button.ghost{background:#e2e8f0;color:#0f172a}
+.msg{margin-top:10px;font-size:.88rem}
+.bad{color:#dc2626}
+.ok{background:#dcfce7;border:1px solid #16a34a;border-radius:14px;padding:14px;text-align:center}
+.code{font-size:1.6rem;font-weight:800;color:#15803d;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title">ลงทะเบียนเข้าโรงเรียน</h1>
+  <p class="lead">สำหรับผู้มาเยือนและบุคลากรภายนอก ใช้ได้เฉพาะวันนี้</p>
+  <div id="closed" class="card" style="display:none">ขณะนี้ยังไม่เปิดรับลงทะเบียนผู้มาเยือน กรุณาติดต่อเจ้าหน้าที่</div>
+  <div id="done" class="card" style="display:none">
+    <div class="ok"><div>ลงทะเบียนสำเร็จ</div><div class="code" id="doneCode"></div>
+    <div id="doneName"></div><small>กรุณาไปสแกนใบหน้าที่ตู้สแกนหน้าโรงเรียน</small></div>
+  </div>
+  <form id="form" class="card" style="display:none" onsubmit="return submitForm(event)">
+    <label>ชื่อ-นามสกุล *</label><input id="full_name" required maxlength="120"/>
+    <label>เพศ</label>
+    <select id="gender"><option value="">ไม่ระบุ</option><option value="male">ชาย</option><option value="female">หญิง</option></select>
+    <label>สังกัด / อาชีพ</label><input id="affiliation" maxlength="120"/>
+    <label>เหตุผลในการเข้าโรงเรียน</label><textarea id="reason" rows="2" maxlength="300"></textarea>
+    <label>ภาพใบหน้า *</label>
+    <video id="cam" autoplay playsinline muted></video>
+    <img id="shot" style="display:none" alt="ภาพใบหน้าที่ถ่าย"/>
+    <button type="button" class="ghost" id="shotBtn" onclick="takePhoto()">ถ่ายภาพใบหน้า</button>
+    <button type="submit" id="send">ลงทะเบียน</button>
+    <div class="msg bad" id="msg"></div>
+  </form>
+</div>
+<canvas id="canvas" style="display:none"></canvas>
+<script>
+const $ = (id) => document.getElementById(id);
+let photo = null;
+async function boot() {
+  try {
+    const s = await (await fetch('/local/api/public/visit/status')).json();
+    if (s.school_name) { $('title').textContent = 'ลงทะเบียนเข้า' + s.school_name; document.title = 'ลงทะเบียนผู้มาเยือน · ' + s.school_name; }
+    if (!s.enabled) { $('closed').style.display = 'block'; return; }
+  } catch (e) {}
+  $('form').style.display = 'block';
+  try { $('cam').srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } }); }
+  catch (e) { $('msg').textContent = 'ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้กล้อง'; }
+}
+function takePhoto() {
+  const cam = $('cam'), c = $('canvas');
+  c.width = cam.videoWidth || 640; c.height = cam.videoHeight || 480;
+  c.getContext('2d').drawImage(cam, 0, 0, c.width, c.height);
+  photo = c.toDataURL('image/jpeg', 0.9);
+  $('shot').src = photo; $('shot').style.display = 'block'; $('cam').style.display = 'none';
+  $('shotBtn').textContent = 'ถ่ายใหม่';
+  $('cam').style.display = 'none';
+}
+async function submitForm(e) {
+  e.preventDefault();
+  $('msg').textContent = '';
+  if (!photo) { $('msg').textContent = 'กรุณาถ่ายภาพใบหน้าก่อนลงทะเบียน'; return false; }
+  $('send').disabled = true; $('send').textContent = 'กำลังลงทะเบียน…';
+  try {
+    const res = await fetch('/local/api/public/visit/register', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        full_name: $('full_name').value, gender: $('gender').value,
+        affiliation: $('affiliation').value, reason: $('reason').value, photo,
+      }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || 'ลงทะเบียนไม่สำเร็จ');
+    $('form').style.display = 'none';
+    $('doneCode').textContent = d.code; $('doneName').textContent = d.full_name;
+    $('done').style.display = 'block';
+    const cam = $('cam');
+    if (cam.srcObject) cam.srcObject.getTracks().forEach((t) => t.stop());
+  } catch (err) {
+    $('msg').textContent = err.message || 'ลงทะเบียนไม่สำเร็จ กรุณาลองใหม่';
+    $('send').disabled = false; $('send').textContent = 'ลงทะเบียน';
+  }
+  return false;
+}
+boot();
 </script>
 </body>
 </html>

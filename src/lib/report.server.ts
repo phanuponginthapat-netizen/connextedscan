@@ -78,7 +78,8 @@ export async function buildAttendanceReport(days = 7): Promise<WeeklyReport> {
     supabaseAdmin
       .from("students")
       .select("id, full_name, class_room, department")
-      .eq("is_active", true),
+      .eq("is_active", true)
+      .neq("person_type", "visitor"),
     supabaseAdmin
       .from("attendance_logs")
       .select("student_id, direction, status, scanned_at")
