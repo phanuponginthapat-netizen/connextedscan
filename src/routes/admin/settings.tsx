@@ -80,6 +80,8 @@ type SettingsRow = {
   allow_web_scan: boolean;
   work_days: string;
   block_non_work_days: boolean;
+  checkin_only_mode: boolean;
+  idle_stats_minutes: number;
   late_grace_minutes: number;
   early_leave_before: string;
   voice_enabled: boolean;
