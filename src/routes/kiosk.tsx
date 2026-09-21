@@ -80,6 +80,10 @@ type TodayStats = {
   left?: number;
   windows_closed?: boolean;
   is_workday?: boolean;
+  /** check-in only school: no closing time, no late marking */
+  checkin_only?: boolean;
+  /** show the statistics board after this many minutes without a scan (0 = off) */
+  idle_stats_minutes?: number;
 };
 
 type GuideState = "idle" | "no_face" | "multiple_faces" | "scanning";
@@ -152,6 +156,20 @@ function Kiosk() {
   const [camReady, setCamReady] = useState(false);
   const [booted, setBooted] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  // Last time somebody actually used the kiosk (face seen, scan, or a touch).
+  // Used to rest the screen on the statistics board without ever stopping
+  // the camera, so the next person is scanned the moment they step up.
+  const [lastActivity, setLastActivity] = useState(() => Date.now());
+  const bumpActivity = useCallback(() => setLastActivity(Date.now()), []);
+
+  useEffect(() => {
+    window.addEventListener("pointerdown", bumpActivity);
+    window.addEventListener("keydown", bumpActivity);
+    return () => {
+      window.removeEventListener("pointerdown", bumpActivity);
+      window.removeEventListener("keydown", bumpActivity);
+    };
+  }, [bumpActivity]);
   const displayRef = useRef(display);
   displayRef.current = display;
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -497,6 +515,8 @@ function Kiosk() {
       lastDurationRef.current = performance.now() - startedAt;
       const data = (await res.json()) as Omit<ScanResult, "result"> & { result?: string };
       setLiveDetection(data.face_detection ?? null);
+      // Somebody is in front of the camera: wake the screen from the stats board.
+      if (data.face_detection || (data.result && data.result !== "no_face")) bumpActivity();
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
         setStatus("idle");
@@ -537,7 +557,7 @@ function Kiosk() {
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, booted, capture, speak, loadRecent]);
+  }, [agentUrl, agentOnline, booted, capture, speak, loadRecent, bumpActivity]);
 
   // Pace the scanning to how fast this PC actually answers: a slow machine
   // gets breathing room instead of piling up frames it cannot process.
@@ -652,6 +672,29 @@ function Kiosk() {
     year: "numeric",
   });
   const success = result?.result === "ok";
+
+  // Resting screen: after the configured quiet period, or once the scan
+  // windows close, or when the power plan blanks the screen. The camera and
+  // the scan loop keep running underneath, so the board disappears again as
+  // soon as a face appears.
+  const checkinOnly = Boolean(todayStats?.checkin_only);
+  const idleMinutes = Number(todayStats?.idle_stats_minutes ?? 0);
+  const idleRest = idleMinutes > 0 && now.getTime() - lastActivity >= idleMinutes * 60_000;
+  const showSaver =
+    (todayStats?.screensaver_mode ?? "stats") === "stats" &&
+    Boolean(todayStats?.windows_closed || powerInfo?.screen_off || idleRest);
+  const saverTiles = checkinOnly
+    ? [
+        { label: "มาแล้ว", value: todayStats?.present ?? 0 },
+        { label: "ยังไม่มา", value: todayStats?.absent ?? 0 },
+        { label: "ทั้งหมด", value: todayStats?.people ?? 0 },
+      ]
+    : [
+        { label: "มาแล้ว", value: todayStats?.present ?? 0 },
+        { label: "มาสาย", value: todayStats?.late ?? 0 },
+        { label: "ขาด", value: todayStats?.absent ?? 0 },
+        { label: "กลับแล้ว", value: todayStats?.left ?? 0 },
+      ];
 
   return (
     <main className="flex h-screen w-screen flex-col overflow-hidden bg-background font-sans">
@@ -825,11 +868,11 @@ function Kiosk() {
         </div>
       )}
 
-      {(todayStats?.screensaver_mode ?? "stats") === "stats" && (todayStats?.windows_closed || powerInfo?.screen_off) && (
-        <button type="button" className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-8 bg-camera p-8 text-camera-foreground" onClick={() => { if (powerInfo?.screen_off) void sendPowerCommand("screen_on"); }}>
+      {showSaver && (
+        <button type="button" className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-8 bg-camera p-8 text-camera-foreground" onClick={() => { bumpActivity(); if (powerInfo?.screen_off) void sendPowerCommand("screen_on"); }}>
           <div className="text-center"><p className="text-sm opacity-60">สถิติวันนี้</p><p className="mt-2 font-display text-3xl font-semibold">{todayStats?.school_name || t("brand.name")}</p><p className="mt-1 opacity-60">{dateText}</p></div>
-          <div className="grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">{[{ label: "มาแล้ว", value: todayStats?.present ?? 0 }, { label: "มาสาย", value: todayStats?.late ?? 0 }, { label: "ขาด", value: todayStats?.absent ?? 0 }, { label: "กลับแล้ว", value: todayStats?.left ?? 0 }].map((item) => <div key={item.label} className="rounded-2xl border border-camera-foreground/10 bg-camera-foreground/5 p-6 text-center"><p className="text-6xl font-bold text-success">{item.value}</p><p className="mt-2 text-sm opacity-70">{item.label}</p></div>)}</div>
-          <p className="text-sm opacity-60">แตะหน้าจอเพื่อใช้งานต่อ</p>
+          <div className="grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">{saverTiles.map((item) => <div key={item.label} className="rounded-2xl border border-camera-foreground/10 bg-camera-foreground/5 p-6 text-center"><p className="text-6xl font-bold text-success">{item.value}</p><p className="mt-2 text-sm opacity-70">{item.label}</p></div>)}</div>
+          <p className="text-sm opacity-60">กล้องยังทำงานอยู่ — เดินเข้ามาสแกนได้ทันที</p>
         </button>
       )}
 

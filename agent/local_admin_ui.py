@@ -590,6 +590,7 @@ const FIELDS = [
   ['checkout_start', 'เริ่มสแกนออก', 'time'], ['checkout_end', 'ปิดสแกนออก', 'time'],
   ['late_after', 'ถือว่าสายหลังเวลา', 'time'], ['late_grace_minutes', 'ผ่อนผัน (นาที)', 'number'],
   ['early_leave_before', 'ออกก่อนเวลา ก่อน', 'time'], ['work_days', 'วันทำการ (0=อาทิตย์)', 'text'],
+  ['idle_stats_minutes', 'พักหน้าจอเป็นสถิติเมื่อไม่มีคนสแกน (นาที, 0=ไม่พัก)', 'number'],
   ['match_threshold', 'ความเข้มงวดการจำหน้า (0.3–0.6)', 'number'],
   ['geometry_min_score', 'ความเข้มงวดสัดส่วนใบหน้า', 'number'],
   ['duplicate_cooldown_minutes', 'กันสแกนซ้ำ (นาที)', 'number'],
@@ -608,6 +609,7 @@ const FIELDS = [
   ['auto_power_off_time', 'เวลาปิดเครื่องอัตโนมัติ', 'time'],
 ];
 const FLAGS = [
+  ['checkin_only_mode', 'สแกนเข้าอย่างเดียว (ไม่มีสแกนออก/ไม่นับสาย)'],
   ['block_non_work_days', 'ปิดรับสแกนวันหยุด'], ['require_liveness', 'ตรวจว่าเป็นคนจริง'],
   ['save_snapshots', 'เก็บภาพตอนสแกน'], ['auto_enroll', 'เรียนรู้ใบหน้าเพิ่มอัตโนมัติ'],
   ['visitor_mode', 'บันทึกภาพผู้ไม่ลงทะเบียน'],

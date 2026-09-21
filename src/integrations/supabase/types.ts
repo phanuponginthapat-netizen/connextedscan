@@ -373,6 +373,7 @@ export type Database = {
           backup_weekday: number
           block_non_work_days: boolean
           checkin_end: string
+          checkin_only_mode: boolean
           checkin_start: string
           checkout_end: string
           checkout_start: string
@@ -401,6 +402,7 @@ export type Database = {
           geometry_min_score: number
           geometry_weight: number
           id: boolean
+          idle_stats_minutes: number
           kiosk_mirror: boolean
           kiosk_news_enabled: boolean
           kiosk_news_text: string
@@ -471,6 +473,7 @@ export type Database = {
           backup_weekday?: number
           block_non_work_days?: boolean
           checkin_end?: string
+          checkin_only_mode?: boolean
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
@@ -499,6 +502,7 @@ export type Database = {
           geometry_min_score?: number
           geometry_weight?: number
           id?: boolean
+          idle_stats_minutes?: number
           kiosk_mirror?: boolean
           kiosk_news_enabled?: boolean
           kiosk_news_text?: string
@@ -569,6 +573,7 @@ export type Database = {
           backup_weekday?: number
           block_non_work_days?: boolean
           checkin_end?: string
+          checkin_only_mode?: boolean
           checkin_start?: string
           checkout_end?: string
           checkout_start?: string
@@ -597,6 +602,7 @@ export type Database = {
           geometry_min_score?: number
           geometry_weight?: number
           id?: boolean
+          idle_stats_minutes?: number
           kiosk_mirror?: boolean
           kiosk_news_enabled?: boolean
           kiosk_news_text?: string

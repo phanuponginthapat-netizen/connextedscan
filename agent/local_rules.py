@@ -56,10 +56,28 @@ def is_work_day(settings: dict[str, Any], weekday: int) -> bool:
     return weekday in parse_work_days(settings.get("work_days"))
 
 
+def is_checkin_only(settings: dict[str, Any]) -> bool:
+    """Schools that only record arrivals: no check-out, no late marking."""
+    return bool(settings.get("checkin_only_mode"))
+
+
+def late_limit(settings: dict[str, Any]) -> float:
+    """Minute after which an arrival counts as late (never, in check-in mode)."""
+    if is_checkin_only(settings):
+        return float("inf")
+    return time_to_minutes(settings.get("late_after")) + int(
+        settings.get("late_grace_minutes") or 0
+    )
+
+
 def decide_direction(settings: dict[str, Any], minutes: int, requested: str | None,
                      weekday: int | None = None) -> dict:
     if weekday is not None and not is_work_day(settings, weekday):
         return {"allowed": False, "direction": requested or "in", "reason": "non_work_day"}
+
+    # Check-in only: always an arrival, at any time of the working day.
+    if is_checkin_only(settings):
+        return {"allowed": True, "direction": "in", "reason": None}
 
     in_open = (
         time_to_minutes(settings.get("checkin_start")) <= minutes
@@ -84,14 +102,13 @@ def decide_direction(settings: dict[str, Any], minutes: int, requested: str | No
 
 
 def is_late(settings: dict[str, Any], minutes: int, direction: str) -> bool:
-    if direction != "in":
+    if direction != "in" or is_checkin_only(settings):
         return False
-    grace = int(settings.get("late_grace_minutes") or 0)
-    return minutes > time_to_minutes(settings.get("late_after")) + grace
+    return minutes > late_limit(settings)
 
 
 def is_early_leave(settings: dict[str, Any], minutes: int, direction: str) -> bool:
     before = settings.get("early_leave_before")
-    if direction != "out" or not before:
+    if direction != "out" or is_checkin_only(settings) or not before:
         return False
     return minutes < time_to_minutes(before)

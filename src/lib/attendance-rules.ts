@@ -15,6 +15,11 @@ export type TimeWindows = {
   early_leave_before?: string | null;
   work_days?: string | null;
   block_non_work_days?: boolean | null;
+  /**
+   * Check-in only schools: every scan is recorded as an arrival, the scan
+   * windows never close and nobody is ever marked late or leaving early.
+   */
+  checkin_only_mode?: boolean | null;
 };
 
 export type Direction = "in" | "out";
@@ -80,6 +85,9 @@ export function decideDirection(
     return { allowed: false, direction: requested ?? "in", reason: "non_work_day" };
   }
 
+  // Check-in only: always an arrival, at any time of the working day.
+  if (settings.checkin_only_mode) return { allowed: true, direction: "in" };
+
   const inOpen =
     minutes >= timeToMinutes(settings.checkin_start) &&
     minutes <= timeToMinutes(settings.checkin_end);
@@ -101,7 +109,7 @@ export function decideDirection(
 
 /** Late = arrived after the late threshold plus the grace period. */
 export function isLate(settings: TimeWindows, minutes: number, direction: Direction): boolean {
-  if (direction !== "in") return false;
+  if (direction !== "in" || settings.checkin_only_mode) return false;
   return minutes > timeToMinutes(settings.late_after) + (settings.late_grace_minutes ?? 0);
 }
 
@@ -111,6 +119,6 @@ export function isEarlyLeave(
   minutes: number,
   direction: Direction,
 ): boolean {
-  if (direction !== "out" || !settings.early_leave_before) return false;
+  if (direction !== "out" || settings.checkin_only_mode || !settings.early_leave_before) return false;
   return minutes < timeToMinutes(settings.early_leave_before);
 }

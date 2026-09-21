@@ -201,6 +201,7 @@ export async function notifyAll(
   checkin_end: string;
   checkout_start: string;
   checkout_end: string;
+  checkin_only_mode: boolean | null;
 };
 
 const thaiTime = (iso: string) =>
@@ -273,8 +274,8 @@ export async function runNotificationChecks(
     }
   }
 
-  // 2. Late arrivals today.
-  if (settings.notify_late && workDay) {
+  // 2. Late arrivals today (never in check-in only mode).
+  if (settings.notify_late && workDay && !settings.checkin_only_mode) {
     const lateLimit = timeToMinutes(settings.late_after) + (settings.late_grace_minutes ?? 0);
     const late = (todayLogs ?? []).filter((l) => {
       if (l.direction !== "in" || l.status !== "ok") return false;
@@ -295,8 +296,8 @@ export async function runNotificationChecks(
     }
   }
 
-  // 3. Early leave today.
-  if (settings.notify_early_leave && workDay) {
+  // 3. Early leave today (never in check-in only mode).
+  if (settings.notify_early_leave && workDay && !settings.checkin_only_mode) {
     const limit = timeToMinutes(settings.early_leave_before);
     const early = (todayLogs ?? []).filter((l) => {
       if (l.direction !== "out" || l.status !== "ok") return false;
