@@ -122,6 +122,7 @@ function Kiosk() {
   const [showConfig, setShowConfig] = useState(false);
   const [status, setStatus] = useState<"idle" | "scanning" | "cooldown">("idle");
   const [guide, setGuide] = useState<GuideState>("idle");
+  const [guideHint, setGuideHint] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [liveDetection, setLiveDetection] = useState<LiveDetection | null>(null);
   const [countdown, setCountdown] = useState(0);
@@ -550,11 +551,15 @@ function Kiosk() {
       if (data.face_detection || (data.result && data.result !== "no_face")) bumpActivity();
       if (!data.result || data.result === "no_face") {
         setGuide("no_face");
+        // The local program knows why it could not read the face (too far,
+        // outside the frame): show that instead of one generic line.
+        setGuideHint(data.message ?? "");
         setStatus("idle");
         busyRef.current = false;
         return;
       }
       if (data.result === "multiple_faces") {
+        setGuideHint(data.message ?? "");
         setGuide("multiple_faces");
         setStatus("idle");
         busyRef.current = false;
@@ -821,35 +826,9 @@ function Kiosk() {
           )}
 
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-xl border border-camera-foreground/15 bg-camera/75 px-5 py-2 text-center text-sm font-medium text-camera-foreground backdrop-blur">
-            {agentOnline === false ? "กรุณาเปิดโปรแกรม FaceGate" : guide === "multiple_faces" ? t("kiosk.guide_multiple") : guide === "no_face" ? t("kiosk.guide_no_face") : status === "scanning" ? t("kiosk.guide_scanning") : t("kiosk.guide_idle")}
+            {agentOnline === false ? "กรุณาเปิดโปรแกรม FaceGate" : guide === "multiple_faces" ? (guideHint || t("kiosk.guide_multiple")) : guide === "no_face" ? (guideHint || t("kiosk.guide_no_face")) : status === "scanning" ? t("kiosk.guide_scanning") : t("kiosk.guide_idle")}
           </div>
 
-          {result && (result.snapshot_url || result.avatar_url) && (
-            <div className="animate-soft-in absolute bottom-5 right-5 w-[min(28rem,calc(100%-2.5rem))] rounded-2xl border bg-card/95 p-5 shadow-panel backdrop-blur">
-              <h2 className="text-center font-display text-lg font-bold">{t("kiosk.comparison_title")}</h2>
-              <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                <figure className="text-center">
-                  <img src={result.snapshot_url ?? result.avatar_url ?? ""} alt={t("kiosk.camera_image_label")} className="mx-auto aspect-square w-full max-w-28 rounded-xl bg-muted object-cover" />
-                  <figcaption className="mt-1 text-xs text-muted-foreground">{t("kiosk.camera_image_label")}</figcaption>
-                </figure>
-                {success ? <CheckCircle2 className="size-9 text-success" /> : <XCircle className="size-9 text-destructive" />}
-                <figure className="text-center">
-                  {result.registered_face_url || result.avatar_url ? (
-                    <img src={result.registered_face_url ?? result.avatar_url ?? ""} alt={t("kiosk.registered_image_label")} className="mx-auto aspect-square w-full max-w-28 rounded-xl bg-muted object-cover" />
-                  ) : (
-                    <div className="mx-auto flex aspect-square w-full max-w-28 items-center justify-center rounded-xl bg-muted"><User className="size-10 text-muted-foreground" /></div>
-                  )}
-                  <figcaption className="mt-1 text-xs text-muted-foreground">{t("kiosk.registered_image_label")}</figcaption>
-                </figure>
-              </div>
-              {result.confidence !== undefined && (
-                <div className="mt-4 rounded-xl bg-muted p-3">
-                  <div className="flex justify-between text-xs font-semibold"><span>{t("kiosk.match_score_label")}</span><span className="text-success">{scanPercent}%</span></div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-border"><div className="h-full rounded-full bg-success transition-all" style={{ width: `${scanPercent}%` }} /></div>
-                </div>
-              )}
-            </div>
-          )}
           {camError && <div className="absolute inset-0 flex items-center justify-center bg-camera p-6 text-center text-destructive-foreground">{camError}</div>}
         </div>
 

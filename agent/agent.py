@@ -435,8 +435,8 @@ def geometry_similarity(a: dict | None, b: dict | None) -> float | None:
 # Size of the on-screen oval guide, as a share of the camera picture.
 # Faces outside this oval belong to people walking past, not to the person
 # being scanned, so they are ignored.
-GUIDE_RX = 0.30
-GUIDE_RY = 0.36
+GUIDE_RX = 0.38
+GUIDE_RY = 0.44
 # Anyone whose face reaches within this much of the oval counts as crowding it.
 GUIDE_MARGIN = 1.25
 

@@ -467,6 +467,13 @@ function startAgent() {
         message: "ยังไม่ได้ติดตั้งไลบรารีที่ตัวประมวลผลต้องใช้ (pip install -r requirements.txt)",
         lastError: line.slice(-500),
       };
+    } else if (
+      /obsensor|videoio|Camera index out of range|global .*\.cpp:/i.test(line)
+    ) {
+      // OpenCV prints noisy camera-probe warnings on Windows while it looks for
+      // the webcam. They are harmless, so they must not flip the start-up
+      // screen into a red failure state.
+      appendLog(`ignored camera probe noise: ${line.slice(-200)}`);
     } else if (/error|exception|traceback|missing/i.test(line)) {
       agentStatus = { ...agentStatus, lastError: line.slice(-500) };
     }
