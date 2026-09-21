@@ -100,7 +100,7 @@ function showResult(d, captured) {
     : ['นักเรียน', student.class_room ? 'ชั้น ' + student.class_room : ''].filter(Boolean).join(' • ');
   $('profileClass').textContent = student.class_room || student.department || '—';
   $('profileId').textContent = student.student_code || '—';
-  $('scanTime').textContent = new Date().toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' น.';
+  $('scanTime').textContent = serverNow().toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' น.';
   $('resultBar').className = 'resultBar' + (ok ? '' : ' bad');
   $('resultBar').textContent = ok ? (content.kiosk_success_label || 'บันทึกสำเร็จ') : d.message;
   setTimeout(() => { $('profile').className = 'profile'; $('waiting').style.display = ''; }, (d.next_delay_seconds || 5) * 1000);
@@ -294,9 +294,12 @@ async function loadRecent() {
       || '<div style="color:#94a3b8;font-size:.9rem">ยังไม่มีการสแกนวันนี้</div>';
   } catch (e) {}
 }
+let serverOffset = 0; // real Thai time minus this PC's clock
+function serverNow() { return new Date(Date.now() + serverOffset); }
 async function loadStats() {
   try {
     const s = await (await fetch('/local/api/public/kiosk/today-stats')).json();
+    if (s.server_time) { const t = Date.parse(s.server_time); if (!isNaN(t)) serverOffset = t - Date.now(); }
     $('sStudents').textContent = s.students_present || 0;
     $('sStaff').textContent = s.staff_present || 0;
     // Visitor QR code: only shown while the admin keeps the mode open.
@@ -344,7 +347,7 @@ function wake() { lastActivity = Date.now(); $('saver').className = 'saver'; }
 window.addEventListener('pointerdown', bumpActivity);
 window.addEventListener('keydown', bumpActivity);
 function clock() {
-  const now = new Date();
+  const now = serverNow();
   $('clock').textContent = now.toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn', { hour: '2-digit', minute: '2-digit', second:'2-digit', hour12:false });
   $('date').textContent = now.toLocaleDateString('th-TH-u-ca-buddhist-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
