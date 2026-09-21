@@ -67,7 +67,8 @@ export async function recordScan(input: RecordScanInput) {
   }
 
   // Visitors register themselves through the QR code and may only enter on the
-  // day they registered; time windows and lateness never apply to them.
+  // day they registered. Apart from that they follow exactly the same scan
+  // rules as the school (check-in only or check-in/out, work days, windows).
   const isVisitor = student.person_type === "visitor";
   if (isVisitor) {
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
