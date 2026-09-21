@@ -363,19 +363,48 @@ function SettingsPage() {
               <CmsSection group={activeCms} />
             ) : !form ? null : section === "time" ? (
               <div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {timeFields.map(([key, label]) => (
-                    <div key={key} className="space-y-1.5">
-                      <Label>{label}</Label>
-                      <TimeInput24
-                        value={String(form[key]).slice(0, 5)}
-                        onChange={(v) => set({ [key]: `${v}:00` } as Partial<SettingsRow>)}
-                      />
-                    </div>
-                  ))}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+                  <div className="min-w-0">
+                    <Label className="text-base">สแกนเข้าอย่างเดียว</Label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      รับเฉพาะการสแกนเข้า ไม่มีการสแกนออก ไม่มีการนับมาสาย และสแกนได้ตลอดวันทำการ
+                    </p>
+                  </div>
+                  <Switch
+                    checked={form.checkin_only_mode}
+                    onCheckedChange={(v) => set({ checkin_only_mode: v })}
+                  />
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  {form.checkin_only_mode
+                    ? null
+                    : timeFields.map(([key, label]) => (
+                        <div key={key} className="space-y-1.5">
+                          <Label>{label}</Label>
+                          <TimeInput24
+                            value={String(form[key]).slice(0, 5)}
+                            onChange={(v) => set({ [key]: `${v}:00` } as Partial<SettingsRow>)}
+                          />
+                        </div>
+                      ))}
+                  <div className="space-y-1.5">
+                    <Label>พักหน้าจอเป็นสถิติเมื่อไม่มีคนสแกน (นาที)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={Number(form.idle_stats_minutes)}
+                      onChange={(e) => set({ idle_stats_minutes: Number(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      0 = ไม่พักหน้าจอ กล้องยังทำงานตลอด สแกนได้ทันทีที่มีคนเดินมา
+                    </p>
+                  </div>
                 </div>
                 <p className="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                  การสแกนนอกช่วงเวลาที่กำหนดจะไม่ถูกบันทึก และตู้สแกนจะแจ้งว่ายังไม่ถึงเวลาสแกน
+                  {form.checkin_only_mode
+                    ? "โหมดสแกนเข้าอย่างเดียว: ทุกการสแกนถูกบันทึกเป็นเวลาเข้า ไม่มีการปิดเวลาสแกนและไม่มีการแจ้งมาสาย"
+                    : "การสแกนนอกช่วงเวลาที่กำหนดจะไม่ถูกบันทึก และตู้สแกนจะแจ้งว่ายังไม่ถึงเวลาสแกน"}
                 </p>
                 {SaveBar}
               </div>
