@@ -557,7 +557,7 @@ function Kiosk() {
       setStatus("idle");
       busyRef.current = false;
     }
-  }, [agentUrl, agentOnline, booted, capture, speak, loadRecent]);
+  }, [agentUrl, agentOnline, booted, capture, speak, loadRecent, bumpActivity]);
 
   // Pace the scanning to how fast this PC actually answers: a slow machine
   // gets breathing room instead of piling up frames it cannot process.
