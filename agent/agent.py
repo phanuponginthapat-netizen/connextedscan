@@ -15,6 +15,7 @@ Start with:  python agent.py
 
 import base64
 import io
+from datetime import datetime, timezone
 import json
 import os
 import platform
@@ -610,7 +611,30 @@ def process_pending(pending: list[dict]) -> None:
         json={"results": results},
         timeout=60,
     )
-    print(f"[agent] processed {len(results)} registration photos")
+
+    # Make the new faces usable straight away instead of waiting for the next
+    # sync round trip: a visitor who just registered can scan immediately.
+    owners = {item["id"]: item.get("student_id") for item in pending}
+    applied = 0
+    with lock:
+        for res in results:
+            if res.get("error") or not res.get("embedding"):
+                continue
+            student_id = owners.get(res["face_id"])
+            if not student_id:
+                continue
+            state["faces"][res["face_id"]] = {
+                "student_id": student_id,
+                "embedding": res["embedding"],
+                "geometry": res.get("geometry"),
+                "version": datetime.now(timezone.utc).isoformat(),
+            }
+            applied += 1
+        if applied:
+            rebuild_matrix_locked()
+    if applied:
+        save_cache()
+    print(f"[agent] processed {len(results)} registration photos (+{applied} ready now)")
 
 
 
