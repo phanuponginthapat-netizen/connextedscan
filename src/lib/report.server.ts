@@ -57,13 +57,15 @@ export async function buildAttendanceReport(days = 7): Promise<WeeklyReport> {
   const { data: settings } = await supabaseAdmin
     .from("settings")
     .select(
-      "late_after, late_grace_minutes, work_days, block_non_work_days, school_name",
+      "late_after, late_grace_minutes, work_days, block_non_work_days, school_name, checkin_only_mode",
     )
     .eq("id", true)
     .maybeSingle();
 
-  const lateLimit =
-    timeToMinutes(settings?.late_after ?? "08:00:00") + (settings?.late_grace_minutes ?? 0);
+  // Check-in only schools never mark anyone late.
+  const lateLimit = settings?.checkin_only_mode
+    ? Number.POSITIVE_INFINITY
+    : timeToMinutes(settings?.late_after ?? "08:00:00") + (settings?.late_grace_minutes ?? 0);
   const workDays = parseWorkDays(settings?.work_days ?? null);
   const blockNonWork = settings?.block_non_work_days ?? false;
 
