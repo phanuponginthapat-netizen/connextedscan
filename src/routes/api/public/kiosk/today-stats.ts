@@ -91,8 +91,6 @@ async function handle() {
   const checkoutClosed = !checkinOnly && now > timeToMinutes(settings?.checkout_end ?? "19:00:00");
 
   return jsonResponse({
-    // Authoritative clock: the kiosk PC's own time may be wrong.
-    server_time: new Date().toISOString(),
     school_name: settings?.school_name ?? "",
     screensaver_mode: settings?.screensaver_mode ?? "stats",
     checkin_only: checkinOnly,
