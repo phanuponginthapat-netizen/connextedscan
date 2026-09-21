@@ -109,7 +109,7 @@ export const CMS_GROUPS: CmsGroup[] = [
       },
       { key: "kiosk.guide_scanning", label: "ข้อความระหว่างตรวจ", default: "กำลังตรวจใบหน้า…" },
       { key: "kiosk.next_person", label: "ข้อความเรียกคนถัดไป", default: "เชิญคนถัดไป" },
-      { key: "kiosk.denied", label: "ข้อความเมื่อไม่ผ่าน", default: "ไม่พบข้อมูลผู้ลงทะเบียน" },
+      { key: "kiosk.denied", label: "ข้อความเมื่อไม่ผ่าน", default: "ท่านไม่ใช่บุคลากรหรือนักเรียนของเรา กรุณาติดต่อเจ้าหน้าที่" },
     ],
   },
   {

@@ -608,30 +608,49 @@ def process_pending(pending: list[dict]) -> None:
 
 # --- Remote control, stranger alerts, visitors and self-update ----------------
 
-_fails = {"count": 0, "last": 0.0}
+_fails = {"count": 0, "last": 0.0, "reported": False, "escalated": False}
 
 
-def note_failed_scan(snapshot: str | None) -> None:
-    """Warn the school when the same unknown person keeps trying to get in."""
+def note_failed_scan(snapshot: str | None) -> dict:
+    """Capture once, report once, then escalate once on the fifth attempt."""
     now = time.time()
     if now - _fails["last"] > 120:
         _fails["count"] = 0
+        _fails["reported"] = False
+        _fails["escalated"] = False
     _fails["last"] = now
     _fails["count"] += 1
     with lock:
-        threshold = int(state["settings"].get("failed_alert_threshold") or 3)
-    if _fails["count"] < max(1, threshold):
-        return
-    _fails["count"] = 0
+        threshold = max(5, int(state["settings"].get("failed_alert_threshold") or 5))
+    first_report = not _fails["reported"]
+    escalation = _fails["count"] >= threshold and not _fails["escalated"]
+    if not first_report and not escalation:
+        return {"attempts": _fails["count"], "escalated": _fails["escalated"]}
+    message = (
+        "บุคคลไม่ทราบชื่อกำลังพยายามบุกรุกโรงเรียน กรุณาดำเนินมาตรการรักษาความปลอดภัย"
+        if escalation
+        else "พบบุคคลที่ไม่ใช่บุคลากรหรือนักเรียนของโรงเรียน กรุณาตรวจสอบ"
+    )
     try:
         requests.post(
             f"{CLOUD_URL}/api/public/kiosk/alert",
             headers=HEADERS,
-            json={"attempts": threshold, "snapshot": snapshot},
+            json={
+                "attempts": _fails["count"],
+                "snapshot": snapshot if first_report else None,
+                "kind": "intrusion_attempt" if escalation else "unknown_person",
+                "message": message,
+                "detail": message,
+            },
             timeout=10,
         )
+        if first_report:
+            _fails["reported"] = True
+        if escalation:
+            _fails["escalated"] = True
     except Exception as exc:  # noqa: BLE001
         print(f"[agent] alert failed: {exc}")
+    return {"attempts": _fails["count"], "escalated": escalation or _fails["escalated"]}
 
 
 def log_visitor(snapshot: str | None, direction: str | None) -> dict | None:
@@ -1244,15 +1263,23 @@ def run_scan(image: str, direction: str | None = None, dry_run: bool = False):
 
     if best_score < threshold:
         snapshot = crop_face_jpeg(arr, face)
-        note_failed_scan(snapshot)
+        failure = note_failed_scan(snapshot)
         if settings.get("visitor_mode"):
             visitor = log_visitor(snapshot, direction)
             if visitor:
                 return {**visitor, "face_detection": visual}
         return door_react({
             "result": "denied",
-            "message": "ไม่พบข้อมูลผู้ใช้ กรุณาลงทะเบียนก่อน",
-            "speak": settings.get("voice_denied_text") or "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
+            "message": (
+                "ท่านกำลังพยายามบุกรุกโรงเรียน ทางเราจำเป็นต้องใช้มาตรการรักษาความปลอดภัย"
+                if failure.get("escalated")
+                else "ท่านไม่ใช่บุคลากรหรือนักเรียนของเรา กรุณาติดต่อเจ้าหน้าที่"
+            ),
+            "speak": (
+                "ท่านกำลังพยายามบุกรุกโรงเรียน ทางเราจำเป็นต้องใช้มาตรการรักษาความปลอดภัย"
+                if failure.get("escalated")
+                else settings.get("voice_denied_text") or "ท่านไม่ใช่บุคลากรหรือนักเรียนของเรา กรุณาติดต่อเจ้าหน้าที่"
+            ),
             "next_delay_seconds": delay,
             "face_detection": visual,
         })

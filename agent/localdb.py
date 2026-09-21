@@ -80,7 +80,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "voice_template": "สแกนสำเร็จ {name} {direction}",
     "voice_late_suffix": "มาสายนะคะ",
     "voice_duplicate_template": "สแกนซ้ำ {name} บันทึกเวลาไปแล้ว",
-    "voice_denied_text": "ไม่พบข้อมูล กรุณาติดต่อเจ้าหน้าที่",
+    "voice_denied_text": "ท่านไม่ใช่บุคลากรหรือนักเรียนของเรา กรุณาติดต่อเจ้าหน้าที่",
     "voice_out_of_window_text": "ยังไม่ถึงเวลาสแกน กรุณาติดต่อเจ้าหน้าที่",
     "kiosk_show_recent": True,
     "kiosk_recent_limit": 20,
