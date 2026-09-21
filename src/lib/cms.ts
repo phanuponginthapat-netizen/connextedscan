@@ -87,9 +87,14 @@ export const CMS_GROUPS: CmsGroup[] = [
     fields: [
       { key: "kiosk.title", label: "หัวเรื่องหน้าจอ", default: "สแกนใบหน้าเข้า-ออก" },
       { key: "kiosk.subtitle", label: "คำอธิบาย", default: "ยืนให้ใบหน้าอยู่ในกรอบทีละคน" },
-      { key: "kiosk.welcome", label: "ข้อความต้อนรับเมื่อสแกนผ่าน", default: "ยินดีต้อนรับกลับโรงเรียน!" },
+      {
+        key: "kiosk.welcome",
+        label: "ข้อความต้อนรับก่อนชื่อโรงเรียน",
+        default: "ยินดีต้อนรับเข้าสู่",
+        help: "ระบบจะเติมชื่อโรงเรียน/หน่วยงานจาก CMS ต่อท้ายให้อัตโนมัติ",
+      },
       { key: "kiosk.live_label", label: "ป้ายกล้องสด", default: "กล้องสด" },
-      { key: "kiosk.today_label", label: "ป้ายสถิติผู้มาเรียนวันนี้", default: "เข้าเรียนวันนี้" },
+      { key: "kiosk.today_label", label: "หัวข้อจำนวนผู้มาโรงเรียนวันนี้", default: "วันนี้" },
       { key: "kiosk.comparison_title", label: "หัวข้อผลเปรียบเทียบ", default: "ผลการเปรียบเทียบใบหน้า" },
       { key: "kiosk.camera_image_label", label: "ป้ายภาพจากกล้อง", default: "ภาพจากกล้อง" },
       { key: "kiosk.registered_image_label", label: "ป้ายภาพลงทะเบียน", default: "ภาพลงทะเบียน" },

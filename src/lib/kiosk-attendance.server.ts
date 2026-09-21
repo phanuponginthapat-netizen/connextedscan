@@ -175,6 +175,26 @@ export async function recordScan(input: RecordScanInput) {
     avatarUrl = signed?.signedUrl ?? null;
   }
 
+  // Keep the enrolled image separate from the live scan evidence. Prefer a
+  // manually enrolled face, then any ready enrolled face, then the profile.
+  // Never fall back to the just-captured snapshot in the comparison panel.
+  let registeredFaceUrl: string | null = null;
+  const { data: enrolledFaces } = await supabaseAdmin
+    .from("student_faces")
+    .select("image_path, source, created_at")
+    .eq("student_id", studentId)
+    .eq("status", "ready")
+    .order("created_at", { ascending: true });
+  const registeredFace =
+    enrolledFaces?.find((face) => face.source !== "auto") ?? enrolledFaces?.[0];
+  if (registeredFace?.image_path) {
+    const { data: signedFace } = await supabaseAdmin.storage
+      .from("faces")
+      .createSignedUrl(registeredFace.image_path, 60 * 60);
+    registeredFaceUrl = signedFace?.signedUrl ?? null;
+  }
+  registeredFaceUrl ??= avatarUrl;
+
   // Signed URL of the photo captured during this scan, shown next to the
   // profile picture as proof the scan really happened.
   let snapshotUrl: string | null = null;
@@ -200,6 +220,7 @@ export async function recordScan(input: RecordScanInput) {
       student,
       direction,
       avatar_url: avatarUrl,
+      registered_face_url: registeredFaceUrl,
       snapshot_url: snapshotUrl,
       confidence,
       message: `${student.full_name} สแกนซ้ำ — บันทึกเวลา${directionLabel}ไปแล้ว`,
@@ -272,6 +293,7 @@ export async function recordScan(input: RecordScanInput) {
     student,
     direction,
     avatar_url: avatarUrl,
+    registered_face_url: registeredFaceUrl,
     snapshot_url: snapshotUrl,
     confidence,
     late,
