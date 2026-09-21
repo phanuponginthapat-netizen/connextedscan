@@ -647,9 +647,21 @@ def today_stats() -> dict:
 
     minutes = rules.bangkok_minutes()
     is_workday = rules.is_work_day(settings, rules.bangkok_weekday())
-    checkin_closed = minutes > rules.time_to_minutes(settings.get("checkin_end") or "10:00")
-    checkout_closed = minutes > rules.time_to_minutes(settings.get("checkout_end") or "19:00")
+    checkin_only = rules.is_checkin_only(settings)
+    # Check-in only schools never close the scan window.
+    checkin_closed = (
+        False
+        if checkin_only
+        else minutes > rules.time_to_minutes(settings.get("checkin_end") or "10:00")
+    )
+    checkout_closed = (
+        False
+        if checkin_only
+        else minutes > rules.time_to_minutes(settings.get("checkout_end") or "19:00")
+    )
     return {
+        "checkin_only": checkin_only,
+        "idle_stats_minutes": int(settings.get("idle_stats_minutes") or 0),
         "school_name": settings.get("school_name"),
         "screensaver_mode": settings.get("screensaver_mode") or "stats",
         "people": len(people),
