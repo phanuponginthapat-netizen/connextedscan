@@ -64,7 +64,6 @@ KIOSK_HTML = r"""<!doctype html>
 </header>
 <div class="app">
   <div class="stage" id="stage"><video id="cam" autoplay playsinline muted></video><div class="shade"></div><div class="live"><i></i><span id="liveLabel">กล้องสด</span></div><div class="guide"><i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i></div><div class="banner" id="banner">กรุณามองกล้องในกรอบ</div>
-    <div class="compare" id="compare"><h3 id="comparisonTitle">ผลการเปรียบเทียบใบหน้า</h3><div class="comparePics"><figure><img id="cameraShot" alt=""/><figcaption id="cameraLabel">ภาพจากกล้อง</figcaption></figure><div class="verifyIcon">✓</div><figure><img id="registeredShot" alt=""/><figcaption id="registeredLabel">ภาพลงทะเบียน</figcaption></figure></div><div class="score"><b><span id="matchLabel">คะแนนตรงกัน</span>: <span id="matchScore">—</span></b><div class="scoreline"><i id="scoreFill" style="width:0"></i></div><small id="verifiedLabel">ยืนยันตัวตนแล้ว</small></div></div>
   </div>
   <aside class="side"><div class="welcome"><i>✦</i><span id="welcome">ยินดีต้อนรับเข้าสู่โรงเรียนของเรา</span></div>
     <div class="profile" id="profile"><img class="avatar" id="profileAvatar" alt=""/><h2 id="profileName">—</h2><div class="role" id="profileRole">—</div><div class="facts"><div class="fact"><small id="classLabel">ชั้นเรียน</small><b id="profileClass">—</b></div><div class="fact"><small id="idLabel">รหัส</small><b id="profileId">—</b></div></div><div class="resultTime"><span id="timeLabel">เวลาเข้า-ออก</span><b id="scanTime">--:--:-- น.</b></div><div class="resultBar" id="resultBar">บันทึกสำเร็จ</div></div>
@@ -106,12 +105,7 @@ function showResult(d, captured) {
   $('scanTime').textContent = new Date().toLocaleTimeString('th-TH-u-ca-buddhist-nu-latn',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' น.';
   $('resultBar').className = 'resultBar' + (ok ? '' : ' bad');
   $('resultBar').textContent = ok ? (content.kiosk_success_label || 'บันทึกสำเร็จ') : d.message;
-  $('cameraShot').src = d.snapshot_url || captured || d.avatar_url || '';
-  $('registeredShot').src = d.registered_face_url || d.avatar_url || '';
-  const score = Math.max(0, Math.min(100, Math.round(Number(d.confidence || 0) * 1000) / 10));
-  $('matchScore').textContent = d.confidence == null ? '—' : score + '%'; $('scoreFill').style.width = score + '%';
-  $('compare').className = 'compare show';
-  setTimeout(() => { $('profile').className = 'profile'; $('waiting').style.display = ''; $('compare').className = 'compare'; }, (d.next_delay_seconds || 5) * 1000);
+  setTimeout(() => { $('profile').className = 'profile'; $('waiting').style.display = ''; }, (d.next_delay_seconds || 5) * 1000);
 }
 let audioReady = false, thaiVoice = null, browserVoiceOk = false;
 const clipCache = new Map();
@@ -281,9 +275,6 @@ async function loadBrand() {
     $('welcome').textContent = welcome.includes('{school}') ? welcome.replaceAll('{school}', school) : welcome + school;
     $('liveLabel').textContent = c.kiosk_live_label || 'กล้องสด';
     $('todayLabel').textContent = c.kiosk_today_label === 'เข้าเรียนวันนี้' ? 'วันนี้' : (c.kiosk_today_label || 'วันนี้');
-    $('comparisonTitle').textContent = c.kiosk_comparison_title || 'ผลการเปรียบเทียบใบหน้า';
-    $('cameraLabel').textContent = c.kiosk_camera_image_label || 'ภาพจากกล้อง'; $('registeredLabel').textContent = c.kiosk_registered_image_label || 'ภาพลงทะเบียน';
-    $('matchLabel').textContent = c.kiosk_match_score_label || 'คะแนนตรงกัน'; $('verifiedLabel').textContent = c.kiosk_verified_label || 'ยืนยันตัวตนแล้ว';
     $('classLabel').textContent = c.kiosk_class_label || 'ชั้นเรียน'; $('idLabel').textContent = c.kiosk_id_label || 'รหัส'; $('timeLabel').textContent = c.kiosk_time_label || 'เวลาเข้า-ออก';
     $('saverTitle').textContent = (c.school_name || '') + ' — สถิติวันนี้';
     if (c.logo_url) { $('logo').src = c.logo_url; $('logo').style.display = 'block'; $('logoFallback').style.display = 'none'; }

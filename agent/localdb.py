@@ -65,7 +65,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "geometry_min_score": 0.5,
     "geometry_weight": 0.3,
     "detector_min_score": 0.5,
-    "min_face_coverage": 0.08,
+    "min_face_coverage": 0.04,
     "require_liveness": True,
     "duplicate_cooldown_minutes": 300,
     "next_person_delay_seconds": 5,
