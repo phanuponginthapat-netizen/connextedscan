@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
         const { data: settings } = await supabaseAdmin
           .from("settings")
           .select(
-            "kiosk_show_recent, kiosk_recent_limit, kiosk_mirror, kiosk_show_clock, kiosk_show_confidence, kiosk_news_enabled, kiosk_news_text, next_person_delay_seconds, voice_enabled, voice_rate, voice_volume",
+            "kiosk_show_recent, kiosk_recent_limit, kiosk_mirror, kiosk_camera_rotate, kiosk_show_clock, kiosk_show_confidence, kiosk_news_enabled, kiosk_news_text, next_person_delay_seconds, voice_enabled, voice_rate, voice_volume",
           )
           .eq("id", true)
           .maybeSingle();
@@ -48,6 +48,7 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
           show_recent: settings?.kiosk_show_recent ?? true,
           recent_limit: Math.min(Math.max(settings?.kiosk_recent_limit ?? 20, 1), 50),
           mirror: settings?.kiosk_mirror ?? true,
+          rotate: ((settings?.kiosk_camera_rotate ?? 0) % 360 + 360) % 360,
           show_clock: settings?.kiosk_show_clock ?? true,
           show_confidence: settings?.kiosk_show_confidence ?? false,
           news_enabled: settings?.kiosk_news_enabled ?? false,

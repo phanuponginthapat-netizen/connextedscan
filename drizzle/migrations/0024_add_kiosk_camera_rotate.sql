@@ -1,0 +1,1 @@
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS kiosk_camera_rotate integer NOT NULL DEFAULT 0;

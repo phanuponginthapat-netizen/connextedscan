@@ -147,6 +147,7 @@ function Kiosk() {
   const [display, setDisplay] = useState({
     show_recent: true,
     mirror: true,
+    rotate: 0,
     show_clock: true,
     voice_enabled: true,
     voice_rate: 1,
@@ -526,16 +527,29 @@ function Kiosk() {
     const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
     const width = Math.round(video.videoWidth * scale);
     const height = Math.round(video.videoHeight * scale);
+    // Straighten the frame before the AI sees it, so a sideways-mounted camera
+    // still gives the detector an upright face.
+    const rot = (((displayRef.current.rotate ?? 0) % 360) + 360) % 360;
+    const swap = rot === 90 || rot === 270;
+    const outW = swap ? height : width;
+    const outH = swap ? width : height;
     let canvas = canvasRef.current;
     if (!canvas) {
       canvas = document.createElement("canvas");
       canvasRef.current = canvas;
     }
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
+    if (canvas.width !== outW || canvas.height !== outH) {
+      canvas.width = outW;
+      canvas.height = outH;
     }
-    canvas.getContext("2d")?.drawImage(video, 0, 0, width, height);
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.save();
+      ctx.translate(outW / 2, outH / 2);
+      ctx.rotate((rot * Math.PI) / 180);
+      ctx.drawImage(video, -width / 2, -height / 2, width, height);
+      ctx.restore();
+    }
     return canvas.toDataURL("image/jpeg", quality);
   }, []);
 
@@ -824,8 +838,19 @@ function Kiosk() {
       )}
 
       <section className="kiosk-layout grid min-h-0 flex-1 grid-cols-1 overflow-auto bg-muted/40 lg:grid-cols-[3fr_2fr] lg:overflow-hidden">
-        <div className="kiosk-camera relative min-h-[52vh] overflow-hidden bg-camera lg:min-h-0">
-          <video ref={videoRef} autoPlay muted playsInline className={`h-full w-full object-cover ${display.mirror ? "scale-x-[-1]" : ""}`} />
+        <div className="kiosk-camera relative min-h-[52vh] overflow-hidden bg-camera [container-type:size] lg:min-h-0">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="absolute left-1/2 top-1/2 object-cover"
+            style={{
+              width: Math.abs(display.rotate) % 180 !== 0 ? "100cqh" : "100%",
+              height: Math.abs(display.rotate) % 180 !== 0 ? "100cqw" : "100%",
+              transform: `translate(-50%, -50%) rotate(${display.rotate}deg)${display.mirror ? " scaleX(-1)" : ""}`,
+            }}
+          />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-camera/55 via-transparent to-camera/55" />
 
           <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full bg-camera/75 px-3 py-1.5 text-xs font-bold text-camera-foreground backdrop-blur">
