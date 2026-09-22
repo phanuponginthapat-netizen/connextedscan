@@ -54,7 +54,7 @@ KIOSK_HTML = r"""<!doctype html>
     .app{height:calc(100vh - 122px);grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(22rem,54%) minmax(0,46%);overflow:hidden}
     .stage{min-height:0}.guide{width:min(34vh,48%)}
     .side{min-height:0;border-left:0;border-top:1px solid #dce8f5;padding:18px 22px}
-    .waiting{margin-top:14px}.waitingContent{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.visitorBox{margin:0;min-width:0;min-height:0;justify-content:center;overflow:hidden}.visitorBox img{width:118px;height:118px}.recentPanel{min-width:0}
+    .waiting{margin-top:14px}.waitingContent{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.waitingContent:has(.visitorBox[style*="display: flex"]){grid-template-columns:repeat(2,minmax(0,1fr))}.visitorBox{margin:0;min-width:0;min-height:0;justify-content:center;overflow:hidden}.visitorBox img{width:118px;height:118px}.recentPanel{min-width:0}
     .profile.show{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;column-gap:22px;padding-top:8px;align-items:center}
     .profile .avatar{grid-column:1;grid-row:1/4;justify-self:center;width:112px;height:112px}.profile h2{grid-column:1;grid-row:4;margin:10px 0 4px;align-self:start}.profile .role{grid-column:1;grid-row:5;align-self:start;text-align:center}
     .facts{grid-column:2;grid-row:1;margin-top:0}.resultTime{grid-column:2;grid-row:2;margin-top:10px}.resultBar{grid-column:2;grid-row:3;margin-top:10px;align-self:start}
