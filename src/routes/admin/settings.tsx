@@ -750,8 +750,20 @@ function SettingsPage() {
                     </p>
                   </div>
                   <div className="space-y-3 rounded-xl border p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium">สื่อประชาสัมพันธ์หน้าพัก</p><p className="text-xs text-muted-foreground">รูปภาพจะสลับทุก 10 วินาที วิดีโอจะเล่นจนจบ</p></div><Button type="button" onClick={() => mediaInputRef.current?.click()} disabled={uploadMedia.isPending}><Upload className="size-4" /> เพิ่มรูปหรือวิดีโอ</Button></div>
+                    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium">สื่อประชาสัมพันธ์หน้าพัก</p><p className="text-xs text-muted-foreground">รูปภาพจะสลับทุก 10 วินาที วิดีโอจะเล่นจนจบ • ไฟล์ละไม่เกิน 1 GB</p></div><Button type="button" onClick={() => mediaInputRef.current?.click()} disabled={uploadMedia.isPending}><Upload className="size-4" /> {uploadMedia.isPending ? "กำลังอัปโหลด..." : "เพิ่มรูปหรือวิดีโอ"}</Button></div>
                     <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadMedia.mutate(file); event.currentTarget.value = ""; }} />
+                    {mediaUpload ? (
+                      <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="truncate font-medium">{mediaUpload.name}</span>
+                          <span className="shrink-0 tabular-nums text-muted-foreground">{mediaUpload.phase === "saving" ? "กำลังบันทึก..." : `${mediaUpload.percent}%`}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-border">
+                          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${mediaUpload.percent}%` }} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">ขนาดไฟล์ {formatMediaSize(mediaUpload.size)} • กรุณาอย่าปิดหน้านี้จนอัปโหลดเสร็จ</p>
+                      </div>
+                    ) : null}
                     <div className="grid gap-2 sm:grid-cols-2">{broadcastMedia.map((item) => <div key={item.id} className="flex items-center gap-3 rounded-lg border bg-card p-3"><ImageIcon className="size-5 text-primary" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.title || item.storage_path}</p><p className="text-xs text-muted-foreground">{item.media_type === "video" ? "วิดีโอ" : "รูปภาพ"}</p></div><Button variant="ghost" size="icon" title="ลบสื่อ" onClick={() => removeMedia.mutate({ id: item.id, path: item.storage_path })}><Trash2 className="size-4" /></Button></div>)}</div>
                     {broadcastMedia.length === 0 ? <p className="rounded-lg border border-dashed p-5 text-center text-sm text-muted-foreground">ยังไม่มีสื่อ หน้าพักจะแสดงชื่อโรงเรียนและสถิติ</p> : null}
                   </div>
