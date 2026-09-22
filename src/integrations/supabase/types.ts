@@ -88,6 +88,39 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_media: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          id: string
+          is_active: boolean
+          media_type: string
+          sort_order: number
+          storage_path: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          media_type: string
+          sort_order?: number
+          storage_path: string
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          sort_order?: number
+          storage_path?: string
+          title?: string
+        }
+        Relationships: []
+      }
       device_commands: {
         Row: {
           command: string

@@ -176,6 +176,13 @@
       "when": 1790050089437,
       "tag": "0024_add_kiosk_camera_rotate",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790051006577,
+      "tag": "0025_add_broadcast_media",
+      "breakpoints": true
     }
   ]
 }
