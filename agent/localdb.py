@@ -130,7 +130,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
 DEFAULT_CONTENT: dict[str, Any] = {
     "brand_name": "FaceGate",
     "kiosk_title": "สแกนใบหน้าเข้า-ออกโรงเรียน",
-    "kiosk_subtitle": "กรุณามองกล้องในกรอบวงรี",
+    "kiosk_subtitle": "กรุณายืนให้ใบหน้าตรงกับกรอบใบหน้าบนหน้าจอ",
     "kiosk_footer": "ระบบบันทึกเวลาด้วยใบหน้า",
     "kiosk_welcome": "ยินดีต้อนรับเข้าสู่",
     "kiosk_live_label": "กล้องสด",
