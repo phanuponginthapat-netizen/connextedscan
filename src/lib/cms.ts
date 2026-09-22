@@ -86,7 +86,7 @@ export const CMS_GROUPS: CmsGroup[] = [
     description: "ข้อความที่แสดงบนหน้าจอสแกนใบหน้า",
     fields: [
       { key: "kiosk.title", label: "หัวเรื่องหน้าจอ", default: "สแกนใบหน้าเข้า-ออก" },
-      { key: "kiosk.subtitle", label: "คำอธิบาย", default: "ยืนให้ใบหน้าอยู่ในกรอบทีละคน" },
+      { key: "kiosk.subtitle", label: "คำอธิบาย", default: "กรุณายืนให้ใบหน้าตรงกับกรอบใบหน้าบนหน้าจอ" },
       {
         key: "kiosk.welcome",
         label: "ข้อความต้อนรับก่อนชื่อโรงเรียน",

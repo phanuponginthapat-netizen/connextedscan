@@ -733,6 +733,11 @@ function Kiosk() {
     ? welcomePrefix.replaceAll("{school}", schoolName)
     : `${welcomePrefix}${schoolName}`;
   const todayLabel = t("kiosk.today_label") === "เข้าเรียนวันนี้" ? "วันนี้" : t("kiosk.today_label");
+  const subtitleRaw = t("kiosk.subtitle");
+  const subtitle =
+    subtitleRaw === "ยืนให้ใบหน้าอยู่ในกรอบทีละคน" || subtitleRaw === "กรุณามองกล้องในกรอบวงรี"
+      ? "กรุณายืนให้ใบหน้าตรงกับกรอบใบหน้าบนหน้าจอ"
+      : subtitleRaw;
 
   // Resting screen: after the configured quiet period, or once the scan
   // windows close, or when the power plan blanks the screen. The camera and
@@ -840,7 +845,7 @@ function Kiosk() {
             </div>
           )}
 
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-xl border border-camera-foreground/15 bg-camera/75 px-5 py-2 text-center text-sm font-medium text-camera-foreground backdrop-blur">
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-camera-foreground/15 bg-camera/75 px-5 py-2 text-center text-[clamp(0.7rem,1.5vw,0.875rem)] font-medium text-camera-foreground backdrop-blur">
             {agentOnline === false ? "กรุณาเปิดโปรแกรม FaceGate" : guide === "multiple_faces" ? (guideHint || t("kiosk.guide_multiple")) : guide === "no_face" ? (guideHint || t("kiosk.guide_no_face")) : status === "scanning" ? t("kiosk.guide_scanning") : t("kiosk.guide_idle")}
           </div>
 
@@ -883,7 +888,7 @@ function Kiosk() {
             <div className="kiosk-waiting flex h-full min-h-0 flex-col">
               <div className="kiosk-ready rounded-2xl bg-primary p-5 text-primary-foreground">
                 <p className="text-xs font-semibold opacity-75">FACEGATE READY</p>
-                <h2 className="mt-1 font-display text-2xl font-bold">{t("kiosk.subtitle")}</h2>
+                <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(0.8rem,1.9vw,1.15rem)] font-bold">{subtitle}</h2>
                 <p className="mt-2 text-sm opacity-80">{agentOnline === true ? `ระบบพร้อม • ลงทะเบียนแล้ว ${knownFaces ?? 0} ใบหน้า` : "กำลังเชื่อมต่อระบบประมวลผล"}</p>
               </div>
               {visitorMode && (
