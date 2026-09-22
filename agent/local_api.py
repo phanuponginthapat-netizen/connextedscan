@@ -23,6 +23,7 @@ import secrets
 import shutil
 import time
 import zipfile
+import mimetypes
 from typing import Any, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Request
@@ -171,7 +172,7 @@ def media(path: str):
     full = os.path.normpath(os.path.join(db.DATA_DIR, path))
     if not full.startswith(os.path.normpath(db.DATA_DIR)) or not os.path.isfile(full):
         raise HTTPException(status_code=404, detail="not found")
-    return FileResponse(full, media_type="image/jpeg")
+    return FileResponse(full, media_type=mimetypes.guess_type(full)[0] or "application/octet-stream")
 
 
 def save_jpeg(folder: str, name: str, data: bytes) -> str:
@@ -634,7 +635,12 @@ def kiosk_recent():
             "avatar_url": media_url(row.get("avatar_path")),
             "snapshot_url": media_url(row.get("snapshot_path")),
         })
-    return {"items": items, "display": display, "school_name": settings.get("school_name"),
+    media_items = db.query(
+        "SELECT id, file_path, title, media_type, duration_seconds FROM broadcast_media"
+        " WHERE is_active = 1 ORDER BY sort_order, created_at"
+    )
+    broadcast_media = [{**item, "url": media_url(item.pop("file_path"))} for item in media_items]
+    return {"items": items, "display": display, "broadcast_media": broadcast_media, "school_name": settings.get("school_name"),
             "server_time": db.now_iso()}
 
 
@@ -679,6 +685,8 @@ def today_stats() -> dict:
     )
     staff_present = sum(1 for person_id in first_in if person_types.get(person_id) == "staff")
     visitors_present = sum(1 for person_id in first_in if person_types.get(person_id) == "visitor")
+    total_students = sum(1 for person in people if person.get("person_type") != "staff")
+    total_staff = sum(1 for person in people if person.get("person_type") == "staff")
     # Check-in only schools never close the scan window.
     checkin_closed = (
         False
@@ -699,6 +707,10 @@ def today_stats() -> dict:
         "present": len(first_in),
         "students_present": students_present,
         "staff_present": staff_present,
+        "total_students": total_students,
+        "total_staff": total_staff,
+        "absent_students": max(total_students - students_present, 0) if is_workday else 0,
+        "absent_staff": max(total_staff - staff_present, 0) if is_workday else 0,
         "visitors_present": visitors_present,
         "visitor_register_enabled": bool(settings.get("visitor_register_enabled")),
         "late": late,
@@ -1190,6 +1202,52 @@ async def settings_post(request: Request, x_local_token: str | None = Header(Non
     # The program already answers the school LAN whenever it starts, so no
     # restart is needed when this switch changes.
     return {"settings": settings, "restarting": False}
+
+
+@router.get("/api/local/broadcast-media")
+def broadcast_media_list(x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    items = db.query("SELECT * FROM broadcast_media ORDER BY sort_order, created_at")
+    return {"items": [{**item, "url": media_url(item.get("file_path"))} for item in items]}
+
+
+@router.post("/api/local/broadcast-media")
+async def broadcast_media_upload(request: Request, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    form = await request.form()
+    upload = form.get("file")
+    if not upload or not hasattr(upload, "read"):
+        raise HTTPException(status_code=400, detail="กรุณาเลือกไฟล์")
+    content_type = str(getattr(upload, "content_type", "") or "")
+    media_type = "video" if content_type.startswith("video/") else "image" if content_type.startswith("image/") else None
+    if not media_type:
+        raise HTTPException(status_code=400, detail="รองรับเฉพาะรูปภาพและวิดีโอ")
+    body = await upload.read()
+    if len(body) > 100 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="ไฟล์ต้องไม่เกิน 100 MB")
+    item_id = db.new_id()
+    ext = os.path.splitext(str(getattr(upload, "filename", "") or ""))[1].lower() or (".mp4" if media_type == "video" else ".jpg")
+    filename = f"{item_id}{ext}"
+    full = os.path.join(db.BROADCAST_DIR, filename)
+    with open(full, "wb") as handle:
+        handle.write(body)
+    relative = os.path.relpath(full, db.DATA_DIR).replace(os.sep, "/")
+    order = db.one("SELECT COALESCE(MAX(sort_order), -1) + 1 AS value FROM broadcast_media")
+    db.run("INSERT INTO broadcast_media (id, file_path, title, media_type, sort_order, created_at) VALUES (?,?,?,?,?,?)",
+           (item_id, relative, os.path.splitext(str(getattr(upload, "filename", "สื่อประชาสัมพันธ์")))[0], media_type, int((order or {}).get("value") or 0), db.now_iso()))
+    return {"ok": True}
+
+
+@router.delete("/api/local/broadcast-media/{item_id}")
+def broadcast_media_delete(item_id: str, x_local_token: str | None = Header(None)):
+    require_admin(x_local_token)
+    item = db.one("SELECT file_path FROM broadcast_media WHERE id = ?", (item_id,))
+    if item:
+        full = os.path.normpath(os.path.join(db.DATA_DIR, item["file_path"]))
+        if full.startswith(os.path.normpath(db.BROADCAST_DIR)) and os.path.isfile(full):
+            os.remove(full)
+        db.run("DELETE FROM broadcast_media WHERE id = ?", (item_id,))
+    return {"ok": True}
 
 
 @router.get("/api/local/devices")

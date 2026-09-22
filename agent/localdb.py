@@ -40,6 +40,7 @@ DB_PATH = os.path.join(DATA_DIR, "facegate.db")
 FACE_DIR = os.path.join(DATA_DIR, "faces")
 SNAPSHOT_DIR = os.path.join(DATA_DIR, "snapshots")
 AVATAR_DIR = os.path.join(DATA_DIR, "avatars")
+BROADCAST_DIR = os.path.join(DATA_DIR, "broadcast")
 
 # Every setting the kiosk, the rules and the door controller read. Kept in one
 # JSON row so a new option never needs a database migration on hundreds of
@@ -246,6 +247,16 @@ CREATE TABLE IF NOT EXISTS kv (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS broadcast_media (
+  id TEXT PRIMARY KEY,
+  file_path TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL DEFAULT '',
+  media_type TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  duration_seconds INTEGER NOT NULL DEFAULT 10,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS devices (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -264,7 +275,7 @@ def connect() -> sqlite3.Connection:
     global _conn
     with _lock:
         if _conn is None:
-            for folder in (DATA_DIR, FACE_DIR, SNAPSHOT_DIR, AVATAR_DIR):
+            for folder in (DATA_DIR, FACE_DIR, SNAPSHOT_DIR, AVATAR_DIR, BROADCAST_DIR):
                 os.makedirs(folder, exist_ok=True)
             _conn = sqlite3.connect(DB_PATH, check_same_thread=False)
             _conn.row_factory = sqlite3.Row
