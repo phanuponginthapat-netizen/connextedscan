@@ -980,9 +980,8 @@ function Kiosk() {
 
       {showSaver && (
         <div role="button" tabIndex={0} className="fixed inset-0 z-[75] grid bg-camera text-camera-foreground lg:grid-cols-[1.35fr_1fr]" onClick={() => { bumpActivity(); if (powerInfo?.screen_off) void sendPowerCommand("screen_on"); }} onKeyDown={bumpActivity}>
-          <div className="relative min-h-[38vh] overflow-hidden bg-muted/10">
-            {activeMedia ? activeMedia.media_type === "video" ? <video key={activeMedia.id} src={activeMedia.url} autoPlay muted playsInline className="h-full w-full object-cover" onEnded={() => setMediaIndex((value) => (value + 1) % broadcastMedia.length)} /> : <img src={activeMedia.url} alt={activeMedia.title || "สื่อประชาสัมพันธ์"} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center p-10 text-center"><p className="font-display text-5xl font-bold">{todayStats?.school_name || t("brand.name")}</p></div>}
-            {activeMedia?.title ? <p className="absolute inset-x-0 bottom-0 bg-camera/75 p-4 text-center text-xl font-semibold">{activeMedia.title}</p> : null}
+          <div className="relative min-h-[38vh] overflow-hidden bg-black">
+            {activeMedia ? activeMedia.media_type === "video" ? <video key={activeMedia.id} src={activeMedia.url} autoPlay muted loop={broadcastMedia.length <= 1} playsInline className="absolute inset-0 h-full w-full object-contain" onEnded={() => { if (broadcastMedia.length > 1) setMediaIndex((value) => (value + 1) % broadcastMedia.length); }} /> : <img key={activeMedia.id} src={activeMedia.url} alt="สื่อประชาสัมพันธ์" className="absolute inset-0 h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center p-10 text-center"><p className="font-display text-5xl font-bold">{todayStats?.school_name || t("brand.name")}</p></div>}
           </div>
           <div className="flex flex-col justify-center gap-6 p-6 md:p-10">
             <div><p className="text-sm opacity-60">สรุปการมาโรงเรียนวันนี้</p><h2 className="mt-1 font-display text-3xl font-bold">{todayStats?.school_name || t("brand.name")}</h2><p className="mt-1 opacity-60">{dateText}</p></div>
