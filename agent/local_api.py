@@ -596,6 +596,7 @@ def kiosk_recent():
         "show_recent": settings.get("kiosk_show_recent", True),
         "recent_limit": limit,
         "mirror": settings.get("kiosk_mirror", True),
+        "rotate": int(settings.get("kiosk_camera_rotate") or 0) % 360,
         "show_clock": settings.get("kiosk_show_clock", True),
         "show_confidence": settings.get("kiosk_show_confidence", False),
         "news_enabled": settings.get("kiosk_news_enabled", False),

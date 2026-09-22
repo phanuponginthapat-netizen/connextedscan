@@ -31,8 +31,8 @@ KIOSK_HTML = r"""<!doctype html>
   .adminBtn { border:0;cursor:pointer;background:#eef4fa;color:var(--primary);font-weight:800;padding:10px 14px;border-radius:10px; }
   .app { display:grid;grid-template-columns:3fr 2fr;height:calc(100vh - 82px);min-height:0; }
   .stage { position:relative;overflow:hidden;background:#111c2c; }
-  video { width:100%;height:100%;object-fit:cover; }
-  .mirror video { transform:scaleX(-1); }
+  video { position:absolute;left:50%;top:50%;translate:-50% -50%;width:100%;height:100%;object-fit:cover; }
+  .stage { container-type:size; }
   .shade { position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,18,34,.42),transparent 42%,rgba(7,18,34,.48));pointer-events:none; }
   .live { position:absolute;top:20px;left:20px;display:flex;align-items:center;gap:8px;background:rgba(7,18,34,.72);color:#fff;border-radius:999px;padding:7px 12px;font-size:.72rem;font-weight:800; }
   .live i { width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.3s infinite; }
@@ -43,7 +43,7 @@ KIOSK_HTML = r"""<!doctype html>
   .banner.ok { background:rgba(12,107,66,.88); }.banner.bad { background:rgba(145,26,38,.9); }
   .side { display:flex;flex-direction:column;min-height:0;padding:24px 28px;background:#fff;border-left:1px solid #dce8f5; }
   .welcome { display:flex;align-items:center;gap:12px;font-family:Outfit,"Noto Sans Thai",sans-serif;font-size:1.55rem;font-weight:800; }.welcome i{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#e8f0f8;color:var(--primary);font-style:normal}.profile{display:none;flex:1;min-height:0;flex-direction:column;align-items:center;padding-top:20px}.profile.show{display:flex;animation:rise .35s ease-out}.profile .avatar{width:136px;height:136px;border:7px solid #fff;box-shadow:0 0 0 4px #dce8f5,0 18px 35px rgba(18,59,103,.2);border-radius:50%;object-fit:cover;background:#e8eef5}.profile h2{font-family:Outfit,"Noto Sans Thai",sans-serif;text-align:center;font-size:1.65rem;margin:18px 0 4px}.profile .role{color:var(--primary);font-weight:700}.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:20px}.fact{padding:14px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.fact small{display:block;color:#64748b;font-weight:700}.fact b{display:block;margin-top:4px;font-size:1.1rem}.resultTime{width:100%;display:flex;justify-content:space-between;margin-top:auto;padding:14px;border-radius:12px;background:#eef4fa}.resultBar{width:100%;padding:16px;margin-top:12px;border-radius:14px;text-align:center;background:var(--success);color:#fff;font-size:1.15rem;font-weight:800}.resultBar.bad{background:var(--danger)}
-  .waiting { flex:1;min-height:0;display:flex;flex-direction:column;margin-top:20px; }.ready{padding:18px;border-radius:16px;background:var(--primary);color:#fff}.ready h2{font-family:Outfit,"Noto Sans Thai",sans-serif;margin:4px 0;font-size:clamp(.8rem,1.9vw,1.15rem);white-space:nowrap}.ready p{margin:0;opacity:.8;font-size:.84rem}.listTitle{display:flex;justify-content:space-between;margin:18px 0 10px;font-weight:800}.list { min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px; }.item{display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;border-radius:12px;padding:8px}.item img{width:42px;height:42px;border-radius:9px;object-fit:cover;background:#e6edf5}.item div{min-width:0;flex:1}.item b,.item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item span{font-size:.72rem;color:#64748b}.tag{font-size:.7rem;font-weight:800;color:var(--primary)}
+  .waiting { flex:1;min-height:0;display:flex;flex-direction:column;margin-top:20px; }.ready{padding:18px;border-radius:16px;background:var(--primary);color:#fff}.ready h2{font-family:Outfit,"Noto Sans Thai",sans-serif;margin:4px 0;font-size:clamp(.7rem,1.5vw,1.15rem);white-space:nowrap}.ready p{margin:0;opacity:.8;font-size:.84rem}.listTitle{display:flex;justify-content:space-between;margin:18px 0 10px;font-weight:800}.list { min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px; }.item{display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;border-radius:12px;padding:8px}.item img{width:42px;height:42px;border-radius:9px;object-fit:cover;background:#e6edf5}.item div{min-width:0;flex:1}.item b,.item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item span{font-size:.72rem;color:#64748b}.tag{font-size:.7rem;font-weight:800;color:var(--primary)}
   .news{position:fixed;bottom:8px;left:20px;right:20px;z-index:10;overflow:hidden;white-space:nowrap;border-radius:10px;padding:8px;background:var(--primary);color:#fff;font-weight:700}.news div{display:inline-block;animation:run 30s linear infinite}@keyframes run{to{transform:translateX(-50%)}}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes pulse{50%{opacity:.35}}
   .saver{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;gap:26px;align-items:center;justify-content:center;color:#fff;background:#111c2c}.saver.show{display:flex}.saver .grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:18px}.saver .grid div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px;text-align:center}.saver .grid b{display:block;font-size:3rem;color:#70dda7}
   @media(max-width:850px){.today{display:none}.top{padding:10px 14px}.app{grid-template-columns:1fr;height:calc(100vh - 82px);overflow:auto}.stage{min-height:55vh}.side{min-height:45vh}.brand span{display:none}}
@@ -95,7 +95,7 @@ KIOSK_HTML = r"""<!doctype html>
 <div class="saver" id="saver" onclick="wake()"><div style="font-size:1.5rem;font-weight:700" id="saverTitle">สถิติวันนี้</div><div class="grid"><div><b id="vPresent">0</b>มาแล้ว</div><div><b id="vLate">0</b><span id="saverLateLabel">มาสาย</span></div><div><b id="vAbsent">0</b><span id="saverAbsentLabel">ขาด</span></div><div><b id="vLeft">0</b><span id="saverLeftLabel">กลับแล้ว</span></div></div><div style="opacity:.65">แตะหน้าจอเพื่อกลับสู่การสแกน</div></div>
 <script>
 const $ = (id) => document.getElementById(id);
-let display = { mirror: true, voice_enabled: true, next_delay_seconds: 5 };
+let display = { mirror: true, rotate: 0, voice_enabled: true, next_delay_seconds: 5 };
 let content = {};
 let busy = false, pausedUntil = 0;
 
@@ -105,6 +105,14 @@ async function startCamera() {
 }
 var lastStatusText = '';
 function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); lastStatusText = text || ''; }
+function applyCameraLook() {
+  const rot = (((Number(display.rotate) || 0) % 360) + 360) % 360;
+  const swap = rot === 90 || rot === 270;
+  const cam = $('cam'); if (!cam) return;
+  cam.style.width = swap ? '100cqh' : '100%';
+  cam.style.height = swap ? '100cqw' : '100%';
+  cam.style.transform = `rotate(${rot}deg)${display.mirror ? ' scaleX(-1)' : ''}`;
+}
 function showResult(d, captured) {
   const student = d.student || {};
   const ok = d.result === 'ok';
@@ -191,11 +199,19 @@ async function speak(text) {
   if (!played) chime();
 }
 
+function drawRotated(v, c, w, h) {
+  // Rotate the frame upright before the AI sees it, so a sideways camera still works.
+  const rot = (((Number(display.rotate) || 0) % 360) + 360) % 360;
+  const swap = rot === 90 || rot === 270;
+  c.width = swap ? h : w; c.height = swap ? w : h;
+  const ctx = c.getContext('2d');
+  ctx.save(); ctx.translate(c.width / 2, c.height / 2); ctx.rotate(rot * Math.PI / 180);
+  ctx.drawImage(v, -w / 2, -h / 2, w, h); ctx.restore();
+}
 function frame() {
   const v = $('cam'); if (!v.videoWidth) return null;
   const c = document.createElement('canvas');
-  c.width = 640; c.height = Math.round(640 * v.videoHeight / v.videoWidth);
-  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  drawRotated(v, c, 640, Math.round(640 * v.videoHeight / v.videoWidth));
   return c.toDataURL('image/jpeg', 0.82).split(',')[1];
 }
 // Live view: a small preview frame for the admin page, sent from the kiosk so
@@ -204,8 +220,7 @@ function previewFrame(wide) {
   const v = $('cam'); if (!v.videoWidth) return null;
   const w = wide ? 480 : 320;
   const c = document.createElement('canvas');
-  c.width = w; c.height = Math.round(w * v.videoHeight / v.videoWidth);
-  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  drawRotated(v, c, w, Math.round(w * v.videoHeight / v.videoWidth));
   return c.toDataURL('image/jpeg', wide ? 0.6 : 0.5);
 }
 // While staff are watching the live page the server asks for many more frames
@@ -299,7 +314,7 @@ async function loadRecent() {
   try {
     const data = await (await fetch('/local/api/public/kiosk/recent')).json();
     display = data.display || display;
-    $('stage').className = 'stage' + (display.mirror ? ' mirror' : '');
+    applyCameraLook();
     if (display.news_enabled && display.news_text) {
       $('newsBox').style.display = 'block';
       $('news').textContent = (display.news_text + '   •   ').repeat(8);
