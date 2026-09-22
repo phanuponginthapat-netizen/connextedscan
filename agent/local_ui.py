@@ -105,6 +105,14 @@ async function startCamera() {
 }
 var lastStatusText = '';
 function say(text, kind) { const b = $('banner'); b.textContent = text; b.className = 'banner' + (kind ? ' ' + kind : ''); lastStatusText = text || ''; }
+function applyCameraLook() {
+  const rot = (((Number(display.rotate) || 0) % 360) + 360) % 360;
+  const swap = rot === 90 || rot === 270;
+  const cam = $('cam'); if (!cam) return;
+  cam.style.width = swap ? '100cqh' : '100%';
+  cam.style.height = swap ? '100cqw' : '100%';
+  cam.style.transform = `rotate(${rot}deg)${display.mirror ? ' scaleX(-1)' : ''}`;
+}
 function showResult(d, captured) {
   const student = d.student || {};
   const ok = d.result === 'ok';
