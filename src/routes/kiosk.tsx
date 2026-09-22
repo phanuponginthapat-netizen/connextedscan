@@ -915,7 +915,7 @@ function Kiosk() {
             <div className="kiosk-waiting flex h-full min-h-0 flex-col">
               <div className="kiosk-ready rounded-2xl bg-primary p-5 text-primary-foreground">
                 <p className="text-xs font-semibold opacity-75">FACEGATE READY</p>
-                <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(0.8rem,1.9vw,1.15rem)] font-bold">{subtitle}</h2>
+                <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(0.7rem,1.5vw,1.15rem)] font-bold">{subtitle}</h2>
                 <p className="mt-2 text-sm opacity-80">{agentOnline === true ? `ระบบพร้อม • ลงทะเบียนแล้ว ${knownFaces ?? 0} ใบหน้า` : "กำลังเชื่อมต่อระบบประมวลผล"}</p>
               </div>
               {visitorMode && (
