@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { backupNow as backupNowFn } from "@/lib/backup.functions";
@@ -22,6 +22,8 @@ import {
   ShieldCheck,
   Monitor,
   DoorOpen,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { recordAudit } from "@/lib/audit.functions";
@@ -151,6 +153,36 @@ function SettingsPage() {
   const [form, setForm] = useState<SettingsRow | null>(null);
   const [section, setSection] = useState<SectionId>("time");
   const { t } = useCms();
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const { data: broadcastMedia = [] } = useQuery({
+    queryKey: ["broadcast-media"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("broadcast_media").select("*").order("sort_order").order("created_at");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const uploadMedia = useMutation({
+    mutationFn: async (file: File) => {
+      const mediaType = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : null;
+      if (!mediaType) throw new Error("รองรับเฉพาะไฟล์รูปภาพและวิดีโอ");
+      const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+      const { error: uploadError } = await supabase.storage.from("broadcast-media").upload(path, file, { contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { error } = await supabase.from("broadcast_media").insert({ storage_path: path, title: file.name.replace(/\.[^.]+$/, ""), media_type: mediaType, sort_order: broadcastMedia.length });
+      if (error) { await supabase.storage.from("broadcast-media").remove([path]); throw error; }
+    },
+    onSuccess: () => { toast.success("เพิ่มสื่อประชาสัมพันธ์แล้ว"); qc.invalidateQueries({ queryKey: ["broadcast-media"] }); },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  const removeMedia = useMutation({
+    mutationFn: async ({ id, path }: { id: string; path: string }) => {
+      const { error } = await supabase.from("broadcast_media").delete().eq("id", id);
+      if (error) throw error;
+      await supabase.storage.from("broadcast-media").remove([path]);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["broadcast-media"] }),
+  });
 
   const { data } = useQuery({
     queryKey: ["settings"],
@@ -689,6 +721,12 @@ function SettingsPage() {
                     <p className="text-xs text-muted-foreground">
                       ข้อความนี้จะไหลวนด้านล่างหน้าจอตู้สแกนทุกเครื่อง มีผลทันทีหลังบันทึก
                     </p>
+                  </div>
+                  <div className="space-y-3 rounded-xl border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium">สื่อประชาสัมพันธ์หน้าพัก</p><p className="text-xs text-muted-foreground">รูปภาพจะสลับทุก 10 วินาที วิดีโอจะเล่นจนจบ</p></div><Button type="button" onClick={() => mediaInputRef.current?.click()} disabled={uploadMedia.isPending}><Upload className="size-4" /> เพิ่มรูปหรือวิดีโอ</Button></div>
+                    <input ref={mediaInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadMedia.mutate(file); event.currentTarget.value = ""; }} />
+                    <div className="grid gap-2 sm:grid-cols-2">{broadcastMedia.map((item) => <div key={item.id} className="flex items-center gap-3 rounded-lg border bg-card p-3"><ImageIcon className="size-5 text-primary" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.title || item.storage_path}</p><p className="text-xs text-muted-foreground">{item.media_type === "video" ? "วิดีโอ" : "รูปภาพ"}</p></div><Button variant="ghost" size="icon" title="ลบสื่อ" onClick={() => removeMedia.mutate({ id: item.id, path: item.storage_path })}><Trash2 className="size-4" /></Button></div>)}</div>
+                    {broadcastMedia.length === 0 ? <p className="rounded-lg border border-dashed p-5 text-center text-sm text-muted-foreground">ยังไม่มีสื่อ หน้าพักจะแสดงชื่อโรงเรียนและสถิติ</p> : null}
                   </div>
                 </div>
                 {SaveBar}

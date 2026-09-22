@@ -9,4 +9,4 @@
 - [x] Show the actual enrolled face, split today's student/staff totals, and include the CMS school name in the kiosk welcome
 - [x] Visitor self-registration via kiosk QR code (form + face photo), visitor scan valid same day only, visitor dashboard, excluded from school reports — online and standalone
 
-- [ ] Add multi-file broadcast media, student/staff attendance breakdown, and larger portrait scan guidance
+- [x] Add multi-file broadcast media, student/staff attendance breakdown, and larger portrait scan guidance
