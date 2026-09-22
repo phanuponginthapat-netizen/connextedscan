@@ -679,8 +679,13 @@ async function renderSettings(view) {
          ถ้าเพิ่มรายชื่อนักเรียนใหม่ ให้กดเตรียมเสียงอีกครั้ง</p>
       <div id="voice_msg"></div></div>
     <div class="card"><h3>สื่อประชาสัมพันธ์หน้าพัก</h3>
-      <p class="hint">เพิ่มรูปภาพหรือวิดีโอหลายไฟล์ รูปจะสลับทุก 10 วินาที และวิดีโอจะเล่นจนจบ</p>
+      <p class="hint">เพิ่มรูปภาพหรือวิดีโอหลายไฟล์ รูปจะสลับทุก 10 วินาที และวิดีโอจะเล่นจนจบ • ไฟล์ละไม่เกิน 1 GB</p>
       <p><input id="broadcast_file" type="file" accept="image/*,video/*" /> <button class="btn" onclick="uploadBroadcast()">เพิ่มสื่อ</button></p>
+      <div id="broadcast_progress" style="display:none">
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><span id="broadcast_progress_name"></span><span id="broadcast_progress_pct">0%</span></div>
+        <div style="height:8px;border-radius:99px;background:#dbe3ef;overflow:hidden;margin-top:4px"><div id="broadcast_progress_bar" style="height:100%;width:0%;background:#2563eb;transition:width .2s"></div></div>
+        <p class="hint">กรุณาอย่าปิดหน้านี้จนอัปโหลดเสร็จ</p>
+      </div>
       <div id="broadcast_list" class="grid2"></div><div id="broadcast_msg"></div></div>`;
   loadVoiceStatus(); loadBroadcast();
 }
@@ -690,11 +695,29 @@ async function loadBroadcast() {
   box.innerHTML = (data.items || []).map((item) => `<div class="card" style="margin:0"><b>${esc(item.title || 'สื่อประชาสัมพันธ์')}</b><p class="sub">${item.media_type === 'video' ? 'วิดีโอ' : 'รูปภาพ'}</p><button class="btn danger" onclick="deleteBroadcast('${item.id}')">ลบ</button></div>`).join('') || '<p class="hint">ยังไม่มีสื่อ หน้าพักจะแสดงชื่อโรงเรียนและสถิติ</p>';
 }
 async function uploadBroadcast() {
-  const file = $('#broadcast_file').files[0]; if (!file) return alert('กรุณาเลือกไฟล์');
+  const input = $('#broadcast_file'); const file = input.files[0]; if (!file) return alert('กรุณาเลือกไฟล์');
+  if (file.size > 1024 * 1024 * 1024) return alert('ไฟล์ต้องมีขนาดไม่เกิน 1 GB');
+  const box = $('#broadcast_progress'); const bar = $('#broadcast_progress_bar'); const pct = $('#broadcast_progress_pct');
+  $('#broadcast_progress_name').textContent = file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)';
+  box.style.display = 'block'; bar.style.width = '0%'; pct.textContent = '0%';
+  $('#broadcast_msg').textContent = '';
   const form = new FormData(); form.append('file', file);
-  const res = await fetch('/local/api/local/broadcast-media', { method:'POST', headers:{'x-local-token':TOKEN}, body:form });
-  if (!res.ok) return alert((await res.json().catch(()=>({}))).detail || 'เพิ่มสื่อไม่สำเร็จ');
-  $('#broadcast_file').value = ''; $('#broadcast_msg').className = 'msg good'; $('#broadcast_msg').textContent = 'เพิ่มสื่อแล้ว'; loadBroadcast();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/local/api/local/broadcast-media');
+  xhr.setRequestHeader('x-local-token', TOKEN);
+  xhr.upload.onprogress = (e) => { if (!e.lengthComputable) return; const p = Math.round(e.loaded / e.total * 100); bar.style.width = p + '%'; pct.textContent = p + '%'; };
+  xhr.onload = () => {
+    box.style.display = 'none';
+    if (xhr.status >= 200 && xhr.status < 300) {
+      input.value = ''; $('#broadcast_msg').className = 'msg good'; $('#broadcast_msg').textContent = 'เพิ่มสื่อแล้ว'; loadBroadcast();
+    } else {
+      let detail = 'เพิ่มสื่อไม่สำเร็จ';
+      try { detail = JSON.parse(xhr.responseText).detail || detail; } catch (err) {}
+      $('#broadcast_msg').className = 'msg bad'; $('#broadcast_msg').textContent = detail;
+    }
+  };
+  xhr.onerror = () => { box.style.display = 'none'; $('#broadcast_msg').className = 'msg bad'; $('#broadcast_msg').textContent = 'เชื่อมต่อไม่สำเร็จระหว่างอัปโหลด'; };
+  pct.textContent = '0%'; xhr.send(form);
 }
 async function deleteBroadcast(id) { if (!confirm('ลบสื่อนี้ใช่หรือไม่')) return; await api('/api/local/broadcast-media/' + id, { method:'DELETE' }); loadBroadcast(); }
 async function loadVoiceStatus() {

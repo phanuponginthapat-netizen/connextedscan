@@ -1223,8 +1223,8 @@ async def broadcast_media_upload(request: Request, x_local_token: str | None = H
     if not media_type:
         raise HTTPException(status_code=400, detail="รองรับเฉพาะรูปภาพและวิดีโอ")
     body = await upload.read()
-    if len(body) > 100 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="ไฟล์ต้องไม่เกิน 100 MB")
+    if len(body) > 1024 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="ไฟล์ต้องไม่เกิน 1 GB")
     item_id = db.new_id()
     ext = os.path.splitext(str(getattr(upload, "filename", "") or ""))[1].lower() or (".mp4" if media_type == "video" else ".jpg")
     filename = f"{item_id}{ext}"
