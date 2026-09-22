@@ -677,9 +677,26 @@ async function renderSettings(view) {
          กดปุ่มเตรียมเสียงหนึ่งครั้งตอนที่ยังต่อเน็ตได้ (จะบันทึกชื่อนักเรียนทุกคนไว้ล่วงหน้า)
          หลังจากนั้นตู้สแกนพูดไทยได้แม้ไม่มีอินเทอร์เน็ต
          ถ้าเพิ่มรายชื่อนักเรียนใหม่ ให้กดเตรียมเสียงอีกครั้ง</p>
-      <div id="voice_msg"></div></div>`;
-  loadVoiceStatus();
+      <div id="voice_msg"></div></div>
+    <div class="card"><h3>สื่อประชาสัมพันธ์หน้าพัก</h3>
+      <p class="hint">เพิ่มรูปภาพหรือวิดีโอหลายไฟล์ รูปจะสลับทุก 10 วินาที และวิดีโอจะเล่นจนจบ</p>
+      <p><input id="broadcast_file" type="file" accept="image/*,video/*" /> <button class="btn" onclick="uploadBroadcast()">เพิ่มสื่อ</button></p>
+      <div id="broadcast_list" class="grid2"></div><div id="broadcast_msg"></div></div>`;
+  loadVoiceStatus(); loadBroadcast();
 }
+async function loadBroadcast() {
+  const box = $('#broadcast_list'); if (!box) return;
+  const data = await api('/api/local/broadcast-media');
+  box.innerHTML = (data.items || []).map((item) => `<div class="card" style="margin:0"><b>${esc(item.title || 'สื่อประชาสัมพันธ์')}</b><p class="sub">${item.media_type === 'video' ? 'วิดีโอ' : 'รูปภาพ'}</p><button class="btn danger" onclick="deleteBroadcast('${item.id}')">ลบ</button></div>`).join('') || '<p class="hint">ยังไม่มีสื่อ หน้าพักจะแสดงชื่อโรงเรียนและสถิติ</p>';
+}
+async function uploadBroadcast() {
+  const file = $('#broadcast_file').files[0]; if (!file) return alert('กรุณาเลือกไฟล์');
+  const form = new FormData(); form.append('file', file);
+  const res = await fetch('/local/api/local/broadcast-media', { method:'POST', headers:{'x-local-token':TOKEN}, body:form });
+  if (!res.ok) return alert((await res.json().catch(()=>({}))).detail || 'เพิ่มสื่อไม่สำเร็จ');
+  $('#broadcast_file').value = ''; $('#broadcast_msg').className = 'msg good'; $('#broadcast_msg').textContent = 'เพิ่มสื่อแล้ว'; loadBroadcast();
+}
+async function deleteBroadcast(id) { if (!confirm('ลบสื่อนี้ใช่หรือไม่')) return; await api('/api/local/broadcast-media/' + id, { method:'DELETE' }); loadBroadcast(); }
 async function loadVoiceStatus() {
   const box = $('#voice_state'); if (!box) return;
   try {
