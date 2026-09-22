@@ -38,6 +38,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CMS_GROUPS } from "@/lib/cms";
 import { CmsSection } from "@/components/admin/CmsSection";
+
+const MEDIA_MAX_BYTES = 1024 * 1024 * 1024;
+const formatMediaSize = (bytes: number) =>
+  bytes >= 1024 * 1024 * 1024
+    ? `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+    : bytes >= 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 import { useCms } from "@/lib/cms-client";
 
 export const Route = createFileRoute("/admin/settings")({
