@@ -44,6 +44,23 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
           .eq("id", true)
           .maybeSingle();
 
+        const { data: mediaRows } = await supabaseAdmin
+          .from("broadcast_media")
+          .select("id, storage_path, title, media_type, duration_seconds")
+          .eq("is_active", true)
+          .order("sort_order")
+          .order("created_at");
+        const mediaStorage = supabaseAdmin.storage.from("broadcast-media");
+        const broadcastMedia = await Promise.all(
+          (mediaRows ?? []).map(async (item) => ({
+            id: item.id,
+            title: item.title,
+            media_type: item.media_type,
+            duration_seconds: item.duration_seconds,
+            url: await signedUrl(mediaStorage, item.storage_path),
+          })),
+        );
+
         const display = {
           show_recent: settings?.kiosk_show_recent ?? true,
           recent_limit: Math.min(Math.max(settings?.kiosk_recent_limit ?? 20, 1), 50),
@@ -123,7 +140,7 @@ export const Route = createFileRoute("/api/public/kiosk/recent")({
           }),
         );
 
-        return jsonResponse({ items, display });
+        return jsonResponse({ items, display, broadcast_media: broadcastMedia.filter((item) => item.url) });
       },
     },
   },

@@ -79,6 +79,10 @@ type TodayStats = {
   present?: number;
   students_present?: number;
   staff_present?: number;
+  total_students?: number;
+  total_staff?: number;
+  absent_students?: number;
+  absent_staff?: number;
   late?: number;
   on_time?: number;
   absent?: number;
@@ -143,6 +147,8 @@ function Kiosk() {
   } | null>(null);
 
   const [recent, setRecent] = useState<RecentScan[]>([]);
+  const [broadcastMedia, setBroadcastMedia] = useState<Array<{ id: string; title: string; media_type: "image" | "video"; duration_seconds: number; url: string }>>([]);
+  const [mediaIndex, setMediaIndex] = useState(0);
   const [voiceOn, setVoiceOn] = useState(false);
   const [display, setDisplay] = useState({
     show_recent: true,
@@ -330,6 +336,7 @@ function Kiosk() {
           news_enabled?: boolean;
           news_text?: string;
         };
+        broadcast_media?: Array<{ id: string; title: string; media_type: "image" | "video"; duration_seconds: number; url: string }>;
       };
       if (data.display) {
         setDisplay({
@@ -344,6 +351,7 @@ function Kiosk() {
           news_text: data.display.news_text ?? "",
         });
       }
+      setBroadcastMedia(data.broadcast_media ?? []);
       setRecent(
         (data.items ?? []).map((item) => ({
           id: item.id,
@@ -364,6 +372,14 @@ function Kiosk() {
       /* offline: keep showing the list already on screen */
     }
   }, []);
+
+  useEffect(() => {
+    if (!showSaver || broadcastMedia.length === 0) return;
+    const item = broadcastMedia[mediaIndex % broadcastMedia.length];
+    if (!item || item.media_type === "video") return;
+    const timer = setTimeout(() => setMediaIndex((value) => (value + 1) % broadcastMedia.length), Math.max(3, item.duration_seconds) * 1000);
+    return () => clearTimeout(timer);
+  }, [showSaver, broadcastMedia, mediaIndex]);
 
   useEffect(() => {
     void loadRecent();
@@ -765,18 +781,11 @@ function Kiosk() {
   const showSaver =
     (todayStats?.screensaver_mode ?? "stats") === "stats" &&
     Boolean(todayStats?.windows_closed || powerInfo?.screen_off || idleRest);
-  const saverTiles = checkinOnly
-    ? [
-        { label: "มาแล้ว", value: todayStats?.present ?? 0 },
-        { label: "ยังไม่มา", value: todayStats?.absent ?? 0 },
-        { label: "ทั้งหมด", value: todayStats?.people ?? 0 },
-      ]
-    : [
-        { label: "มาแล้ว", value: todayStats?.present ?? 0 },
-        { label: "มาสาย", value: todayStats?.late ?? 0 },
-        { label: "ขาด", value: todayStats?.absent ?? 0 },
-        { label: "กลับแล้ว", value: todayStats?.left ?? 0 },
-      ];
+  const saverGroups = [
+    { label: "นักเรียน", total: todayStats?.total_students ?? 0, present: todayStats?.students_present ?? 0, absent: todayStats?.absent_students ?? 0 },
+    { label: "บุคลากร", total: todayStats?.total_staff ?? 0, present: todayStats?.staff_present ?? 0, absent: todayStats?.absent_staff ?? 0 },
+  ];
+  const activeMedia = broadcastMedia[mediaIndex % Math.max(1, broadcastMedia.length)];
 
   return (
     <main className="kiosk-screen flex h-screen w-screen flex-col overflow-hidden bg-background font-sans">
@@ -915,7 +924,7 @@ function Kiosk() {
             <div className="kiosk-waiting flex h-full min-h-0 flex-col">
               <div className="kiosk-ready rounded-2xl bg-primary p-5 text-primary-foreground">
                 <p className="text-xs font-semibold opacity-75">FACEGATE READY</p>
-                <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(0.7rem,1.5vw,1.15rem)] font-bold">{subtitle}</h2>
+                <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(0.8rem,1.7vw,1.3rem)] font-bold">{subtitle}</h2>
                 <p className="mt-2 text-sm opacity-80">{agentOnline === true ? `ระบบพร้อม • ลงทะเบียนแล้ว ${knownFaces ?? 0} ใบหน้า` : "กำลังเชื่อมต่อระบบประมวลผล"}</p>
               </div>
               {visitorMode && (
@@ -962,11 +971,17 @@ function Kiosk() {
       )}
 
       {showSaver && (
-        <button type="button" className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-8 bg-camera p-8 text-camera-foreground" onClick={() => { bumpActivity(); if (powerInfo?.screen_off) void sendPowerCommand("screen_on"); }}>
-          <div className="text-center"><p className="text-sm opacity-60">สถิติวันนี้</p><p className="mt-2 font-display text-3xl font-semibold">{todayStats?.school_name || t("brand.name")}</p><p className="mt-1 opacity-60">{dateText}</p></div>
-          <div className="kiosk-saver-grid grid w-full max-w-4xl grid-cols-2 gap-6 lg:grid-cols-4">{saverTiles.map((item) => <div key={item.label} className="rounded-2xl border border-camera-foreground/10 bg-camera-foreground/5 p-6 text-center"><p className="text-6xl font-bold text-success">{item.value}</p><p className="mt-2 text-sm opacity-70">{item.label}</p></div>)}</div>
-          <p className="text-sm opacity-60">กล้องยังทำงานอยู่ — เดินเข้ามาสแกนได้ทันที</p>
-        </button>
+        <div role="button" tabIndex={0} className="fixed inset-0 z-[75] grid bg-camera text-camera-foreground lg:grid-cols-[1.35fr_1fr]" onClick={() => { bumpActivity(); if (powerInfo?.screen_off) void sendPowerCommand("screen_on"); }} onKeyDown={bumpActivity}>
+          <div className="relative min-h-[38vh] overflow-hidden bg-muted/10">
+            {activeMedia ? activeMedia.media_type === "video" ? <video key={activeMedia.id} src={activeMedia.url} autoPlay muted playsInline className="h-full w-full object-cover" onEnded={() => setMediaIndex((value) => (value + 1) % broadcastMedia.length)} /> : <img src={activeMedia.url} alt={activeMedia.title || "สื่อประชาสัมพันธ์"} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center p-10 text-center"><p className="font-display text-5xl font-bold">{todayStats?.school_name || t("brand.name")}</p></div>}
+            {activeMedia?.title ? <p className="absolute inset-x-0 bottom-0 bg-camera/75 p-4 text-center text-xl font-semibold">{activeMedia.title}</p> : null}
+          </div>
+          <div className="flex flex-col justify-center gap-6 p-6 md:p-10">
+            <div><p className="text-sm opacity-60">สรุปการมาโรงเรียนวันนี้</p><h2 className="mt-1 font-display text-3xl font-bold">{todayStats?.school_name || t("brand.name")}</h2><p className="mt-1 opacity-60">{dateText}</p></div>
+            {saverGroups.map((group) => <section key={group.label} className="border-t border-camera-foreground/15 pt-5"><div className="flex items-end justify-between"><h3 className="text-xl font-bold">{group.label}</h3><p className="text-sm opacity-60">ในระบบ {group.total} คน</p></div><div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-lg bg-camera-foreground/10 p-4"><p className="text-sm opacity-65">มาวันนี้</p><strong className="mt-1 block text-5xl text-success">{group.present}</strong></div><div className="rounded-lg bg-camera-foreground/10 p-4"><p className="text-sm opacity-65">ขาด</p><strong className="mt-1 block text-5xl">{group.absent}</strong></div></div></section>)}
+            <p className="text-sm opacity-60">กล้องพร้อมสแกนตลอดเวลา</p>
+          </div>
+        </div>
       )}
 
       {powerInfo?.pending && <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] flex items-center justify-center bg-camera/80 p-4 backdrop-blur"><div className="w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-panel"><p className="text-xl font-semibold">{powerInfo.pending.action === "sleep" ? "กำลังจะพักเครื่อง" : "กำลังจะปิดเครื่อง"}</p><p className="mt-2 text-5xl font-bold text-primary">{powerCountdown}</p><Button className="mt-5 w-full" onClick={() => void sendPowerCommand("cancel")}>ยังใช้งานอยู่ — ยกเลิก</Button></div></div>}

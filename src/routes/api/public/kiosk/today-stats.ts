@@ -65,7 +65,10 @@ async function handle() {
 
   // Visitors are guests of the day: they never count as school members and
   // never appear as "absent".
-  const people = (peopleRows ?? []).filter((person) => person.person_type !== "visitor").length;
+  const schoolPeople = (peopleRows ?? []).filter((person) => person.person_type !== "visitor");
+  const people = schoolPeople.length;
+  const totalStudents = schoolPeople.filter((person) => person.person_type !== "staff").length;
+  const totalStaff = schoolPeople.filter((person) => person.person_type === "staff").length;
   const personTypeById = new Map((peopleRows ?? []).map((person) => [person.id, person.person_type]));
   let studentsPresent = 0;
   let staffPresent = 0;
@@ -99,6 +102,10 @@ async function handle() {
     present,
     students_present: studentsPresent,
     staff_present: staffPresent,
+    total_students: totalStudents,
+    total_staff: totalStaff,
+    absent_students: isWorkday ? Math.max(0, totalStudents - studentsPresent) : 0,
+    absent_staff: isWorkday ? Math.max(0, totalStaff - staffPresent) : 0,
     visitors_present: visitorsPresent,
     visitor_register_enabled: Boolean(settings?.visitor_register_enabled),
     late,
