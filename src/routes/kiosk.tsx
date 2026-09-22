@@ -322,6 +322,7 @@ function Kiosk() {
         display?: {
           show_recent?: boolean;
           mirror?: boolean;
+          rotate?: number;
           show_clock?: boolean;
           voice_enabled?: boolean;
           voice_rate?: number;
@@ -334,6 +335,7 @@ function Kiosk() {
         setDisplay({
           show_recent: data.display.show_recent ?? true,
           mirror: data.display.mirror ?? true,
+          rotate: Number(data.display.rotate ?? 0),
           show_clock: data.display.show_clock ?? true,
           voice_enabled: data.display.voice_enabled ?? true,
           voice_rate: Number(data.display.voice_rate ?? 1),

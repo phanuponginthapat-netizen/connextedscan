@@ -94,6 +94,7 @@ type SettingsRow = {
   kiosk_show_recent: boolean;
   kiosk_recent_limit: number;
   kiosk_mirror: boolean;
+  kiosk_camera_rotate: number;
   kiosk_show_clock: boolean;
   kiosk_show_confidence: boolean;
   kiosk_news_enabled: boolean;
@@ -600,6 +601,21 @@ function SettingsPage() {
                       <span className="text-sm">{label}</span>
                     </div>
                   ))}
+                  <div className="flex items-center gap-3 rounded-lg border p-3">
+                    <span className="text-sm">
+                      หมุนภาพกล้อง — ใช้เมื่อติดตั้งจอแนวตั้งแล้วภาพจาก webcam เอียง
+                    </span>
+                    <select
+                      className="ml-auto h-9 shrink-0 rounded-md border bg-background px-2 text-sm"
+                      value={Number(form.kiosk_camera_rotate ?? 0)}
+                      onChange={(e) => set({ kiosk_camera_rotate: Number(e.target.value) })}
+                    >
+                      <option value={0}>ไม่หมุน (0°)</option>
+                      <option value={90}>หมุนขวา 90°</option>
+                      <option value={180}>กลับหัว 180°</option>
+                      <option value={270}>หมุนซ้าย 90°</option>
+                    </select>
+                  </div>
                   <div className="flex items-center gap-3 rounded-lg border p-3">
                     <Switch
                       checked={form.visitor_mode}

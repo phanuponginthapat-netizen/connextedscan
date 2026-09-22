@@ -31,8 +31,8 @@ KIOSK_HTML = r"""<!doctype html>
   .adminBtn { border:0;cursor:pointer;background:#eef4fa;color:var(--primary);font-weight:800;padding:10px 14px;border-radius:10px; }
   .app { display:grid;grid-template-columns:3fr 2fr;height:calc(100vh - 82px);min-height:0; }
   .stage { position:relative;overflow:hidden;background:#111c2c; }
-  video { width:100%;height:100%;object-fit:cover; }
-  .mirror video { transform:scaleX(-1); }
+  video { position:absolute;left:50%;top:50%;translate:-50% -50%;width:100%;height:100%;object-fit:cover; }
+  .stage { container-type:size; }
   .shade { position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,18,34,.42),transparent 42%,rgba(7,18,34,.48));pointer-events:none; }
   .live { position:absolute;top:20px;left:20px;display:flex;align-items:center;gap:8px;background:rgba(7,18,34,.72);color:#fff;border-radius:999px;padding:7px 12px;font-size:.72rem;font-weight:800; }
   .live i { width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.3s infinite; }
@@ -95,7 +95,7 @@ KIOSK_HTML = r"""<!doctype html>
 <div class="saver" id="saver" onclick="wake()"><div style="font-size:1.5rem;font-weight:700" id="saverTitle">สถิติวันนี้</div><div class="grid"><div><b id="vPresent">0</b>มาแล้ว</div><div><b id="vLate">0</b><span id="saverLateLabel">มาสาย</span></div><div><b id="vAbsent">0</b><span id="saverAbsentLabel">ขาด</span></div><div><b id="vLeft">0</b><span id="saverLeftLabel">กลับแล้ว</span></div></div><div style="opacity:.65">แตะหน้าจอเพื่อกลับสู่การสแกน</div></div>
 <script>
 const $ = (id) => document.getElementById(id);
-let display = { mirror: true, voice_enabled: true, next_delay_seconds: 5 };
+let display = { mirror: true, rotate: 0, voice_enabled: true, next_delay_seconds: 5 };
 let content = {};
 let busy = false, pausedUntil = 0;
 
@@ -191,11 +191,19 @@ async function speak(text) {
   if (!played) chime();
 }
 
+function drawRotated(v, c, w, h) {
+  // Rotate the frame upright before the AI sees it, so a sideways camera still works.
+  const rot = (((Number(display.rotate) || 0) % 360) + 360) % 360;
+  const swap = rot === 90 || rot === 270;
+  c.width = swap ? h : w; c.height = swap ? w : h;
+  const ctx = c.getContext('2d');
+  ctx.save(); ctx.translate(c.width / 2, c.height / 2); ctx.rotate(rot * Math.PI / 180);
+  ctx.drawImage(v, -w / 2, -h / 2, w, h); ctx.restore();
+}
 function frame() {
   const v = $('cam'); if (!v.videoWidth) return null;
   const c = document.createElement('canvas');
-  c.width = 640; c.height = Math.round(640 * v.videoHeight / v.videoWidth);
-  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  drawRotated(v, c, 640, Math.round(640 * v.videoHeight / v.videoWidth));
   return c.toDataURL('image/jpeg', 0.82).split(',')[1];
 }
 // Live view: a small preview frame for the admin page, sent from the kiosk so
@@ -204,8 +212,7 @@ function previewFrame(wide) {
   const v = $('cam'); if (!v.videoWidth) return null;
   const w = wide ? 480 : 320;
   const c = document.createElement('canvas');
-  c.width = w; c.height = Math.round(w * v.videoHeight / v.videoWidth);
-  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  drawRotated(v, c, w, Math.round(w * v.videoHeight / v.videoWidth));
   return c.toDataURL('image/jpeg', wide ? 0.6 : 0.5);
 }
 // While staff are watching the live page the server asks for many more frames
@@ -299,7 +306,7 @@ async function loadRecent() {
   try {
     const data = await (await fetch('/local/api/public/kiosk/recent')).json();
     display = data.display || display;
-    $('stage').className = 'stage' + (display.mirror ? ' mirror' : '');
+    applyCameraLook();
     if (display.news_enabled && display.news_text) {
       $('newsBox').style.display = 'block';
       $('news').textContent = (display.news_text + '   •   ').repeat(8);

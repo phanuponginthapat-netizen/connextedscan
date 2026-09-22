@@ -630,6 +630,7 @@ const FIELDS = [
   ['door_angle_down', 'องศาตอนลง', 'number'], ['door_angle_up', 'องศาตอนขึ้น', 'number'],
   ['door_move_step', 'ขยับทีละกี่องศา', 'number'], ['door_move_delay_ms', 'หน่วงระหว่างจังหวะ (ms)', 'number'],
   ['screen_idle_minutes', 'พักหน้าจอเมื่อไม่ใช้งาน (นาที)', 'number'],
+  ['kiosk_camera_rotate', 'หมุนภาพกล้อง (องศา 0/90/180/270)', 'number'],
   ['auto_power_off_time', 'เวลาปิดเครื่องอัตโนมัติ', 'time'],
 ];
 const FLAGS = [

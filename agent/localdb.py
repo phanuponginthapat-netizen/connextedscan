@@ -92,6 +92,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "kiosk_show_recent": True,
     "kiosk_recent_limit": 20,
     "kiosk_mirror": True,
+    "kiosk_camera_rotate": 0,
     "kiosk_show_clock": True,
     "kiosk_show_confidence": False,
     "kiosk_news_enabled": False,
