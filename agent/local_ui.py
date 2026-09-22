@@ -43,9 +43,9 @@ KIOSK_HTML = r"""<!doctype html>
   .banner.ok { background:rgba(12,107,66,.88); }.banner.bad { background:rgba(145,26,38,.9); }
   .side { display:flex;flex-direction:column;min-height:0;padding:24px 28px;background:#fff;border-left:1px solid #dce8f5; }
   .welcome { display:flex;align-items:center;gap:12px;font-family:Outfit,"Noto Sans Thai",sans-serif;font-size:1.55rem;font-weight:800; }.welcome i{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#e8f0f8;color:var(--primary);font-style:normal}.profile{display:none;flex:1;min-height:0;flex-direction:column;align-items:center;padding-top:20px}.profile.show{display:flex;animation:rise .35s ease-out}.profile .avatar{width:136px;height:136px;border:7px solid #fff;box-shadow:0 0 0 4px #dce8f5,0 18px 35px rgba(18,59,103,.2);border-radius:50%;object-fit:cover;background:#e8eef5}.profile h2{font-family:Outfit,"Noto Sans Thai",sans-serif;text-align:center;font-size:1.65rem;margin:18px 0 4px}.profile .role{color:var(--primary);font-weight:700}.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:20px}.fact{padding:14px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.fact small{display:block;color:#64748b;font-weight:700}.fact b{display:block;margin-top:4px;font-size:1.1rem}.resultTime{width:100%;display:flex;justify-content:space-between;margin-top:auto;padding:14px;border-radius:12px;background:#eef4fa}.resultBar{width:100%;padding:16px;margin-top:12px;border-radius:14px;text-align:center;background:var(--success);color:#fff;font-size:1.15rem;font-weight:800}.resultBar.bad{background:var(--danger)}
-  .waiting { flex:1;min-height:0;display:flex;flex-direction:column;margin-top:20px; }.ready{padding:18px;border-radius:16px;background:var(--primary);color:#fff}.ready h2{font-family:Outfit,"Noto Sans Thai",sans-serif;margin:4px 0;font-size:clamp(.7rem,1.5vw,1.15rem);white-space:nowrap}.ready p{margin:0;opacity:.8;font-size:.84rem}.listTitle{display:flex;justify-content:space-between;margin:18px 0 10px;font-weight:800}.list { min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px; }.item{display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;border-radius:12px;padding:8px}.item img{width:42px;height:42px;border-radius:9px;object-fit:cover;background:#e6edf5}.item div{min-width:0;flex:1}.item b,.item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item span{font-size:.72rem;color:#64748b}.tag{font-size:.7rem;font-weight:800;color:var(--primary)}
+  .waiting { flex:1;min-height:0;display:flex;flex-direction:column;margin-top:20px; }.ready{padding:18px;border-radius:16px;background:var(--primary);color:#fff}.ready h2{font-family:Outfit,"Noto Sans Thai",sans-serif;margin:4px 0;font-size:clamp(.8rem,1.7vw,1.3rem);white-space:nowrap}.ready p{margin:0;opacity:.8;font-size:.84rem}.listTitle{display:flex;justify-content:space-between;margin:18px 0 10px;font-weight:800}.list { min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px; }.item{display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;border-radius:12px;padding:8px}.item img{width:42px;height:42px;border-radius:9px;object-fit:cover;background:#e6edf5}.item div{min-width:0;flex:1}.item b,.item span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item span{font-size:.72rem;color:#64748b}.tag{font-size:.7rem;font-weight:800;color:var(--primary)}
   .news{position:fixed;bottom:8px;left:20px;right:20px;z-index:10;overflow:hidden;white-space:nowrap;border-radius:10px;padding:8px;background:var(--primary);color:#fff;font-weight:700}.news div{display:inline-block;animation:run 30s linear infinite}@keyframes run{to{transform:translateX(-50%)}}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes pulse{50%{opacity:.35}}
-  .saver{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;gap:26px;align-items:center;justify-content:center;color:#fff;background:#111c2c}.saver.show{display:flex}.saver .grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:18px}.saver .grid div{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px;text-align:center}.saver .grid b{display:block;font-size:3rem;color:#70dda7}
+  .saver{position:fixed;inset:0;z-index:60;display:none;color:#fff;background:#111c2c}.saver.show{display:grid;grid-template-columns:1.35fr 1fr}.saverMedia{min-height:38vh;overflow:hidden;background:#17263a;display:grid;place-items:center}.saverMedia img,.saverMedia video{width:100%;height:100%;object-fit:cover}.saverPanel{display:flex;flex-direction:column;justify-content:center;gap:22px;padding:38px}.saverGroup{border-top:1px solid rgba(255,255,255,.15);padding-top:18px}.saverHead{display:flex;align-items:end;justify-content:space-between}.saverGroup .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.saverGroup .grid div{background:rgba(255,255,255,.09);border-radius:9px;padding:16px}.saverGroup .grid b{display:block;font-size:3rem;color:#70dda7}
   @media(max-width:850px){.today{display:none}.top{padding:10px 14px}.app{grid-template-columns:1fr;height:calc(100vh - 82px);overflow:auto}.stage{min-height:55vh}.side{min-height:45vh}.brand span{display:none}}
   @media(orientation:portrait) and (min-width:600px){
     .top{height:122px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:7px 14px;padding:12px 20px}
@@ -60,7 +60,7 @@ KIOSK_HTML = r"""<!doctype html>
     .profile.show{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;column-gap:22px;padding-top:8px;align-items:center}
     .profile .avatar{grid-column:1;grid-row:1/4;justify-self:center;width:112px;height:112px}.profile h2{grid-column:1;grid-row:4;margin:10px 0 4px;align-self:start}.profile .role{grid-column:1;grid-row:5;align-self:start;text-align:center}
     .facts{grid-column:2;grid-row:1;margin-top:0}.resultTime{grid-column:2;grid-row:2;margin-top:10px}.resultBar{grid-column:2;grid-row:3;margin-top:10px;align-self:start}
-    .saver .grid{grid-template-columns:repeat(2,minmax(180px,1fr));max-width:620px;width:86%}
+    .saver.show{grid-template-columns:1fr;grid-template-rows:minmax(36%,1fr) auto}.saverPanel{padding:24px}.saverGroup .grid{grid-template-columns:1fr 1fr}
   }
   @media(orientation:portrait) and (min-width:600px) and (max-height:950px){.app{grid-template-rows:minmax(20rem,51%) minmax(0,49%)}.side{padding-block:14px;overflow-y:auto}.visitorBox img{width:96px;height:96px}}
   @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
@@ -92,10 +92,11 @@ KIOSK_HTML = r"""<!doctype html>
   </aside>
 </div>
 <div class="news" id="newsBox" style="display:none"><div id="news"></div></div>
-<div class="saver" id="saver" onclick="wake()"><div style="font-size:1.5rem;font-weight:700" id="saverTitle">สถิติวันนี้</div><div class="grid"><div><b id="vPresent">0</b>มาแล้ว</div><div><b id="vLate">0</b><span id="saverLateLabel">มาสาย</span></div><div><b id="vAbsent">0</b><span id="saverAbsentLabel">ขาด</span></div><div><b id="vLeft">0</b><span id="saverLeftLabel">กลับแล้ว</span></div></div><div style="opacity:.65">แตะหน้าจอเพื่อกลับสู่การสแกน</div></div>
+<div class="saver" id="saver" onclick="wake()"><div class="saverMedia" id="saverMedia"><div style="font-size:2.5rem;font-weight:800" id="saverTitle">สถิติวันนี้</div></div><div class="saverPanel"><div><small style="opacity:.65">สรุปการมาโรงเรียนวันนี้</small><h1 id="saverSchool" style="margin:5px 0">โรงเรียนของเรา</h1><span id="saverDate" style="opacity:.65"></span></div><div class="saverGroup"><div class="saverHead"><b>นักเรียน</b><span>ในระบบ <b id="studentTotal">0</b> คน</span></div><div class="grid"><div>มาวันนี้<b id="studentPresent">0</b></div><div>ขาด<b id="studentAbsent">0</b></div></div></div><div class="saverGroup"><div class="saverHead"><b>บุคลากร</b><span>ในระบบ <b id="staffTotal">0</b> คน</span></div><div class="grid"><div>มาวันนี้<b id="staffPresent">0</b></div><div>ขาด<b id="staffAbsent">0</b></div></div></div><div style="opacity:.65">กล้องพร้อมสแกนตลอดเวลา</div></div></div>
 <script>
 const $ = (id) => document.getElementById(id);
 let display = { mirror: true, rotate: 0, voice_enabled: true, next_delay_seconds: 5 };
+let broadcastMedia = [], broadcastIndex = 0, broadcastTimer = null;
 let content = {};
 let busy = false, pausedUntil = 0;
 
@@ -314,6 +315,7 @@ async function loadRecent() {
   try {
     const data = await (await fetch('/local/api/public/kiosk/recent')).json();
     display = data.display || display;
+    broadcastMedia = data.broadcast_media || [];
     applyCameraLook();
     if (display.news_enabled && display.news_text) {
       $('newsBox').style.display = 'block';
@@ -345,19 +347,11 @@ async function loadStats() {
     } else {
       vBox.style.display = 'none';
     }
-    $('vPresent').textContent = s.present; $('vLate').textContent = s.late;
-    $('vAbsent').textContent = s.absent; $('vLeft').textContent = s.left;
+    $('studentTotal').textContent = s.total_students || 0; $('studentPresent').textContent = s.students_present || 0; $('studentAbsent').textContent = s.absent_students || 0;
+    $('staffTotal').textContent = s.total_staff || 0; $('staffPresent').textContent = s.staff_present || 0; $('staffAbsent').textContent = s.absent_staff || 0;
+    $('saverSchool').textContent = s.school_name || 'โรงเรียนของเรา'; $('saverDate').textContent = serverNow().toLocaleDateString('th-TH-u-ca-buddhist-nu-latn',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     checkinOnly = !!s.checkin_only;
     idleMinutes = Number(s.idle_stats_minutes || 0);
-    if (checkinOnly) {
-      // Check-in only schools have no late count and no check-out count.
-      $('saverLateLabel').textContent = 'ยังไม่มา';
-      $('vLate').textContent = s.absent;
-      $('saverAbsentLabel').textContent = 'ทั้งหมด';
-      $('vAbsent').textContent = s.people;
-      $('saverLeftLabel').textContent = 'วันทำการ';
-      $('vLeft').textContent = s.is_workday ? 'เปิด' : 'ปิด';
-    }
     statsMode = s.screensaver_mode === 'stats';
     windowsClosed = !!s.windows_closed;
     applySaver();
@@ -374,7 +368,16 @@ function applySaver() {
   const idle = idleMinutes > 0 && Date.now() - lastActivity > idleMinutes * 60000;
   const show = statsMode && (windowsClosed || idle);
   $('saver').className = 'saver' + (show ? ' show' : '');
+  if (show) showBroadcast(); else if (broadcastTimer) { clearTimeout(broadcastTimer); broadcastTimer = null; }
 }
+function showBroadcast() {
+  const box = $('saverMedia'); if (!box || !broadcastMedia.length || broadcastTimer) return;
+  const item = broadcastMedia[broadcastIndex % broadcastMedia.length];
+  if (item.media_type === 'video') { box.innerHTML = `<video src="${item.url}" autoplay muted playsinline></video>`; box.querySelector('video').onended=nextBroadcast; }
+  else { box.innerHTML = `<img src="${item.url}" alt=""/>`; broadcastTimer=setTimeout(nextBroadcast, Math.max(3,item.duration_seconds||10)*1000); }
+}
+function nextBroadcast(){ if(broadcastTimer) clearTimeout(broadcastTimer); broadcastTimer=null; broadcastIndex=(broadcastIndex+1)%Math.max(1,broadcastMedia.length); showBroadcast(); }
+
 function wake() { lastActivity = Date.now(); $('saver').className = 'saver'; }
 window.addEventListener('pointerdown', bumpActivity);
 window.addEventListener('keydown', bumpActivity);
