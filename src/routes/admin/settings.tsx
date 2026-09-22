@@ -162,18 +162,45 @@ function SettingsPage() {
       return data ?? [];
     },
   });
+  const [mediaUpload, setMediaUpload] = useState<{ name: string; size: number; percent: number; phase: "uploading" | "saving" } | null>(null);
   const uploadMedia = useMutation({
     mutationFn: async (file: File) => {
       const mediaType = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : null;
       if (!mediaType) throw new Error("รองรับเฉพาะไฟล์รูปภาพและวิดีโอ");
+      if (file.size > MEDIA_MAX_BYTES) throw new Error("ไฟล์ต้องมีขนาดไม่เกิน 1 GB");
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
-      const { error: uploadError } = await supabase.storage.from("broadcast-media").upload(path, file, { contentType: file.type });
-      if (uploadError) throw uploadError;
+      setMediaUpload({ name: file.name, size: file.size, percent: 0, phase: "uploading" });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const baseUrl = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
+      const anonKey = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string | undefined;
+      if (baseUrl && anonKey && token) {
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", `${baseUrl}/storage/v1/object/broadcast-media/${encodeURIComponent(path)}`);
+          xhr.setRequestHeader("apikey", anonKey);
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+          xhr.setRequestHeader("x-upsert", "false");
+          if (file.type) xhr.setRequestHeader("Content-Type", file.type);
+          xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable) return;
+            setMediaUpload({ name: file.name, size: file.size, percent: Math.round((event.loaded / event.total) * 100), phase: "uploading" });
+          };
+          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง")));
+          xhr.onerror = () => reject(new Error("เชื่อมต่อไม่สำเร็จระหว่างอัปโหลด"));
+          xhr.send(file);
+        });
+      } else {
+        const { error: uploadError } = await supabase.storage.from("broadcast-media").upload(path, file, { contentType: file.type });
+        if (uploadError) throw uploadError;
+      }
+      setMediaUpload({ name: file.name, size: file.size, percent: 100, phase: "saving" });
       const { error } = await supabase.from("broadcast_media").insert({ storage_path: path, title: file.name.replace(/\.[^.]+$/, ""), media_type: mediaType, sort_order: broadcastMedia.length });
       if (error) { await supabase.storage.from("broadcast-media").remove([path]); throw error; }
     },
     onSuccess: () => { toast.success("เพิ่มสื่อประชาสัมพันธ์แล้ว"); qc.invalidateQueries({ queryKey: ["broadcast-media"] }); },
     onError: (error: Error) => toast.error(error.message),
+    onSettled: () => setMediaUpload(null),
   });
   const removeMedia = useMutation({
     mutationFn: async ({ id, path }: { id: string; path: string }) => {
