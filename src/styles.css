@@ -380,23 +380,27 @@
   }
 
   .kiosk-waiting {
-    display: grid;
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
   }
 
   .kiosk-ready {
-    grid-column: 1;
-    grid-row: 1;
+    flex: none;
+  }
+
+  .kiosk-waiting-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .kiosk-waiting-content.has-visitor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .kiosk-visitor {
-    grid-column: 1;
-    grid-row: 2;
-    margin-top: 0;
     min-height: 0;
-    justify-content: center;
+    overflow: hidden;
   }
 
   .kiosk-visitor img {
@@ -404,9 +408,7 @@
   }
 
   .kiosk-recent {
-    grid-column: 2;
-    grid-row: 1 / -1;
-    margin-top: 0;
+    min-width: 0;
   }
 
   .kiosk-result {

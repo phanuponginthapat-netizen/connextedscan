@@ -935,28 +935,30 @@ function Kiosk() {
                 <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(0.8rem,1.7vw,1.3rem)] font-bold">{subtitle}</h2>
                 <p className="mt-2 text-sm opacity-80">{agentOnline === true ? `ระบบพร้อม • ลงทะเบียนแล้ว ${knownFaces ?? 0} ใบหน้า` : "กำลังเชื่อมต่อระบบประมวลผล"}</p>
               </div>
-              {visitorMode && (
-                <div className="kiosk-visitor mt-4 rounded-2xl border-2 border-primary/30 bg-card p-4 text-center">
-                  <p className="font-display text-base font-bold text-primary">ผู้มาเยือน / บุคลากรภายนอก</p>
-                  <p className="mt-1 text-xs text-muted-foreground">สแกน QR code นี้เพื่อลงทะเบียนเข้าโรงเรียน</p>
-                  {visitorQr ? (
-                    <img src={visitorQr} alt="QR code ลงทะเบียนผู้มาเยือน" className="mx-auto mt-3 w-40 rounded-xl border bg-white p-2" />
-                  ) : (
-                    <div className="mx-auto mt-3 flex size-40 items-center justify-center rounded-xl border bg-muted text-xs text-muted-foreground">กำลังสร้าง QR…</div>
-                  )}
-                  <p className="mt-2 text-xs text-muted-foreground">กรอกข้อมูลและถ่ายภาพใบหน้า แล้วมาสแกนที่ตู้นี้ • วันนี้เข้าแล้ว {todayStats?.visitors_present ?? 0} คน</p>
-                </div>
-              )}
-              <div className="kiosk-recent mt-5 flex min-h-0 flex-1 flex-col">
-                <div className="flex items-center justify-between"><h3 className="font-display text-lg font-bold">สแกนเข้าล่าสุด</h3><span className="text-xs text-muted-foreground">{recent.length} รายการ</span></div>
-                <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
-                  {recent.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">ยังไม่มีรายการสแกน</p> : recent.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 rounded-xl border p-2">
-                      {item.avatarUrl ? <img src={item.avatarUrl} alt={item.name} className="size-11 rounded-lg object-cover" /> : <div className="flex size-11 items-center justify-center rounded-lg bg-muted"><User className="size-4" /></div>}
-                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.name}</p><p className="truncate text-xs text-muted-foreground">{item.role || item.detail}</p></div>
-                      <div className="text-right text-xs"><strong className="text-primary">{item.direction === "in" ? "เข้า" : "ออก"}</strong><p className="text-muted-foreground">{item.time}</p></div>
-                    </div>
-                  ))}
+              <div className={`kiosk-waiting-content mt-4 min-h-0 flex-1 ${visitorMode ? "has-visitor" : ""}`}>
+                {visitorMode && (
+                  <div className="kiosk-visitor rounded-2xl border-2 border-primary/30 bg-card p-4 text-center">
+                    <p className="font-display text-base font-bold text-primary">ผู้มาเยือน / บุคลากรภายนอก</p>
+                    <p className="mt-1 text-xs text-muted-foreground">สแกน QR code นี้เพื่อลงทะเบียนเข้าโรงเรียน</p>
+                    {visitorQr ? (
+                      <img src={visitorQr} alt="QR code ลงทะเบียนผู้มาเยือน" className="mx-auto mt-3 w-40 rounded-xl border bg-white p-2" />
+                    ) : (
+                      <div className="mx-auto mt-3 flex size-40 items-center justify-center rounded-xl border bg-muted text-xs text-muted-foreground">กำลังสร้าง QR…</div>
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground">กรอกข้อมูลและถ่ายภาพใบหน้า แล้วมาสแกนที่ตู้นี้ • วันนี้เข้าแล้ว {todayStats?.visitors_present ?? 0} คน</p>
+                  </div>
+                )}
+                <div className="kiosk-recent flex min-h-0 flex-1 flex-col">
+                  <div className="flex items-center justify-between"><h3 className="font-display text-lg font-bold">สแกนเข้าล่าสุด</h3><span className="text-xs text-muted-foreground">{recent.length} รายการ</span></div>
+                  <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
+                    {recent.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">ยังไม่มีรายการสแกน</p> : recent.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 rounded-xl border p-2">
+                        {item.avatarUrl ? <img src={item.avatarUrl} alt={item.name} className="size-11 rounded-lg object-cover" /> : <div className="flex size-11 items-center justify-center rounded-lg bg-muted"><User className="size-4" /></div>}
+                        <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.name}</p><p className="truncate text-xs text-muted-foreground">{item.role || item.detail}</p></div>
+                        <div className="text-right text-xs"><strong className="text-primary">{item.direction === "in" ? "เข้า" : "ออก"}</strong><p className="text-muted-foreground">{item.time}</p></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
