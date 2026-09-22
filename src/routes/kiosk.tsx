@@ -374,12 +374,20 @@ function Kiosk() {
   }, []);
 
   useEffect(() => {
-    if (!showSaver || broadcastMedia.length === 0) return;
+    const idleMinutes = Number(todayStats?.idle_stats_minutes ?? 0);
+    const isResting =
+      (todayStats?.screensaver_mode ?? "stats") === "stats" &&
+      Boolean(
+        todayStats?.windows_closed ||
+          powerInfo?.screen_off ||
+          (idleMinutes > 0 && now.getTime() - lastActivity >= idleMinutes * 60_000),
+      );
+    if (!isResting || broadcastMedia.length === 0) return;
     const item = broadcastMedia[mediaIndex % broadcastMedia.length];
     if (!item || item.media_type === "video") return;
     const timer = setTimeout(() => setMediaIndex((value) => (value + 1) % broadcastMedia.length), Math.max(3, item.duration_seconds) * 1000);
     return () => clearTimeout(timer);
-  }, [showSaver, broadcastMedia, mediaIndex]);
+  }, [todayStats, powerInfo?.screen_off, now, lastActivity, broadcastMedia, mediaIndex]);
 
   useEffect(() => {
     void loadRecent();
